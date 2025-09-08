@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bizilla TV - Upload</title>
+
+  <!-- Uppy CSS -->
+  <link href="https://releases.transloadit.com/uppy/v4.18.2/uppy.min.css" rel="stylesheet">
+
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      line-height: 1.6;
+      color: #333;
+      background-color: #f8f9fa;
+      padding: 2rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #3498db;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 0.5rem;
+    }
+    
+    p {
+      color: #666;
+      margin-bottom: 1.5rem;
+    }
+    
+    #uppy-container { 
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+    }
+    
+    .button-link {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      margin-top: 1rem;
+      background-color: white;
+      color: #3498db;
+      text-decoration: none;
+      border-radius: 4px;
+      border: 1px solid #3498db;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    
+    .button-link:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .upload-status {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      display: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem;
+      }
+      
+      .button-link {
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+      }
+    }
+  </style>
+
+  <!-- Clerk JS -->
+  <script 
+    async 
+    crossorigin="anonymous" 
+    data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA" 
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
+    type="text/javascript">
+  </script>
+
+  <!-- Uppy JS -->
+  <script type="module">
+    import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs";
+    window.UppyModules = { Uppy, Dashboard, AwsS3 };
+  </script>
+</head>
+<body>
+  <h1>Upload a Video</h1>
+  <p>Upload your video content to Bizilla TV. Supported formats include MP4, MOV, AVI, and more.</p>
+  <div id="uppy-container"></div>
+  
+  <div id="upload-status" class="upload-status"></div>
+
+  <!-- Navigation link styled as a button -->
+  <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
+
+  <script>
+    window.addEventListener('load', async () => {
+      try {
+        // Wait for Clerk to initialize
+        await Clerk.load();
+
+        // Correct way to check signed-in user
+        const user = Clerk.user;
+        if (!user) {
+          alert("Please sign in first!");
+          window.location.href = '/dev/index.html';
+          return;
+        }
+
+        const userId = user.id; // Clerk user ID
+        
+        // Wait for Uppy modules to load
+        while (!window.UppyModules) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Initialize Uppy using the imported modules
+        const { Uppy, Dashboard, AwsS3 } = window.UppyModules;
+        const uppy = new Uppy({
+          autoProceed: false,
+          restrictions: {
+            maxFileSize: 500 * 1024 * 1024, // 500 MB
+            allowedFileTypes: ['video/*'],
+            maxNumberOfFiles: 1
+          },
+          meta: { user_id: userId }
+        });
+
+        uppy.use(Dashboard, {
+          inline: true,
+          target: '#uppy-container',
+          note: 'Upload your video file (max 500MB).'
+        });
+
+        uppy.use(AwsS3, {
+          shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
+          getChunkSize: (file) => 10 * 1024 * 1024, // 10MB chunks
+          createMultipartUpload: async (file) => {
+            const token = await Clerk.session.getToken();
+            const response = await fetch('/api/upload?type=createMultipartUpload', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-User-Email': user.emailAddress
+              },
+              body: JSON.stringify({
+                filename: file.name,
+                contentType: file.type,
+                key: `uploads/${userId}/${file.name}`
+              })
+            });
+            const data = await response.json();
+            return {
+              uploadId: data.uploadId,
+              key: data.key
+            };
+          },
+          listParts: async (file, { uploadId, key }) => {
+            const token = await Clerk.session.getToken();
+            const response = await fetch(`/api/upload?type=listParts&uploadId=${uploadId}&key=${encodeURIComponent(key)}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-User-Email': user.emailAddress
+              }
+            });
+            const data = await response.json();
+            return data.parts || [];
+          },
+          signPart: async (file, { uploadId, key, partNumber }) => {
+            const token = await Clerk.session.getToken();
+            const response = await fetch(`/api/upload?type=getUploadPartURL&uploadId=${uploadId}&key=${encodeURIComponent(key)}&partNumber=${partNumber}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-User-Email': user.emailAddress
+              }
+            });
+            const data = await response.json();
+            return {
+              url: data.url
+            };
+          },
+          completeMultipartUpload: async (file, { uploadId, key, parts }) => {
+            const token = await Clerk.session.getToken();
+            const response = await fetch('/api/upload?type=completeMultipartUpload', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-User-Email': user.emailAddress
+              },
+              body: JSON.stringify({
+                uploadId,
+                key,
+                parts
+              })
+            });
+            const data = await response.json();
+            return {
+              location: data.location
+            };
+          },
+          abortMultipartUpload: async (file, { uploadId, key }) => {
+            const token = await Clerk.session.getToken();
+            await fetch('/api/upload?type=abortMultipartUpload', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-User-Email': user.emailAddress
+              },
+              body: JSON.stringify({
+                uploadId,
+                key
+              })
+            });
+          }
+        });
+
+        // Show upload progress
+        uppy.on('upload-progress', (file, progress) => {
+          const percent = Math.floor(progress.bytesUploaded / progress.bytesTotal * 100);
+          const statusEl = document.getElementById('upload-status');
+          statusEl.textContent = `Uploading: ${percent}% complete`;
+          statusEl.style.display = 'block';
+          statusEl.className = 'upload-status';
+        });
+
+        // Handle upload completion (both success and failure)
+        uppy.on('complete', (result) => {
+          console.log('Upload complete! Successful:', result.successful, 'Failed:', result.failed);
+          const statusEl = document.getElementById('upload-status');
+          
+          if (result.failed && result.failed.length > 0) {
+            // There were failed uploads - show error and don't redirect
+            const firstError = result.failed[0].error;
+            statusEl.textContent = `Upload failed: ${firstError?.message || 'Unknown error'}`;
+            statusEl.className = 'upload-status error';
+            statusEl.style.display = 'block';
+            console.error('Upload failed:', result.failed);
+          } else if (result.successful && result.successful.length > 0) {
+            // All uploads successful - show success and redirect
+            statusEl.textContent = 'Upload complete! Redirecting to dashboard...';
+            statusEl.className = 'upload-status success';
+            statusEl.style.display = 'block';
+            
+            // Redirect immediately as requested by client
+            window.location.href = '/dev/';
+          } else {
+            // No files processed
+            statusEl.textContent = 'No files were uploaded.';
+            statusEl.className = 'upload-status error';
+            statusEl.style.display = 'block';
+          }
+        });
+        
+        // Handle upload errors
+        uppy.on('error', (error) => {
+          console.error('Upload error:', error);
+          const statusEl = document.getElementById('upload-status');
+          statusEl.textContent = `Error: ${error.message || 'Upload failed'}`;
+          statusEl.className = 'upload-status error';
+          statusEl.style.display = 'block';
+        });
+
+      } catch (err) {
+        console.error("Error initializing upload page:", err);
+        const statusEl = document.getElementById('upload-status');
+        statusEl.textContent = `Error: ${err.message || 'Failed to initialize uploader'}`;
+        statusEl.className = 'upload-status error';
+        statusEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

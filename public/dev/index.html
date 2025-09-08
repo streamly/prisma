@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bizilla TV - Dashboard</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      line-height: 1.6;
+      color: #333;
+      background-color: #f8f9fa;
+      padding: 2rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #3498db;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 0.5rem;
+    }
+    
+    .user-info {
+      background-color: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+    
+    .button-container {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    
+    .primary-btn {
+      background-color: #3498db;
+      color: white;
+    }
+    
+    .secondary-btn {
+      background-color: white;
+      color: #3498db;
+      border: 1px solid #3498db;
+    }
+    
+    .danger-btn {
+      background-color: #e74c3c;
+      color: white;
+    }
+    
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .notification.show {
+      opacity: 1;
+    }
+    
+    @media (max-width: 600px) {
+      .button-container {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+    }
+  </style>
+
+  <!-- Clerk JS SDK -->
+  <script 
+    async 
+    crossorigin="anonymous" 
+    data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA" 
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
+    type="text/javascript">
+  </script>
+</head>
+<body>
+  <h1>Bizilla TV</h1>
+  
+  <div class="user-info">
+    <p id="greeting">Loading user info...</p>
+  </div>
+  
+  <div class="button-container">
+    <button id="signInBtn" class="primary-btn">Sign In / Sign Up</button>
+    <button id="uploadBtn" class="secondary-btn">Upload Video</button>
+    <button id="signOutBtn" class="danger-btn">Sign Out</button>
+  </div>
+
+  <script>
+    window.addEventListener('load', async function () {
+      try {
+        await Clerk.load();
+
+        const session = Clerk.session;
+
+        const greetingEl = document.getElementById('greeting');
+        const signInBtn = document.getElementById('signInBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const signOutBtn = document.getElementById('signOutBtn');
+
+        if (session) {
+          // User is signed in
+          const user = Clerk.user;
+          greetingEl.innerHTML = `<strong>Hello, ${user.fullName}!</strong><br>You can now upload videos.`;
+          signInBtn.style.display = 'none';
+        } else {
+          // Not signed in
+          greetingEl.textContent = "Please sign in to access your account.";
+          uploadBtn.style.display = 'none';
+          signOutBtn.style.display = 'none';
+        }
+
+      // Sign In button
+      signInBtn.addEventListener('click', async () => {
+        try {
+          await Clerk.redirectToSignIn({
+            redirectUrl: window.location.href // automatically handles encoding
+          });
+        } catch (err) {
+          console.error("Failed to redirect to sign-in:", err);
+          showNotification("Error starting sign-in process", "error");
+        }
+      });
+
+      // Go to upload page
+      uploadBtn.addEventListener('click', () => {
+        if (!session) {
+          showNotification("Please sign in first!", "error");
+          return;
+        }
+        window.location.href = '/dev/upload/index.html';
+      });
+
+      // Sign out
+      signOutBtn.addEventListener('click', async () => {
+        if (session) {
+          try {
+            await Clerk.signOut();
+            showNotification("You have been signed out", "success");
+            setTimeout(() => window.location.reload(), 1500);
+          } catch (err) {
+            console.error("Sign out error:", err);
+            showNotification("Error signing out", "error");
+          }
+        } else {
+          showNotification("You are not signed in", "info");
+        }
+      });
+      
+      
+      // Function to show notifications
+      function showNotification(message, type = 'info') {
+        // Check if notification container exists, if not create it
+        let notifContainer = document.getElementById('notification-container');
+        if (!notifContainer) {
+          notifContainer = document.createElement('div');
+          notifContainer.id = 'notification-container';
+          notifContainer.style.position = 'fixed';
+          notifContainer.style.top = '20px';
+          notifContainer.style.right = '20px';
+          notifContainer.style.zIndex = '1000';
+          document.body.appendChild(notifContainer);
+        }
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.style.backgroundColor = type === 'error' ? '#f8d7da' : 
+                                           type === 'success' ? '#d4edda' : 
+                                           '#cce5ff';
+        notification.style.color = type === 'error' ? '#721c24' : 
+                                 type === 'success' ? '#155724' : 
+                                 '#004085';
+        notification.style.padding = '10px 15px';
+        notification.style.marginBottom = '10px';
+        notification.style.borderRadius = '4px';
+        notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        notification.style.transition = 'all 0.3s ease';
+        notification.textContent = message;
+        
+        // Add to container
+        notifContainer.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          setTimeout(() => {
+            notifContainer.removeChild(notification);
+          }, 300);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Dashboard initialization error:', error);
+      document.getElementById('greeting').textContent = 'Error loading dashboard. Please try again later.';
+    }
+  })
+  </script>
+  </div>
+</body>
+</html>

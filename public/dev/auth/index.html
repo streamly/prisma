@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bizilla TV - Auth</title>
+  <script
+    async
+    crossorigin="anonymous"
+    data-clerk-publishable-key="pk_test_dmVyaWZpZWQtYWtpdGEtNTYuY2xlcmsuYWNjb3VudHMuZGV2JA"
+    src="https://verified-akita-56.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    type="text/javascript"
+  ></script>
+</head>
+<body>
+  <p>Authenticating...</p>
+
+  <script>
+    window.addEventListener("load", async () => {
+      try {
+        await Clerk.load();
+
+        // Get the active session
+        const session = Clerk.session;
+        if (!session) {
+          alert("No active session found. Please sign in.");
+          window.location.href = '/dev/index.html';
+          return;
+        }
+
+        // Get session token
+        const sessionToken = await session.getToken();
+        
+        // Get user information
+        const user = Clerk.user;
+        const userId = user.id;
+        const fullName = user.fullName;
+        const email = user.emailAddress;
+
+        // Send sessionToken to backend for verification
+        const resp = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({ 
+            userId,
+            fullName,
+            email
+          })
+        });
+
+        const data = await resp.json();
+
+        if (data.authenticated) {
+          console.log('Authentication successful, redirecting to dashboard...');
+          window.location.href = '/dev/index.html';
+        } else {
+          console.error('Authentication failed:', data.error);
+          alert(`Authentication failed: ${data.error || 'Unknown error'}`);
+          window.location.href = '/dev/index.html';
+        }
+
+      } catch (err) {
+        console.error("Authentication error:", err);
+        alert("Error during authentication. Check console.");
+        window.location.href = '/dev/index.html';
+      }
+    });
+  </script>
+</body>
+</html>
