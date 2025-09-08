@@ -5,10 +5,10 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // Check required environment variables
 if (!process.env.AWS_REGION || !process.env.AWS_KEY || !process.env.AWS_SECRET || !process.env.AWS_BUCKET) {
   console.error('Missing required environment variables:', {
-    AWS_REGION: !!process.env.AWS_REGION,
-    AWS_KEY: !!process.env.AWS_KEY,
-    AWS_SECRET: !!process.env.AWS_SECRET,
-    AWS_BUCKET: !!process.env.AWS_BUCKET
+    AWS_REGION: process.env.AWS_REGION,
+    AWS_KEY: process.env.AWS_KEY,
+    AWS_SECRET: process.env.AWS_SECRET,
+    AWS_BUCKET: process.env.AWS_BUCKET
   });
 }
 
@@ -19,6 +19,7 @@ const s3Client = new S3Client({
     accessKeyId: process.env.AWS_KEY,
     secretAccessKey: process.env.AWS_SECRET
   },
+  forcePathStyle: true,
   endpoint: process.env.AWS_ENDPOINT // For S3-compatible storage
 });
 
