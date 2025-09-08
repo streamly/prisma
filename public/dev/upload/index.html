@@ -167,7 +167,7 @@
               body: JSON.stringify({
                 filename: file.name,
                 contentType: file.type,
-                key: `uploads/${userId}/${file.name}`
+                key: file.name
               })
             });
             if (!response.ok) {
@@ -196,7 +196,7 @@
               body: JSON.stringify({
                 filename: file.name,
                 contentType: file.type,
-                key: `uploads/${userId}/${file.name}`
+                key: file.name
               })
             });
             if (!response.ok) {

@@ -113,7 +113,7 @@ async function handleGetUploadParameters(req, res, userId) {
             return res.status(400).json({ error: 'Missing filename or contentType' });
         }
 
-        const uploadKey = key || `uploads/${userId}/${filename}`;
+        const uploadKey = key || filename;
 
         const command = new PutObjectCommand({
             Bucket: BUCKET_NAME,
@@ -150,7 +150,7 @@ async function handleCreateMultipartUpload(req, res, userId) {
         }
 
         // Use the key provided by Uppy or generate one
-        const uploadKey = key || `uploads/${userId}/${filename}`;
+        const uploadKey = key || filename;
 
         console.log('Creating upload with key:', uploadKey, 'bucket:', BUCKET_NAME);
 
