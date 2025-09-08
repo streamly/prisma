@@ -153,6 +153,37 @@
         uppy.use(AwsS3, {
           shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
           getChunkSize: (file) => 10 * 1024 * 1024, // 10MB chunks
+          getUploadParameters: async (file) => {
+            // This is required by Uppy even when using multipart
+            // For small files that don't use multipart
+            const token = await Clerk.session.getToken();
+            const response = await fetch('/api/upload?type=getUploadParameters', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-User-Email': user.emailAddress
+              },
+              body: JSON.stringify({
+                filename: file.name,
+                contentType: file.type,
+                key: `uploads/${userId}/${file.name}`
+              })
+            });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(`Failed to get upload parameters: ${errorData.error || response.statusText}`);
+            }
+            const data = await response.json();
+            return {
+              method: 'PUT',
+              url: data.url,
+              fields: {},
+              headers: {
+                'Content-Type': file.type
+              }
+            };
+          },
           createMultipartUpload: async (file) => {
             const token = await Clerk.session.getToken();
             const response = await fetch('/api/upload?type=createMultipartUpload', {
