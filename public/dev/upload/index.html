@@ -153,7 +153,6 @@
         uppy.use(AwsS3, {
           shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
           getChunkSize: (file) => 10 * 1024 * 1024, // 10MB chunks
-          endpoint: 'https://j1i2.or.idrivee2-36.co',
           createMultipartUpload: async (file) => {
             const token = await Clerk.session.getToken();
             const response = await fetch('/api/upload?type=createMultipartUpload', {
@@ -169,6 +168,10 @@
                 key: `uploads/${userId}/${file.name}`
               })
             });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(`Failed to create multipart upload: ${errorData.error || response.statusText}`);
+            }
             const data = await response.json();
             return {
               uploadId: data.uploadId,
@@ -194,6 +197,10 @@
                 'X-User-Email': user.emailAddress
               }
             });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(`Failed to get upload URL: ${errorData.error || response.statusText}`);
+            }
             const data = await response.json();
             return {
               url: data.url
@@ -214,6 +221,10 @@
                 parts
               })
             });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(`Failed to complete upload: ${errorData.error || response.statusText}`);
+            }
             const data = await response.json();
             return {
               location: data.location
