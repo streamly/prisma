@@ -153,6 +153,7 @@
         uppy.use(AwsS3, {
           shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
           getChunkSize: (file) => 10 * 1024 * 1024, // 10MB chunks
+          endpoint: 'https://j1i2.or.idrivee2-36.co',
           createMultipartUpload: async (file) => {
             const token = await Clerk.session.getToken();
             const response = await fetch('/api/upload?type=createMultipartUpload', {
