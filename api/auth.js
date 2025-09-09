@@ -1,5 +1,6 @@
 import { createClerkClient, verifyToken } from '@clerk/backend';
 import { serialize } from 'cookie';
+import { getTypesenseClient } from '../lib/apiHelpers.js';
 
 // Initialize Clerk client
 const clerkClient = createClerkClient({
@@ -48,23 +49,51 @@ export default async function handler(req, res) {
       
       userId = payload.sub;
       
+      // Generate scoped Typesense key for this user
+      let scopedApiKey = null;
+      try {
+        const typesenseClient = getTypesenseClient();
+        scopedApiKey = await typesenseClient.keys().generateScopedSearchKey(
+          process.env.TYPESENSE_SEARCH_ONLY_KEY,
+          {
+            filter_by: `uid:${userId} && active:1`,
+            include_fields: "id,uid,title,description,duration,file_size,thumbnail,created_at,active",
+            expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+          }
+        );
+      } catch (typesenseError) {
+        console.error('Failed to generate scoped Typesense key:', typesenseError);
+        // Continue without the key - videos won't load but auth will still work
+      }
       
       // Set cookies for authentication
       const cookieOptions = {
-        httpOnly: true,
+        httpOnly: false, // Allow JavaScript access for apikey
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/'
       };
       
+      const httpOnlyCookieOptions = {
+        ...cookieOptions,
+        httpOnly: true // Keep sensitive data httpOnly
+      };
+      
       // Set cookies with user information
-      res.setHeader('Set-Cookie', [
-        serialize('user_id', userId, cookieOptions),
-        serialize('user_name', fullName || '', cookieOptions),
-        serialize('user_email', email || '', cookieOptions),
-        serialize('auth_token', token, cookieOptions)
-      ]);
+      const cookies = [
+        serialize('user_id', userId, httpOnlyCookieOptions),
+        serialize('user_name', fullName || '', httpOnlyCookieOptions),
+        serialize('user_email', email || '', httpOnlyCookieOptions),
+        serialize('auth_token', token, httpOnlyCookieOptions)
+      ];
+      
+      // Add scoped API key if generated successfully
+      if (scopedApiKey) {
+        cookies.push(serialize('apikey', scopedApiKey, cookieOptions));
+      }
+      
+      res.setHeader('Set-Cookie', cookies);
       
       return res.status(200).json({ 
         authenticated: true, 

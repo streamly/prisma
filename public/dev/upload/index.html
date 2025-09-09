@@ -6,85 +6,7 @@
 
   <!-- Uppy CSS -->
   <link href="https://releases.transloadit.com/uppy/v4.18.2/uppy.min.css" rel="stylesheet">
-
-  <style>
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-      line-height: 1.6;
-      color: #333;
-      background-color: #f8f9fa;
-      padding: 2rem;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    h1 {
-      color: #3498db;
-      margin-bottom: 1rem;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 0.5rem;
-    }
-    
-    p {
-      color: #666;
-      margin-bottom: 1.5rem;
-    }
-    
-    #uppy-container { 
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      margin: 2rem 0;
-    }
-    
-    .button-link {
-      display: inline-block;
-      padding: 0.5rem 1rem;
-      margin-top: 1rem;
-      background-color: white;
-      color: #3498db;
-      text-decoration: none;
-      border-radius: 4px;
-      border: 1px solid #3498db;
-      font-weight: 500;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    
-    .button-link:hover {
-      background-color: #f8f9fa;
-    }
-    
-    .upload-status {
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 8px;
-      display: none;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    
-    @media (max-width: 600px) {
-      body {
-        padding: 1rem;
-      }
-      
-      .button-link {
-        width: 100%;
-        text-align: center;
-        box-sizing: border-box;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="/styles/upload.css">
 
   <!-- Clerk JS -->
   <script 
@@ -94,6 +16,7 @@
     src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
     type="text/javascript">
   </script>
+
 
   <!-- Uppy JS -->
   <script type="module">
@@ -288,7 +211,7 @@
         });
 
         // Handle upload completion (both success and failure)
-        uppy.on('complete', (result) => {
+        uppy.on('complete', async (result) => {
           console.log('Upload complete! Successful:', result.successful, 'Failed:', result.failed);
           const statusEl = document.getElementById('upload-status');
           
@@ -300,13 +223,55 @@
             statusEl.style.display = 'block';
             console.error('Upload failed:', result.failed);
           } else if (result.successful && result.successful.length > 0) {
-            // All uploads successful - show success and redirect
-            statusEl.textContent = 'Upload complete! Redirecting to dashboard...';
+            // All uploads successful - insert metadata to Typesense
+            statusEl.textContent = 'Upload complete! Processing video metadata...';
             statusEl.className = 'upload-status success';
             statusEl.style.display = 'block';
             
-            // Redirect immediately as requested by client
-            window.location.href = '/dev/';
+            const uploadedFile = result.successful[0];
+            const file = uploadedFile.data;
+            
+            // Prepare metadata for Typesense (only essential fields)
+            const videoMetadata = {
+              id: generateVideoId(),
+              filename: file.name,
+              file_size: file.size,
+              content_type: file.type,
+              duration: 0 // Will be updated later when video is processed
+            };
+            
+            try {
+              // Insert video metadata to Typesense
+              const response = await fetch('/api/insert', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${await Clerk.session.getToken()}`
+                },
+                body: JSON.stringify(videoMetadata)
+              });
+              
+              const result = await response.json();
+              
+              if (result.success) {
+                statusEl.textContent = 'Upload and processing complete! Redirecting...';
+                // Redirect to video details page
+                setTimeout(() => {
+                  window.location.href = `/dev/?v=${videoMetadata.id}`;
+                }, 1000);
+              } else {
+                throw new Error(result.error || 'Failed to process video metadata');
+              }
+            } catch (error) {
+              console.error('Failed to insert video metadata:', error);
+              statusEl.textContent = 'Upload successful but failed to process metadata. Please try again.';
+              statusEl.className = 'upload-status error';
+              
+              // Still redirect to dashboard after a delay
+              setTimeout(() => {
+                window.location.href = '/dev/';
+              }, 3000);
+            }
           } else {
             // No files processed
             statusEl.textContent = 'No files were uploaded.';
@@ -314,6 +279,11 @@
             statusEl.style.display = 'block';
           }
         });
+        
+        // Function to generate a unique video ID
+        function generateVideoId() {
+          return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
         
         // Handle upload errors
         uppy.on('error', (error) => {
