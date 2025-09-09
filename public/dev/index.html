@@ -14,7 +14,7 @@
     src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
     type="text/javascript">
   </script>
-   <script src="https://cdn.jsdelivr.net/npm/typesense@1.7.2/dist/typesense.min.js"></script>
+   <script async src="https://cdn.jsdelivr.net/npm/typesense@1.8.2/dist/typesense.min.js"></script>
   
 </head>
 <body>
@@ -215,6 +215,17 @@
       // Function to load videos from Typesense
       async function loadVideos() {
         try {
+          // Wait for Typesense library to load
+          let attempts = 0;
+          while (!window.Typesense && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+          
+          if (!window.Typesense) {
+            throw new Error('Typesense library failed to load after 5 seconds');
+          }
+          
           let apiKey = getCookie('apikey');
           if (!apiKey) {
             console.log('No scoped API key found, requesting new one...');
@@ -264,6 +275,16 @@
               }
 
               // Initialize Typesense client with scoped API key
+              console.log('Initializing Typesense client with:', {
+                host: CONFIG.TYPESENSE_HOST,
+                apiKey: apiKey ? 'present' : 'missing'
+              });
+              
+              if (!window.Typesense) {
+                console.error('Typesense library not loaded');
+                throw new Error('Typesense library not available');
+              }
+              
               typesenseClient = new Typesense.Client({
                 nodes: [{
                   host: CONFIG.TYPESENSE_HOST,
@@ -273,11 +294,20 @@
                 apiKey: apiKey,
                 connectionTimeoutSeconds: 2
               });
+              
+              console.log('Typesense client initialized successfully');
             } catch (error) {
               console.error('Error requesting scoped API key:', error);
               await Clerk.signOut({ redirectUrl: '/dev/' });
               return;
             }
+          }
+
+          // Check if Typesense client was initialized successfully
+          if (!typesenseClient) {
+            console.error('Typesense client not initialized');
+            document.getElementById('noVideos').style.display = 'block';
+            return;
           }
 
           // Use Typesense client library to search videos
