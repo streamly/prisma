@@ -2,8 +2,44 @@ import { getVideoUrl } from './config.js';
 
 // Modal management functionality
 export class ModalManager {
-  constructor() {
+  constructor(notificationManager) {
     this.currentVideoData = null;
+    this.notificationManager = notificationManager;
+  }
+
+  // Setup event listeners for modal functionality
+  setupEventListeners() {
+    // Modal close button
+    const closeBtn = document.querySelector('.close');
+    if (closeBtn) {
+      closeBtn.onclick = () => this.closeVideoModal();
+    }
+
+    // Click outside modal to close
+    window.onclick = (event) => {
+      const modal = document.getElementById('videoModal');
+      if (event.target === modal) {
+        this.closeVideoModal();
+      }
+    };
+
+    // Generate thumbnail button
+    const generateThumbnailBtn = document.getElementById('generateThumbnail');
+    if (generateThumbnailBtn) {
+      generateThumbnailBtn.onclick = () => this.generateThumbnail();
+    }
+
+    // Thumbnail upload input
+    const thumbnailUpload = document.getElementById('thumbnailUpload');
+    if (thumbnailUpload) {
+      thumbnailUpload.onchange = (event) => this.handleThumbnailUpload(event);
+    }
+
+    // Publish button
+    const publishBtn = document.getElementById('publishBtn');
+    if (publishBtn) {
+      publishBtn.onclick = () => this.publishVideo();
+    }
   }
 
   // Construct video URL for iDrive e2 storage
@@ -16,7 +52,7 @@ export class ModalManager {
     // Find video data from the loaded videos
     const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
     if (!videoCard) {
-      window.notificationManager.showNotification('Video not found', 'error');
+      this.notificationManager.showNotification('Video not found', 'error');
       return;
     }
 
@@ -83,7 +119,7 @@ export class ModalManager {
   generateThumbnail() {
     const videoElement = document.getElementById('videoElement');
     if (videoElement.videoWidth === 0) {
-      window.notificationManager.showNotification('Please wait for video to load', 'info');
+      this.notificationManager.showNotification('Please wait for video to load', 'info');
       return;
     }
 
@@ -105,7 +141,7 @@ export class ModalManager {
       
       // Store thumbnail data for upload
       this.currentVideoData.thumbnailBlob = blob;
-      window.notificationManager.showNotification('Thumbnail generated successfully', 'success');
+      this.notificationManager.showNotification('Thumbnail generated successfully', 'success');
     }, 'image/jpeg', 0.8);
   }
 
@@ -115,7 +151,7 @@ export class ModalManager {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      window.notificationManager.showNotification('Please select an image file', 'error');
+      this.notificationManager.showNotification('Please select an image file', 'error');
       return;
     }
 
@@ -124,7 +160,7 @@ export class ModalManager {
       const thumbnailPreview = document.getElementById('thumbnailPreview');
       thumbnailPreview.innerHTML = `<img src="${e.target.result}" alt="Custom thumbnail">`;
       this.currentVideoData.thumbnailBlob = file;
-      window.notificationManager.showNotification('Thumbnail uploaded successfully', 'success');
+      this.notificationManager.showNotification('Thumbnail uploaded successfully', 'success');
     };
     reader.readAsDataURL(file);
   }
@@ -137,7 +173,7 @@ export class ModalManager {
     const description = document.getElementById('videoDescription').value.trim();
 
     if (!title) {
-      window.notificationManager.showNotification('Please enter a title', 'error');
+      this.notificationManager.showNotification('Please enter a title', 'error');
       return;
     }
 
@@ -167,7 +203,7 @@ export class ModalManager {
       const result = await response.json();
 
       if (result.success) {
-        window.notificationManager.showNotification('Video details updated successfully', 'success');
+        this.notificationManager.showNotification('Video details updated successfully', 'success');
         this.closeVideoModal();
         
         // Update the video card in the grid
@@ -181,10 +217,8 @@ export class ModalManager {
       }
     } catch (error) {
       console.error('Failed to update video:', error);
-      window.notificationManager.showNotification('Failed to update video details', 'error');
+      this.notificationManager.showNotification('Failed to update video details', 'error');
     }
   }
 }
 
-// Export for use in other modules
-window.ModalManager = ModalManager;

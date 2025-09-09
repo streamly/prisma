@@ -9,7 +9,7 @@ class App {
     this.typesenseManager = new TypesenseManager();
     this.notificationManager = new NotificationManager();
     this.videoManager = new VideoManager(this.typesenseManager, this.notificationManager);
-    this.modalManager = new ModalManager();
+    this.modalManager = new ModalManager(this.notificationManager);
   }
 
   async initialize() {
