@@ -9,6 +9,9 @@ const clerkClient = createClerkClient({
 
 // Middleware to verify Clerk authentication token and set cookies
 export default async function handler(req, res) {
+  console.log('Auth endpoint called with method:', req.method);
+  console.log('Request headers:', req.headers);
+  
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -16,11 +19,13 @@ export default async function handler(req, res) {
   
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return res.status(200).end();
   }
   
   // Only accept POST requests
   if (req.method !== 'POST') {
+    console.log('Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
