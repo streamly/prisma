@@ -263,35 +263,35 @@
                 await Clerk.signOut({ redirectUrl: '/dev/' });
                 return;
               }
-
-              // Initialize Typesense client with scoped API key
-              console.log('Initializing Typesense client with:', {
-                host: CONFIG.TYPESENSE_HOST,
-                apiKey: apiKey ? 'present' : 'missing'
-              });
-              
-              if (typeof Typesense === 'undefined') {
-                console.error('Typesense library not loaded');
-                throw new Error('Typesense library not available');
-              }
-              
-              typesenseClient = new Typesense.Client({
-                nodes: [{
-                  host: CONFIG.TYPESENSE_HOST,
-                  port: 443,
-                  protocol: 'https'
-                }],
-                apiKey: apiKey,
-                connectionTimeoutSeconds: 2
-              });
-              
-              console.log('Typesense client initialized successfully');
             } catch (error) {
               console.error('Error requesting scoped API key:', error);
               await Clerk.signOut({ redirectUrl: '/dev/' });
               return;
             }
           }
+
+          // Initialize Typesense client with scoped API key (always run this)
+          console.log('Initializing Typesense client with:', {
+            host: CONFIG.TYPESENSE_HOST,
+            apiKey: apiKey ? 'present' : 'missing'
+          });
+          
+          if (typeof Typesense === 'undefined') {
+            console.error('Typesense library not loaded');
+            throw new Error('Typesense library not available');
+          }
+          
+          typesenseClient = new Typesense.Client({
+            nodes: [{
+              host: CONFIG.TYPESENSE_HOST,
+              port: 443,
+              protocol: 'https'
+            }],
+            apiKey: apiKey,
+            connectionTimeoutSeconds: 2
+          });
+          
+          console.log('Typesense client initialized successfully');
 
           // Check if Typesense client was initialized successfully
           if (!typesenseClient) {
