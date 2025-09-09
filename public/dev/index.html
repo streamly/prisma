@@ -314,8 +314,7 @@
             .search({
               q: '*',
               query_by: 'title,description',
-              per_page: 50,
-              sort_by: 'created_at:desc'
+              per_page: 50
             });
 
           displayVideos(searchResults.hits || []);

@@ -55,16 +55,26 @@ export default async function handler(req, res) {
       let scopedApiKey = null;
       try {
         console.log('Attempting to generate scoped Typesense key for user:', userId);
-        console.log('TYPESENSE_SEARCH_ONLY_KEY exists:', !!process.env.TYPESENSE_SEARCH_ONLY_KEY);
+        
+        if (!process.env.TYPESENSE_SEARCH_KEY) {
+          throw new Error('TYPESENSE_SEARCH_KEY environment variable not set');
+        }
         
         const typesenseClient = getTypesenseClient();
+        
+        // Test if the base search key works first
+        console.log('Testing base search key...');
+        await typesenseClient.collections('videos').retrieve();
+        console.log('Base search key works, generating scoped key...');
+        
         const keyParams = {
-          filter_by: `uid:${userId} && active:1`,
-          include_fields: "id,uid,title,description,duration,file_size,thumbnail,created_at,active",
+          filter_by: `uid:${userId}`,
+          include_fields: "id,uid,title,description,duration,file_size,thumbnail,created_at,active,filename,content_type",
           expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
         };
         
         console.log('Key generation parameters:', keyParams);
+        console.log('Base key preview:', process.env.TYPESENSE_SEARCH_KEY.substring(0, 10) + '...');
         
         scopedApiKey = await typesenseClient.keys().generateScopedSearchKey(
           process.env.TYPESENSE_SEARCH_KEY,
@@ -72,12 +82,15 @@ export default async function handler(req, res) {
         );
         
         console.log('Scoped API key generated successfully:', !!scopedApiKey);
+        console.log('Scoped key length:', scopedApiKey ? scopedApiKey.length : 0);
+        console.log('Scoped key preview:', scopedApiKey ? scopedApiKey.substring(0, 20) + '...' : 'none');
       } catch (typesenseError) {
         console.error('Failed to generate scoped Typesense key:', typesenseError);
         console.error('Error details:', {
           message: typesenseError.message,
           stack: typesenseError.stack,
-          name: typesenseError.name
+          name: typesenseError.name,
+          httpStatus: typesenseError.httpStatus
         });
         // Continue without the key - videos won't load but auth will still work
       }
