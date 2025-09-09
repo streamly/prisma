@@ -239,6 +239,7 @@
               
               const authData = await authResponse.json();
               console.log('Auth response data:', authData);
+              console.log('Scoped key generated:', authData.scopedKeyGenerated);
 
               // Check if apikey cookie was set
               apiKey = getCookie('apikey');

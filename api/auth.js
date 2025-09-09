@@ -112,7 +112,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ 
         authenticated: true, 
         userId: userId,
-        message: 'Authentication successful'
+        message: 'Authentication successful',
+        scopedKeyGenerated: !!scopedApiKey
       });
     } catch (error) {
       console.error('Token verification failed:', error);
