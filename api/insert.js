@@ -41,7 +41,8 @@ export default async function handler(req, res) {
       content_type,
       thumbnail: '',
       created_at: Math.floor(Date.now() / 1000), // Set on backend
-      active: 1
+      active: 1,
+      ranking: Math.floor(Date.now() / 1000) // Add ranking field for default sorting
     };
     
     try {
