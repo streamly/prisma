@@ -194,7 +194,12 @@
         }, 3000);
       }
 
-      // Function to get cookie value
+      // Configuration - UPDATE THESE VALUES
+      const CONFIG = {
+        TYPESENSE_HOST: 'https://1.tubie.cx', // Replace with your Typesense host
+      };
+
+      // Utility function to get cookie value
       function getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -260,8 +265,7 @@
           }
 
           // Use direct Typesense search with scoped API key
-          const typesenseHost = process.env.TYPESENSE_HOST || 'example.cx';
-          const response = await fetch(`https://${typesenseHost}/collections/videos/documents/search?q=*&query_by=title,description&per_page=50&sort_by=created_at:desc`, {
+          const response = await fetch(`https://${CONFIG.TYPESENSE_HOST}/collections/videos/documents/search?q=*&query_by=title,description&per_page=50&sort_by=created_at:desc`, {
             headers: {
               'X-TYPESENSE-API-KEY': apiKey
             }
