@@ -113,7 +113,8 @@ export default async function handler(req, res) {
         authenticated: true, 
         userId: userId,
         message: 'Authentication successful',
-        scopedKeyGenerated: !!scopedApiKey
+        scopedKeyGenerated: !!scopedApiKey,
+        typesenseError: scopedApiKey ? null : 'Typesense key generation failed - check environment variables'
       });
     } catch (error) {
       console.error('Token verification failed:', error);
