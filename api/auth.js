@@ -67,7 +67,7 @@ export default async function handler(req, res) {
         console.log('Key generation parameters:', keyParams);
         
         scopedApiKey = await typesenseClient.keys().generateScopedSearchKey(
-          process.env.TYPESENSE_SEARCH_ONLY_KEY,
+          process.env.TYPESENSE_SEARCH_KEY,
           keyParams
         );
         
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
         envVars: {
           TYPESENSE_HOST: !!process.env.TYPESENSE_HOST,
           TYPESENSE_ADMIN_KEY: !!process.env.TYPESENSE_ADMIN_KEY,
-          TYPESENSE_SEARCH_ONLY_KEY: !!process.env.TYPESENSE_SEARCH_ONLY_KEY,
+          TYPESENSE_SEARCH_KEY: !!process.env.TYPESENSE_SEARCH_KEY,
           CLERK_API_SECRET: !!process.env.CLERK_API_SECRET
         }
       });
