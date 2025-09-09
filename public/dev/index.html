@@ -141,9 +141,8 @@
       signOutBtn.addEventListener('click', async () => {
         if (session) {
           try {
-            await Clerk.signOut();
+            await Clerk.signOut({ redirectUrl: '/dev/' });
             showNotification("You have been signed out", "success");
-            setTimeout(() => window.location.reload(), 1500);
           } catch (err) {
             console.error("Sign out error:", err);
             showNotification("Error signing out", "error");
@@ -206,12 +205,44 @@
       // Function to load videos from Typesense
       async function loadVideos() {
         try {
-          const apiKey = getCookie('apikey');
+          let apiKey = getCookie('apikey');
           if (!apiKey) {
-            console.log('No scoped API key found, signing out user...');
-            // Sign out user without redirect
-            await Clerk.signOut();
-            return;
+            console.log('No scoped API key found, requesting new one...');
+            // Try to get a new scoped API key from /api/auth
+            try {
+              const token = await Clerk.session?.getToken();
+              if (!token) {
+                console.log('No session token, signing out user...');
+                await Clerk.signOut({ redirectUrl: '/dev/' });
+                return;
+              }
+
+              const authResponse = await fetch('/api/auth', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (!authResponse.ok) {
+                console.log('Failed to get scoped API key, signing out user...');
+                await Clerk.signOut({ redirectUrl: '/dev/' });
+                return;
+              }
+
+              // Check if apikey cookie was set
+              apiKey = getCookie('apikey');
+              if (!apiKey) {
+                console.log('Scoped API key not set in cookie, signing out user...');
+                await Clerk.signOut({ redirectUrl: '/dev/' });
+                return;
+              }
+            } catch (error) {
+              console.error('Error requesting scoped API key:', error);
+              await Clerk.signOut({ redirectUrl: '/dev/' });
+              return;
+            }
           }
 
           // Use direct Typesense search with scoped API key
