@@ -84,6 +84,11 @@
   </div>
 
   <script>
+    // Configuration - UPDATE THESE VALUES
+    const CONFIG = {
+      TYPESENSE_HOST: 'https://1.tubie.cx', // Replace with your Typesense host
+    };
+
     window.addEventListener('load', async function () {
       try {
         await Clerk.load();
@@ -194,10 +199,6 @@
         }, 3000);
       }
 
-      // Configuration - UPDATE THESE VALUES
-      const CONFIG = {
-        TYPESENSE_HOST: 'https://1.tubie.cx', // Replace with your Typesense host
-      };
 
       // Utility function to get cookie value
       function getCookie(name) {
@@ -264,11 +265,24 @@
             }
           }
 
-          // Use direct Typesense search with scoped API key
-          const response = await fetch(`https://${CONFIG.TYPESENSE_HOST}/collections/videos/documents/search?q=*&query_by=title,description&per_page=50&sort_by=created_at:desc`, {
+          // Use Typesense multi_search endpoint with scoped API key
+          const response = await fetch(`${CONFIG.TYPESENSE_HOST}/multi_search`, {
+            method: 'POST',
             headers: {
+              'Content-Type': 'application/json',
               'X-TYPESENSE-API-KEY': apiKey
-            }
+            },
+            body: JSON.stringify({
+              searches: [
+                {
+                  collection: 'videos',
+                  q: '*',
+                  query_by: 'title,description',
+                  per_page: 50,
+                  sort_by: 'created_at:desc'
+                }
+              ]
+            })
           });
 
           if (!response.ok) {
@@ -276,7 +290,9 @@
           }
 
           const data = await response.json();
-          displayVideos(data.hits || []);
+          // multi_search returns results in an array, get the first search result
+          const searchResult = data.results && data.results[0];
+          displayVideos(searchResult?.hits || []);
         } catch (error) {
           console.error('Error loading videos:', error);
           document.getElementById('noVideos').style.display = 'block';
