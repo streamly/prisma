@@ -120,7 +120,7 @@
       signInBtn.addEventListener('click', async () => {
         try {
           await Clerk.redirectToSignIn({
-            redirectUrl: window.location.href // automatically handles encoding
+            redirectUrl: '/dev/auth/'
           });
         } catch (err) {
           console.error("Failed to redirect to sign-in:", err);
