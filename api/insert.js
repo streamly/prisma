@@ -57,22 +57,35 @@ export default async function handler(req, res) {
       
     } catch (typesenseError) {
       console.error('Typesense insertion failed:', typesenseError);
+      console.error('Typesense error details:', {
+        message: typesenseError.message,
+        httpStatus: typesenseError.httpStatus,
+        code: typesenseError.code,
+        stack: typesenseError.stack
+      });
       
       if (typesenseError.message && typesenseError.message.includes('already exists')) {
         return errorResponse(res, 409, 'Video with this ID already exists');
       }
       
-      return errorResponse(res, 500, 'Failed to insert video metadata into search index');
+      return errorResponse(res, 500, `Failed to insert video metadata into search index: ${typesenseError.message}`);
     }
     
   } catch (error) {
     console.error('Insert API error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
+    
     if (error.message === 'Method not allowed') {
       return errorResponse(res, 405, error.message);
     }
     if (error.message.includes('Authentication')) {
       return errorResponse(res, 401, error.message);
     }
-    return errorResponse(res, 500, 'Internal server error');
+    return errorResponse(res, 500, `Internal server error: ${error.message}`);
   }
 }
