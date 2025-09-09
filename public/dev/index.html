@@ -217,6 +217,7 @@
                 return;
               }
 
+              console.log('Making request to /api/auth...');
               const authResponse = await fetch('/api/auth', {
                 method: 'POST',
                 headers: {
@@ -225,11 +226,19 @@
                 }
               });
 
+              console.log('Auth response status:', authResponse.status);
+              console.log('Auth response ok:', authResponse.ok);
+              
               if (!authResponse.ok) {
+                const errorText = await authResponse.text();
+                console.log('Auth response error:', errorText);
                 console.log('Failed to get scoped API key, signing out user...');
                 await Clerk.signOut({ redirectUrl: '/dev/' });
                 return;
               }
+              
+              const authData = await authResponse.json();
+              console.log('Auth response data:', authData);
 
               // Check if apikey cookie was set
               apiKey = getCookie('apikey');
