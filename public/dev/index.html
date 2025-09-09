@@ -265,24 +265,19 @@
             }
           }
 
-          // Use Typesense multi_search endpoint with scoped API key
-          const response = await fetch(`https://${CONFIG.TYPESENSE_HOST}/multi_search`, {
-            method: 'POST',
+          // Use Typesense search endpoint with scoped API key
+          const searchParams = new URLSearchParams({
+            q: '*',
+            query_by: 'title,description',
+            per_page: '50',
+            sort_by: 'created_at:desc'
+          });
+          
+          const response = await fetch(`https://${CONFIG.TYPESENSE_HOST}/collections/videos/documents/search?${searchParams}`, {
+            method: 'GET',
             headers: {
-              'Content-Type': 'application/json',
               'X-TYPESENSE-API-KEY': apiKey
-            },
-            body: JSON.stringify({
-              searches: [
-                {
-                  collection: 'videos',
-                  q: '*',
-                  query_by: 'title,description',
-                  per_page: 50,
-                  sort_by: 'created_at:desc'
-                }
-              ]
-            })
+            }
           });
 
           if (!response.ok) {
@@ -290,9 +285,7 @@
           }
 
           const data = await response.json();
-          // multi_search returns results in an array, get the first search result
-          const searchResult = data.results && data.results[0];
-          displayVideos(searchResult?.hits || []);
+          displayVideos(data.hits || []);
         } catch (error) {
           console.error('Error loading videos:', error);
           document.getElementById('noVideos').style.display = 'block';
