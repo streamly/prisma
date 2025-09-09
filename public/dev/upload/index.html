@@ -60,7 +60,6 @@
         const uppy = new Uppy({
           autoProceed: false,
           restrictions: {
-            maxFileSize: 500 * 1024 * 1024, // 500 MB
             allowedFileTypes: ['video/*'],
             maxNumberOfFiles: 1
           },
@@ -70,7 +69,7 @@
         uppy.use(Dashboard, {
           inline: true,
           target: '#uppy-container',
-          note: 'Upload your video file (max 500MB).'
+          note: 'Upload your video file.'
         });
 
         uppy.use(AwsS3, {
