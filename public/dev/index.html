@@ -86,7 +86,7 @@
   <script>
     // Configuration - UPDATE THESE VALUES
     const CONFIG = {
-      TYPESENSE_HOST: 'https://1.tubie.cx', // Replace with your Typesense host
+      TYPESENSE_HOST: '1.tubie.cx', // Replace with your Typesense host (hostname only, no protocol)
     };
 
     window.addEventListener('load', async function () {
@@ -266,7 +266,7 @@
           }
 
           // Use Typesense multi_search endpoint with scoped API key
-          const response = await fetch(`${CONFIG.TYPESENSE_HOST}/multi_search`, {
+          const response = await fetch(`https://${CONFIG.TYPESENSE_HOST}/multi_search`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
