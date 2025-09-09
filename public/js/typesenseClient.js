@@ -1,5 +1,7 @@
+import { TYPESENSE_HOST } from './config.js';
+
 // Typesense client management
-class TypesenseManager {
+export class TypesenseManager {
   constructor() {
     this.client = null;
     this.config = {
@@ -38,10 +40,14 @@ class TypesenseManager {
         throw new Error('API key is required');
       }
 
-      const config = window.APP_CONFIG.getTypesenseConfig();
       this.client = new Typesense.Client({
-        ...config,
-        apiKey: apiKey
+        nodes: [{
+          host: TYPESENSE_HOST,
+          port: 443,
+          protocol: 'https'
+        }],
+        apiKey: apiKey,
+        connectionTimeoutSeconds: 2
       });
 
       console.log('Typesense client initialized successfully');
@@ -129,5 +135,3 @@ class TypesenseManager {
   }
 }
 
-// Export for use in other modules
-window.TypesenseManager = TypesenseManager;

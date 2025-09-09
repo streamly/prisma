@@ -1,7 +1,10 @@
+import { getVideoUrl } from './config.js';
+
 // Video management functionality
-class VideoManager {
-  constructor(typesenseManager) {
+export class VideoManager {
+  constructor(typesenseManager, notificationManager) {
     this.typesenseManager = typesenseManager;
+    this.notificationManager = notificationManager;
     this.currentVideoData = null;
   }
 
@@ -119,9 +122,10 @@ class VideoManager {
       const result = await response.json();
 
       if (result.success) {
-        window.notificationManager.showNotification('Video deleted successfully', 'success');
+        this.notificationManager.showNotification('Video deleted successfully', 'success');
         
-        // Remove video card from DOM
+        // Construct video URL for iDrive e2 storage
+        const videoUrl = getVideoUrl(video.document.filename);
         const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
         if (videoCard) {
           videoCard.remove();
@@ -137,10 +141,7 @@ class VideoManager {
       }
     } catch (error) {
       console.error('Failed to delete video:', error);
-      window.notificationManager.showNotification('Failed to delete video', 'error');
+      this.notificationManager.showNotification('Failed to load videos', 'error');
     }
   }
 }
-
-// Export for use in other modules
-window.VideoManager = VideoManager;

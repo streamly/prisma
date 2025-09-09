@@ -1,7 +1,23 @@
 // Notification management functionality
-class NotificationManager {
+export class NotificationManager {
   constructor() {
     this.container = null;
+  }
+
+  // Create notification container if it doesn't exist
+  createContainer() {
+    let container = document.getElementById('notification-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'notification-container';
+      container.style.position = 'fixed';
+      container.style.top = '20px';
+      container.style.right = '20px';
+      container.style.zIndex = '1000';
+      document.body.appendChild(container);
+    }
+    this.container = container;
+    return container;
   }
 
   // Show notification
@@ -27,7 +43,7 @@ class NotificationManager {
     // Add to container
     this.container.appendChild(notification);
     
-    // Remove after configured timeout
+    // Remove after 3 seconds
     setTimeout(() => {
       notification.style.opacity = '0';
       setTimeout(() => {
@@ -35,9 +51,7 @@ class NotificationManager {
           notification.parentNode.removeChild(notification);
         }
       }, 300);
-    }, window.APP_CONFIG.APP.NOTIFICATIONS.AUTO_DISMISS_TIMEOUT);
+    }, 3000);
   }
 }
 
-// Export for use in other modules
-window.NotificationManager = NotificationManager;

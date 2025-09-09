@@ -1,8 +1,15 @@
+import { NotificationManager } from './notificationManager.js';
+import { TypesenseManager } from './typesenseClient.js';
+import { VideoManager } from './videoManager.js';
+import { ModalManager } from './modalManager.js';
+
 // Main application initialization
 class App {
   constructor() {
-    this.typesenseManager = null;
-    this.videoManager = null;
+    this.typesenseManager = new TypesenseManager();
+    this.notificationManager = new NotificationManager();
+    this.videoManager = new VideoManager(this.typesenseManager, this.notificationManager);
+    this.modalManager = new ModalManager();
   }
 
   async initialize() {
