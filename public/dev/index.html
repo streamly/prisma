@@ -208,17 +208,24 @@
         try {
           const apiKey = getCookie('apikey');
           if (!apiKey) {
-            console.log('No API key found in cookies');
-            document.getElementById('noVideos').style.display = 'block';
+            console.log('No scoped API key found, signing out user...');
+            // Sign out user and redirect to Clerk sign-in
+            await Clerk.signOut();
+            Clerk.redirectToSignIn();
             return;
           }
 
-          // Use native fetch instead of Typesense InstantSearch adapter
-          const response = await fetch(`https://${process.env.TYPESENSE_HOST || 'your-host'}/collections/videos/documents/search?q=*&query_by=title,description&per_page=50`, {
+          // Use direct Typesense search with scoped API key
+          const typesenseHost = process.env.TYPESENSE_HOST || 'example.cx';
+          const response = await fetch(`https://${typesenseHost}/collections/videos/documents/search?q=*&query_by=title,description&per_page=50&sort_by=created_at:desc`, {
             headers: {
               'X-TYPESENSE-API-KEY': apiKey
             }
           });
+
+          if (!response.ok) {
+            throw new Error('Failed to search videos');
+          }
 
           const data = await response.json();
           displayVideos(data.hits || []);
