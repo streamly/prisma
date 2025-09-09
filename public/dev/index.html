@@ -240,6 +240,7 @@
               const authData = await authResponse.json();
               console.log('Auth response data:', authData);
               console.log('Scoped key generated:', authData.scopedKeyGenerated);
+              console.log('Environment variables:', authData.envVars);
               if (authData.typesenseError) {
                 console.error('Typesense error:', authData.typesenseError);
               }

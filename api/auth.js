@@ -114,7 +114,13 @@ export default async function handler(req, res) {
         userId: userId,
         message: 'Authentication successful',
         scopedKeyGenerated: !!scopedApiKey,
-        typesenseError: scopedApiKey ? null : 'Typesense key generation failed - check environment variables'
+        typesenseError: scopedApiKey ? null : 'Typesense key generation failed - check environment variables',
+        envVars: {
+          TYPESENSE_HOST: !!process.env.TYPESENSE_HOST,
+          TYPESENSE_ADMIN_KEY: !!process.env.TYPESENSE_ADMIN_KEY,
+          TYPESENSE_SEARCH_ONLY_KEY: !!process.env.TYPESENSE_SEARCH_ONLY_KEY,
+          CLERK_API_SECRET: !!process.env.CLERK_API_SECRET
+        }
       });
     } catch (error) {
       console.error('Token verification failed:', error);
