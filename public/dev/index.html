@@ -209,9 +209,8 @@
           const apiKey = getCookie('apikey');
           if (!apiKey) {
             console.log('No scoped API key found, signing out user...');
-            // Sign out user and redirect to Clerk sign-in
+            // Sign out user without redirect
             await Clerk.signOut();
-            Clerk.redirectToSignIn();
             return;
           }
 
