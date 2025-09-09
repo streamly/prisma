@@ -33,9 +33,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Authentication token required' });
     }
     
-    // Get user data from request body
-    const { fullName, email } = req.body;
-    
     let userId;
     try {
       const payload = await verifyToken(token, {
@@ -52,17 +49,31 @@ export default async function handler(req, res) {
       // Generate scoped Typesense key for this user
       let scopedApiKey = null;
       try {
+        console.log('Attempting to generate scoped Typesense key for user:', userId);
+        console.log('TYPESENSE_SEARCH_ONLY_KEY exists:', !!process.env.TYPESENSE_SEARCH_ONLY_KEY);
+        
         const typesenseClient = getTypesenseClient();
+        const keyParams = {
+          filter_by: `uid:${userId} && active:1`,
+          include_fields: "id,uid,title,description,duration,file_size,thumbnail,created_at,active",
+          expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+        };
+        
+        console.log('Key generation parameters:', keyParams);
+        
         scopedApiKey = await typesenseClient.keys().generateScopedSearchKey(
           process.env.TYPESENSE_SEARCH_ONLY_KEY,
-          {
-            filter_by: `uid:${userId} && active:1`,
-            include_fields: "id,uid,title,description,duration,file_size,thumbnail,created_at,active",
-            expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
-          }
+          keyParams
         );
+        
+        console.log('Scoped API key generated successfully:', !!scopedApiKey);
       } catch (typesenseError) {
         console.error('Failed to generate scoped Typesense key:', typesenseError);
+        console.error('Error details:', {
+          message: typesenseError.message,
+          stack: typesenseError.stack,
+          name: typesenseError.name
+        });
         // Continue without the key - videos won't load but auth will still work
       }
       
@@ -83,8 +94,6 @@ export default async function handler(req, res) {
       // Set cookies with user information
       const cookies = [
         serialize('user_id', userId, httpOnlyCookieOptions),
-        serialize('user_name', fullName || '', httpOnlyCookieOptions),
-        serialize('user_email', email || '', httpOnlyCookieOptions),
         serialize('auth_token', token, httpOnlyCookieOptions)
       ];
       
