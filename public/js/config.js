@@ -6,11 +6,21 @@ export const TYPESENSE_HOST = 't1.tubie.cx';
 // Get video URL using video ID
 export async function getVideoUrl(videoId) {
   try {
+    // Check if user is authenticated
+    if (!Clerk.session) {
+      throw new Error('No active session - user not authenticated');
+    }
+    
+    const token = await Clerk.session.getToken();
+    if (!token) {
+      throw new Error('Failed to get authentication token');
+    }
+    
     const response = await fetch('/api/getVideoUrl', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await Clerk.session.getToken()}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ videoId })
     });
@@ -42,11 +52,21 @@ export async function getVideoUrl(videoId) {
 // Get thumbnail URL using video ID
 export async function getThumbnailUrl(videoId) {
   try {
+    // Check if user is authenticated
+    if (!Clerk.session) {
+      throw new Error('No active session - user not authenticated');
+    }
+    
+    const token = await Clerk.session.getToken();
+    if (!token) {
+      throw new Error('Failed to get authentication token');
+    }
+    
     const response = await fetch('/api/getThumbnailUrl', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await Clerk.session.getToken()}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ videoId })
     });
