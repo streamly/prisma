@@ -1,39 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
+<div id="uppy-container" class="vh-100"></div>
 
-<head>
-  <meta charset="UTF-8">
-  <title>Bizilla TV - Upload</title>
+<link href="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.css" rel="stylesheet">
+<script src="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
 
-  <!-- Uppy CSS -->
-  <link href="https://releases.transloadit.com/uppy/v4.18.2/uppy.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/styles/upload.css">
+<script>
+const uid = 777777777;
 
-  <!-- Clerk JS -->
-  <script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
-    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript">
-    </script>
+const uppy = new Uppy.Core({
+  restrictions: {
+    maxNumberOfFiles: 1,
+    maxFileSize: 1771673011, // ~1.65GB
+    allowedFileTypes: ['video/mp4']
+  },
+  autoProceed: false
+})
+.use(Uppy.Dashboard, {
+  target: '#uppy-container',
+  inline: true,
+  height: '75vh',
+  proudlyDisplayPoweredByUppy: false,
+  note: 'MP4 only. 16:9, minimum 1 min, maximum 1.65GB.'
+})
+.use(Uppy.AwsS3Multipart, {
+  limit: 5,
+  async createMultipartUpload(file) {
+    const fileKey = md5(Date.now() + '_' + file.name.replace(/\s+/g, '_'));
+    uppy.setFileMeta(file.id, { fileKey });
 
+    const resp = await fetch('/api/s3-create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: fileKey, contentType: file.type })
+    });
+    if (!resp.ok) throw new Error('Failed to init multipart upload');
+    return resp.json();
+  },
+  async signPart(file, { key, uploadId, partNumber }) {
+    const resp = await fetch('/api/s3-sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, uploadId, partNumber })
+    });
+    if (!resp.ok) throw new Error('Failed to sign part');
+    const { url } = await resp.json();
+    return { url };
+  },
+  async completeMultipartUpload(file, { key, uploadId, parts }) {
+    const resp = await fetch('/api/s3-complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, uploadId, parts })
+    });
+    if (!resp.ok) throw new Error('Failed to complete upload');
+    return resp.json();
+  }
+});
 
-  <!-- Uppy JS -->
-  <script type="module">
-    import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs";
-    window.UppyModules = { Uppy, Dashboard, AwsS3 };
-  </script>
+// Custom plugin to validate MP4 metadata before upload
+class VideoValidator extends Uppy.Plugin {
+  constructor(uppy, opts) {
+    super(uppy, opts);
+    this.type = 'validator';
+  }
 
-  <!-- Upload module -->
-  <script src="/js/uploadManager.js"></script>
-</head>
+  install() {
+    this.uppy.on('file-added', (file) => {
+      if (!file.type.startsWith('video/mp4')) {
+        alert('Only MP4 files are allowed.');
+        this.uppy.removeFile(file.id);
+        return;
+      }
 
-<body>
-  <h1>Upload a Video</h1>
-  <p>Upload your video content to Bizilla TV. Supported formats include MP4, MOV, AVI, and more.</p>
-  <div id="uppy-container"></div>
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.src = URL.createObjectURL(file.data);
 
-  <div id="upload-status" class="upload-status"></div>
+      video.onloadedmetadata = () => {
+        const duration = video.duration;
+        const ratio = video.videoWidth / video.videoHeight;
+        URL.revokeObjectURL(video.src);
 
-  <!-- Navigation link styled as a button -->
-  <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
-</body>
+        if (duration < 60 || Math.abs(ratio - 16/9) > 0.05) {
+          alert('Video must be at least 1 minute long and 16:9 aspect ratio.');
+          this.uppy.removeFile(file.id);
+          return;
+        }
 
-</html>
+        // Set metadata for server
+        this.uppy.setFileMeta(file.id, {
+          width: video.videoWidth,
+          height: video.videoHeight,
+          duration: Math.round(duration),
+          uid,
+          fileKey: file.meta.fileKey || md5(Date.now() + '_' + file.name)
+        });
+      };
+
+      video.onerror = () => {
+        URL.revokeObjectURL(video.src);
+        alert('Could not read video metadata.');
+        this.uppy.removeFile(file.id);
+      };
+    });
+  }
+}
+
+uppy.use(VideoValidator);
+
+// After successful upload, send metadata to /api/insert
+uppy.on('complete', async (result) => {
+  if (!result.successful.length) return;
+
+  const file = result.successful[0];
+  const meta = file.meta;
+  const payload = {
+    filename: meta.fileKey,
+    width: meta.width,
+    height: meta.height,
+    duration: meta.duration,
+    id: 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2,9)
+  };
+
+  const resp = await fetch('/api/insert', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (resp.ok) {
+    window.location.href = "/dev/?v=" + encodeURIComponent(payload.id);
+  } else {
+    alert('Upload succeeded but saving metadata failed.');
+    console.error(await resp.json());
+  }
+});
+</script>
