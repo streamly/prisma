@@ -1,4 +1,4 @@
-import { getVideoUrl } from './config.js';
+import { getVideoUrl } from './apiUtils.js';
 
 // Modal management functionality
 export class ModalManager {

@@ -1,4 +1,4 @@
-import { getVideoUrl, getThumbnailUrl } from './config.js';
+import { getVideoUrl, getThumbnailUrl } from './apiUtils.js';
 
 // Video management functionality
 export class VideoManager {
