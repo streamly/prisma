@@ -60,13 +60,17 @@ $(document).on("click", ".edit", async function () {
             
             if (result.success && result.url) {
                 // Set video source
-                player.src({
-                    type: 'video/mp4',
-                    src: result.url
-                });
-                player.ready(() => {
-                    player.load();
-                });
+                if (player && player.src) {
+                    player.src({
+                        type: 'video/mp4',
+                        src: result.url
+                    });
+                    player.ready(() => {
+                        player.load();
+                    });
+                } else {
+                    console.error('Player not initialized');
+                }
             } else {
                 console.error('Failed to get video URL:', result.error);
             }
@@ -191,12 +195,8 @@ $(document).on("click", ".logout", async function () {
     }
 });
 
-// Video.js player
-const player = videojs('player', {
-    autoplay: true,
-    muted: false,
-    controls: true,
-});
+// Video.js player - initialize after DOM is ready
+let player;
 
 // Modal close handler
 $("#vodModal").on("hidden.bs.modal", function () {
@@ -443,6 +443,13 @@ async function startSearch() {
 
 // Initialize search when DOM is ready
 $(document).ready(async function () {
+    // Initialize video player first
+    player = videojs('player', {
+        autoplay: false,
+        muted: false,
+        controls: true,
+    });
+
     const search = await startSearch();
 
     // Handle URL parameters after search is initialized
