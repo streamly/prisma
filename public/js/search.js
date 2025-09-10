@@ -50,15 +50,7 @@ class SearchManager {
     const { query, params } = request;
     
     try {
-      const searchParams = {
-        q: query || '*',
-        query_by: 'title,description,filename',
-        filter_by: 'active:1',
-        sort_by: 'created_at:desc',
-        per_page: params.hitsPerPage || 12,
-        page: (params.page || 0) + 1
-      };
-
+      // Use the TypesenseManager's search method directly
       const response = await this.typesenseManager.searchVideos(query || '');
 
       return {
@@ -101,21 +93,6 @@ class SearchManager {
       })
     ]);
 
-    // Company filter
-    this.search.addWidgets([
-      instantsearch.widgets.refinementList({
-        container: '#channel-filter',
-        attribute: 'channel',
-        searchable: true,
-        searchablePlaceholder: 'Search companies',
-        limit: 30,
-        templates: {
-          item(data) {
-            return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${data.label} (${data.count})</label>`;
-          }
-        }
-      })
-    ]);
 
     // Duration filter
     this.search.addWidgets([
@@ -141,7 +118,7 @@ class SearchManager {
     this.search.addWidgets([
       instantsearch.widgets.numericMenu({
         container: '#created-filter',
-        attribute: 'created_at',
+        attribute: 'created',
         items: [
           { label: 'All', start: 0 },
           { label: 'Today', start: today },
