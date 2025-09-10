@@ -7,7 +7,7 @@
   src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
 
 <script>
-  (async () => {
+  window.addEventListener('load', async () => {
     // Ensure Clerk is loaded and get token
     async function ensureClerkReady() {
       if (!window.Clerk) throw new Error('Clerk not loaded');
@@ -141,5 +141,5 @@
         console.error(await resp.json());
       }
     });
-  })();
+  });
 </script>
