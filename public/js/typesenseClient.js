@@ -72,7 +72,9 @@ export class TypesenseManager {
         searchParameters.filter_by = filterBy;
       }
 
+      console.log('Typesense search parameters:', searchParameters);
       const searchResults = await this.client.collections('videos').documents().search(searchParameters);
+      console.log('Typesense raw results:', searchResults);
       return searchResults.hits.map(hit => hit);
     } catch (error) {
       console.error('Error searching videos:', error);

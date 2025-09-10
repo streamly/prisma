@@ -162,6 +162,7 @@ class SearchManager {
   async performSearch(query = '') {
     try {
       this.currentQuery = query;
+      console.log('Performing search with query:', query);
       
       // Build filter string for Typesense
       let filterBy = [];
@@ -188,7 +189,10 @@ class SearchManager {
         }
       }
       
+      console.log('Filter by:', filterBy.join(' && '));
       const results = await this.typesenseManager.searchVideos(query, filterBy.join(' && '));
+      console.log('Search results:', results);
+      
       this.searchResults = { hits: results }; // Store for modal manager
       this.displayResults(results);
     } catch (error) {
@@ -202,10 +206,15 @@ class SearchManager {
   }
 
   displayResults(results) {
+    console.log('displayResults called with:', results);
     const hitsContainer = document.getElementById('hits');
-    if (!hitsContainer) return;
+    if (!hitsContainer) {
+      console.error('hits container not found');
+      return;
+    }
 
     if (!results || results.length === 0) {
+      console.log('No results to display');
       hitsContainer.innerHTML = `
         <div class="text-center py-5">
           <i class="bx bx-search-alt-2" style="font-size: 3rem; color: #ddd;"></i>
@@ -215,6 +224,8 @@ class SearchManager {
       `;
       return;
     }
+
+    console.log('Displaying', results.length, 'results');
 
     const videosHtml = results.map(hit => {
       const video = hit.document;
