@@ -7,7 +7,6 @@
 
   <!-- Uppy CSS -->
   <link href="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/styles/upload.css">
   
   <!-- Clerk JS SDK -->
   <script 
@@ -17,33 +16,20 @@
     src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
     type="text/javascript">
   </script>
+</head>
+<body>
+  <div id="uppy-container" class="vh-100"></div>
+  <div id="upload-status" style="display: none; padding: 10px; margin: 10px; border-radius: 4px;"></div>
 
   <!-- JS Libraries -->
   <script src="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
-  <script src="/js/authGuard.js"></script>
   <script src="/js/uploadManager.js"></script>
-</head>
-<body>
-  <h1>Upload a Video</h1>
-  <p>Upload your video content to SyndiNet. Supported formats include MP4.</p>
-  <div id="uppy-container"></div>
-  
-  <div id="upload-status" class="upload-status"></div>
-
-  <!-- Navigation link styled as a button -->
-  <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
 
   <script>
     // Initialize upload manager when page loads
-    document.addEventListener('DOMContentLoaded', async () => {
-      // Initialize auth guard first
-      const authGuard = new AuthGuard();
-      await authGuard.init();
-      
-      // Initialize upload manager
-      const uploadManager = new UploadManager('#uppy-container', '#upload-status');
-      await uploadManager.init();
+    document.addEventListener('DOMContentLoaded', () => {
+      // UploadManager will auto-initialize from its own script
     });
   </script>
 </body>

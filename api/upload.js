@@ -65,29 +65,23 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: 'Invalid authentication token' });
         }
 
-        // Handle different requests - check for action in body first, then query params
-        const { action } = req.body;
+        // Handle different requests based on query parameters (original API style)
         const { type } = req.query;
-        
-        const requestType = action || type;
 
-        switch (requestType) {
+        switch (type) {
             case 'getUploadParameters':
                 return handleGetUploadParameters(req, res, userId);
-            case 'create':
             case 'createMultipartUpload':
                 return handleCreateMultipartUpload(req, res, userId);
-            case 'sign':
             case 'getUploadPartURL':
                 return handleGetUploadPartURL(req, res, userId);
             case 'listParts':
                 return handleListParts(req, res, userId);
-            case 'complete':
             case 'completeMultipartUpload':
                 return handleCompleteMultipartUpload(req, res, userId);
             case 'abortMultipartUpload':
                 return handleAbortMultipartUpload(req, res, userId);
-            case 'insert':
+            case 'insertMetadata':
                 return handleInsertMetadata(req, res, userId);
             default:
                 return res.status(400).json({ error: 'Invalid request type' });
