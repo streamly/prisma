@@ -1,7 +1,7 @@
 /**
  * UploadManager - Handles video upload functionality using Uppy
  */
-class UploadManager {
+export class UploadManager {
   constructor() {
     this.uppy = null;
     this.user = null;

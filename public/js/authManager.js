@@ -30,8 +30,8 @@ class AuthManager {
             // Get the active session
             const session = Clerk.session;
             if (!session) {
-                console.log("No active session found, redirecting to dashboard");
-                this.redirectToDashboard();
+                console.log("No active session found, redirecting to sign-in");
+                Clerk.redirectToSignIn({ redirectUrl: window.location.href });
                 return;
             }
 

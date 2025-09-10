@@ -4,9 +4,6 @@ import { TYPESENSE_HOST } from './config.js';
 export class TypesenseManager {
   constructor() {
     this.client = null;
-    this.config = {
-      TYPESENSE_HOST: 't1.tubie.cx'
-    };
   }
 
   // Get cookie value
