@@ -85,20 +85,5 @@ class AuthManager {
 // Initialize auth manager when DOM is loaded
 window.addEventListener("load", () => {
     const authManager = new AuthManager();
-    authManager
-        .initialize()
-        .then(async () => {
-            if (!Clerk.user) {
-                try {
-                    await Clerk.redirectToSignIn({
-                        redirectUrl: '/dev/auth/'
-                    });
-                } catch (err) {
-                    console.error("Failed to redirect to sign-in:", err);
-                    this.notificationManager.showNotification("Error starting sign-in process", "error");
-                }
-            }
-        })
-
-
+    authManager.initialize()
 });
