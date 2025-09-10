@@ -212,8 +212,11 @@ $("#publish").on("click", async function () {
 $(document).on("click", ".trash", async function (e) {
     e.preventDefault();
 
+    // Get the video ID from the closest row's data attributes
+    const videoId = $(this).closest('.row').data('id');
+    
     const payload = {
-        id: $("#id").val(),
+        id: videoId,
     };
 
     const token = await ensureClerkReady()
