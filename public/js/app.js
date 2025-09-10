@@ -26,30 +26,49 @@ class App {
       await Clerk.load();
 
       const session = Clerk.session;
+      
+      // Handle both old and new UI elements
       const greetingEl = document.getElementById('greeting');
       const signInBtn = document.getElementById('signInBtn');
       const uploadBtn = document.getElementById('uploadBtn');
       const signOutBtn = document.getElementById('signOutBtn');
       const videosContainer = document.getElementById('videosContainer');
+      const userDropdown = document.getElementById('userDropdown');
+      const userName = document.getElementById('userName');
 
       if (session) {
         // User is signed in
         const user = Clerk.user;
-        greetingEl.innerHTML = `<strong>Hello, ${user.fullName}!</strong><br>You can now upload videos.`;
-        signInBtn.style.display = 'none';
-        uploadBtn.style.display = 'inline-block';
-        signOutBtn.style.display = 'inline-block';
-        videosContainer.style.display = 'block';
         
-        // Load videos
-        await this.videoManager.loadVideos();
+        // Old UI elements (if they exist)
+        if (greetingEl) {
+          greetingEl.innerHTML = `<strong>Hello, ${user.fullName}!</strong><br>You can now upload videos.`;
+        }
+        if (videosContainer) {
+          videosContainer.style.display = 'block';
+        }
+        
+        // New navbar elements
+        if (signInBtn) signInBtn.style.display = 'none';
+        if (uploadBtn) uploadBtn.style.display = 'inline-block';
+        if (userDropdown) userDropdown.style.display = 'inline-block';
+        if (userName) userName.textContent = user.firstName || user.fullName || 'User';
+        if (signOutBtn && !userDropdown) signOutBtn.style.display = 'inline-block';
+        
+        // Load videos (for old UI) or initialize search (for new UI)
+        if (videosContainer) {
+          await this.videoManager.loadVideos();
+        }
       } else {
         // Not signed in
-        greetingEl.textContent = "Please sign in to access your account.";
-        signInBtn.style.display = 'inline-block';
-        uploadBtn.style.display = 'none';
-        signOutBtn.style.display = 'none';
-        videosContainer.style.display = 'none';
+        if (greetingEl) {
+          greetingEl.textContent = "Please sign in to access your account.";
+        }
+        if (signInBtn) signInBtn.style.display = 'inline-block';
+        if (uploadBtn) uploadBtn.style.display = 'none';
+        if (signOutBtn) signOutBtn.style.display = 'none';
+        if (userDropdown) userDropdown.style.display = 'none';
+        if (videosContainer) videosContainer.style.display = 'none';
       }
 
       this.setupEventListeners(session);
@@ -67,7 +86,10 @@ class App {
 
     } catch (error) {
       console.error('Dashboard initialization error:', error);
-      document.getElementById('greeting').textContent = 'Error loading dashboard. Please try again later.';
+      const greetingEl = document.getElementById('greeting');
+      if (greetingEl) {
+        greetingEl.textContent = 'Error loading dashboard. Please try again later.';
+      }
     }
   }
 
@@ -77,40 +99,46 @@ class App {
     const signOutBtn = document.getElementById('signOutBtn');
 
     // Sign In button
-    signInBtn.addEventListener('click', async () => {
-      try {
-        await Clerk.redirectToSignIn({
-          redirectUrl: '/dev/auth/'
-        });
-      } catch (err) {
-        console.error("Failed to redirect to sign-in:", err);
-        this.notificationManager.showNotification("Error starting sign-in process", "error");
-      }
-    });
+    if (signInBtn) {
+      signInBtn.addEventListener('click', async () => {
+        try {
+          await Clerk.redirectToSignIn({
+            redirectUrl: '/dev/auth/'
+          });
+        } catch (err) {
+          console.error("Failed to redirect to sign-in:", err);
+          this.notificationManager.showNotification("Error starting sign-in process", "error");
+        }
+      });
+    }
 
     // Go to upload page
-    uploadBtn.addEventListener('click', () => {
-      if (!session) {
-        this.notificationManager.showNotification("Please sign in first!", "error");
-        return;
-      }
-      window.location.href = '/dev/upload/index.html';
-    });
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', () => {
+        if (!session) {
+          this.notificationManager.showNotification("Please sign in first!", "error");
+          return;
+        }
+        window.location.href = '/dev/upload/index.html';
+      });
+    }
 
     // Sign out
-    signOutBtn.addEventListener('click', async () => {
-      if (session) {
-        try {
-          await Clerk.signOut({ redirectUrl: '/dev/' });
-          this.notificationManager.showNotification("You have been signed out", "success");
-        } catch (err) {
-          console.error("Sign out error:", err);
-          this.notificationManager.showNotification("Error signing out", "error");
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', async () => {
+        if (session) {
+          try {
+            await Clerk.signOut({ redirectUrl: '/dev/' });
+            this.notificationManager.showNotification("You have been signed out", "success");
+          } catch (err) {
+            console.error("Sign out error:", err);
+            this.notificationManager.showNotification("Error signing out", "error");
+          }
+        } else {
+          this.notificationManager.showNotification("You are not signed in", "info");
         }
-      } else {
-        this.notificationManager.showNotification("You are not signed in", "info");
-      }
-    });
+      });
+    }
   }
 
   setupGlobalEventListeners() {

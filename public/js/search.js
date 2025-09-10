@@ -16,19 +16,9 @@ class SearchManager {
       // Wait for Clerk to load
       await Clerk.load();
       
-      // Get search key from environment or use existing client setup
-      const searchKey = 'xyz'; // This should match your TYPESENSE_SEARCH_KEY
-      
-      // Initialize Typesense client with search key
-      this.typesenseClient = new Typesense.Client({
-        nodes: [{
-          host: 'typesense.syndinet.com',
-          port: 443,
-          protocol: 'https'
-        }],
-        apiKey: searchKey,
-        connectionTimeoutSeconds: 2
-      });
+      // Use existing TypesenseManager which handles API keys automatically
+      this.typesenseManager = new TypesenseManager();
+      this.typesenseClient = await this.typesenseManager.initializeClient();
 
       // Initialize InstantSearch
       this.search = instantsearch({
@@ -223,9 +213,18 @@ window.openVideoModal = async (videoId) => {
 };
 
 // Initialize search when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  const searchManager = new SearchManager();
-  searchManager.initialize();
+window.addEventListener('load', async () => {
+  // Wait for Clerk to be ready first
+  await Clerk.load();
+  
+  // Only initialize search if user is signed in
+  if (Clerk.session) {
+    const searchManager = new SearchManager();
+    await searchManager.initialize();
+    
+    // Make it globally accessible
+    window.searchManager = searchManager;
+  }
 });
 
 export { SearchManager };
