@@ -1,5 +1,5 @@
 /**
- * Search functionality using TypesenseManager directly
+ * Simple search functionality using TypesenseManager directly
  */
 
 import { TypesenseManager } from './typesenseClient.js';
@@ -81,42 +81,6 @@ class SearchManager {
 
   async loadVideos() {
     await this.performSearch('');
-  }
-
-  async performSearch(requests) {
-    const request = requests[0];
-    const { query, params } = request;
-    
-    try {
-      // Use the TypesenseManager's search method directly
-      const response = await this.typesenseManager.searchVideos(query || '');
-
-      return {
-        results: [{
-          hits: response.map(hit => ({
-            objectID: hit.document.id,
-            ...hit.document
-          })),
-          nbHits: response.length,
-          page: params.page || 0,
-          nbPages: Math.ceil(response.length / (params.hitsPerPage || 12)),
-          hitsPerPage: params.hitsPerPage || 12,
-          processingTimeMS: 0
-        }]
-      };
-    } catch (error) {
-      console.error('Search error:', error);
-      return {
-        results: [{
-          hits: [],
-          nbHits: 0,
-          page: 0,
-          nbPages: 0,
-          hitsPerPage: 12,
-          processingTimeMS: 0
-        }]
-      };
-    }
   }
 
   displayResults(results) {
@@ -203,36 +167,6 @@ class SearchManager {
     } else {
       return `${formattedMins}:${formattedSecs}`;
     }
-  }
-
-
-
-  setupInfiniteScroll() {
-    let isLoading = false;
-    
-    window.addEventListener('scroll', async () => {
-      if (isLoading) return;
-      
-      const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-      
-      if (scrollTop + clientHeight >= scrollHeight - 1000) {
-        isLoading = true;
-        
-        // Show loading spinner
-        document.getElementById('loading').style.display = 'block';
-        
-        // Load more results by triggering search with higher page
-        const helper = this.search.helper;
-        if (helper) {
-          helper.nextPage().search();
-        }
-        
-        setTimeout(() => {
-          document.getElementById('loading').style.display = 'none';
-          isLoading = false;
-        }, 1000);
-      }
-    });
   }
 }
 

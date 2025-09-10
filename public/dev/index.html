@@ -26,7 +26,7 @@
   
   <!-- Application -->
   <script type="module" src="/js/app.js"></script>
-  <script type="module" src="/js/search.js"></script>
+  <script type="module" src="/js/search-new.js"></script>
   
   <!-- MDB Bootstrap JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.2/mdb.min.js"></script>
@@ -52,21 +52,10 @@
 
       <!-- Right section -->
       <div class="d-flex align-items-center pe-5 ms-auto">
-        <a class="btn btn-link bg-transparent p-0 m-0 add" role="button" type="button" title="Add a Video" href="/dev/upload/"><i class="bx bx-plus bx-sm mx-4"></i></a>
-        <a class="btn btn-link bg-transparent p-0 m-0 analytics" role="button" type="button" title="Analytics"><i class="bx bx-bar-chart bx-sm mx-4"></i></a>
-        <a class="btn btn-link bg-transparent p-0 m-0 conversions" role="button" type="button" title="Conversions"><i class="bx bx-user-voice bx-sm mx-4"></i></a>
-
-        <div class="dropdown">
-          <a class="btn btn-link bg-transparent p-0 m-0" href="#" title="More" data-mdb-toggle="dropdown" aria-expanded="false">
-            <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a type="button" class="dropdown-item billing">Billing</a></li>
-            <li><a type="button" class="dropdown-item profile">Profile</a></li>
-            <li><a type="button" class="dropdown-item help">Help</a></li>
-            <li><a type="button" class="dropdown-item logout" id="signOutBtn">Sign Out</a></li>
-          </ul>
-        </div>
+        <button class="btn btn-primary me-2" id="uploadBtn" style="display: none;">
+          <i class="bx bx-upload me-1"></i>Upload
+        </button>
+        <button class="btn btn-outline-secondary" id="signOutBtn" style="display: none;">Sign Out</button>
         <button class="btn btn-primary" id="signInBtn">Sign In</button>
       </div>
     </div>
@@ -76,13 +65,7 @@
   <div class="container-fluid p-4 mb-5">
     <div class="row">
       <div class="col-2">
-        <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Duration</h5>
-        <div id="duration-filter" class="ps-2"></div>
-
-        <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Date Added</h5>
-        <div id="created-filter" class="ps-2 mb-5"></div>
-        <div class="p-5 m-5"></div>
-        <div id="refinements" style="display:none;"></div>
+        <!-- Filters removed - not working -->
       </div>
       <div class="col p-0">
         <div id="hits" class=""></div>
