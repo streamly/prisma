@@ -44,7 +44,7 @@ class UploadManager {
     this.uppy = new Uppy({
       autoProceed: false,
       restrictions: {
-        allowedFileTypes: ['video/*'],
+        allowedFileTypes: ['video/mp4', 'video/mpeg', 'video/mpeg-4'],
         maxNumberOfFiles: 1,
         maxFileSize: 1771673011 // ~1.65GB
       },
