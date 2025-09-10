@@ -6,7 +6,6 @@ class UploadManager {
     this.uppy = null;
     this.user = null;
     this.isInitialized = false;
-    this.currentVideoId = null; // Store video ID for consistent use
   }
 
   /**
@@ -27,6 +26,9 @@ class UploadManager {
         return;
       }
 
+      // Wait for Uppy modules to load
+      await this.waitForUppyModules();
+      
       // Initialize Uppy
       this.initializeUppy();
       
@@ -38,38 +40,37 @@ class UploadManager {
   }
 
   /**
+   * Wait for Uppy modules to be available
+   */
+  async waitForUppyModules() {
+    while (!window.UppyModules) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  /**
    * Initialize Uppy with all configurations
    */
   initializeUppy() {
+    const { Uppy, Dashboard, AwsS3 } = window.UppyModules;
     const userId = this.user.id;
     
     this.uppy = new Uppy({
       autoProceed: false,
       restrictions: {
-        allowedFileTypes: ['video/mp4'],
-        maxNumberOfFiles: 1,
-        maxFileSize: 1771673011, // ~1.65GB
-        minFileSize: 1000
+        allowedFileTypes: ['video/*'],
+        maxNumberOfFiles: 1
       },
       meta: { user_id: userId }
     });
 
-    this.uppy.use(Uppy.Dashboard, {
+    this.uppy.use(Dashboard, {
       inline: true,
       target: '#uppy-container',
-      height: '75vh',
-      width: '100%',
-      proudlyDisplayPoweredByUppy: false,
-      note: 'Your video must be MP4, 1min–1.65GB. Business content only.',
-      locale: {
-        strings: {
-          poweredBy: '',
-          dropPasteFiles: 'Drag and drop a video or %{browseFiles}'
-        }
-      }
+      note: 'Upload your video file.'
     });
 
-    this.uppy.use(Uppy.AwsS3, {
+    this.uppy.use(AwsS3, {
       shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
       getChunkSize: (file) => 10 * 1024 * 1024, // 10MB chunks
       getUploadParameters: this.getUploadParameters.bind(this),
@@ -87,38 +88,6 @@ class UploadManager {
    * Set up Uppy event listeners
    */
   setupEventListeners() {
-    // Validate video metadata on file add
-    this.uppy.on('file-added', (file) => {
-      this.uppy.setFileMeta(file.id, { userId: this.user.id });
-
-      const video = document.createElement('video');
-      video.src = URL.createObjectURL(file.data);
-
-      video.addEventListener('loadedmetadata', () => {
-        const duration = video.duration;
-
-        if (duration <= 59) {
-          this.uppy.removeFile(file.id);
-          alert("Video must be at least 1 minute long.");
-        } else {
-          this.uppy.setFileMeta(file.id, {
-            width: video.videoWidth,
-            height: video.videoHeight,
-            duration: Math.round(duration),
-            metadataExtracted: true
-          });
-        }
-
-        URL.revokeObjectURL(video.src);
-      });
-
-      video.addEventListener('error', () => {
-        this.uppy.removeFile(file.id);
-        alert("Failed to load video metadata. Please try a different file.");
-        URL.revokeObjectURL(video.src);
-      });
-    });
-
     // Show upload progress
     this.uppy.on('upload-progress', (file, progress) => {
       const percent = Math.floor(progress.bytesUploaded / progress.bytesTotal * 100);
@@ -140,11 +109,6 @@ class UploadManager {
    */
   async getUploadParameters(file) {
     const token = await Clerk.session.getToken();
-    
-    // Generate file key using md5 hash (consistent with upload page)
-    const fileKey = md5(Date.now() + '_' + file.name.replace(/\s+/g, '_'));
-    this.uppy.setFileMeta(file.id, { fileKey });
-    
     const response = await fetch('/api/upload?type=getUploadParameters', {
       method: 'POST',
       headers: {
@@ -155,7 +119,7 @@ class UploadManager {
       body: JSON.stringify({
         filename: file.name,
         contentType: file.type,
-        key: fileKey
+        key: file.name
       })
     });
     
@@ -180,11 +144,6 @@ class UploadManager {
    */
   async createMultipartUpload(file) {
     const token = await Clerk.session.getToken();
-    
-    // Generate file key using md5 hash (consistent with upload page)
-    const fileKey = md5(Date.now() + '_' + file.name.replace(/\s+/g, '_'));
-    this.uppy.setFileMeta(file.id, { fileKey });
-    
     const response = await fetch('/api/upload?type=createMultipartUpload', {
       method: 'POST',
       headers: {
@@ -195,7 +154,7 @@ class UploadManager {
       body: JSON.stringify({
         filename: file.name,
         contentType: file.type,
-        key: fileKey
+        key: file.name
       })
     });
     
@@ -315,47 +274,37 @@ class UploadManager {
       
       const uploadedFile = result.successful[0];
       const file = uploadedFile.data;
-      const metadata = uploadedFile.meta || {};
       
-      // Validate that metadata was extracted
-      if (!metadata.metadataExtracted) {
-        this.showError('Video metadata not extracted. Please try again.');
-        return;
-      }
-      
-      // Use the file key that was generated during upload
-      const fileKey = metadata.fileKey;
-      if (!fileKey) {
-        this.showError('Upload file key missing. Please try again.');
-        return;
-      }
+      // Prepare metadata for Typesense (only essential fields)
+      const videoMetadata = {
+        id: this.generateVideoId(),
+        filename: file.name,
+        file_size: file.size,
+        content_type: file.type,
+        duration: 0 // Will be updated later when video is processed
+      };
       
       try {
         // Insert video metadata to Typesense
-        const response = await fetch('/api/upload?type=insertMetadata', {
+        const response = await fetch('/api/insert', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${await Clerk.session.getToken()}`
           },
-          body: JSON.stringify({
-            filename: fileKey,
-            width: metadata.width || 0,
-            height: metadata.height || 0,
-            duration: metadata.duration || 0
-          })
+          body: JSON.stringify(videoMetadata)
         });
         
-        const insertResult = await response.json();
+        const result = await response.json();
         
-        if (insertResult.success) {
+        if (result.success) {
           this.showStatus('Upload and processing complete! Redirecting...', 'success');
           // Redirect to video details page
           setTimeout(() => {
-            window.location.href = `/dev/?v=${insertResult.id}`;
+            window.location.href = `/dev/?v=${videoMetadata.id}`;
           }, 1000);
         } else {
-          throw new Error(insertResult.error || 'Failed to process video metadata');
+          throw new Error(result.error || 'Failed to process video metadata');
         }
       } catch (error) {
         console.error('Failed to insert video metadata:', error);
@@ -372,17 +321,21 @@ class UploadManager {
     }
   }
 
+  /**
+   * Generate a unique video ID
+   */
+  generateVideoId() {
+    return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
 
   /**
    * Show status message
    */
   showStatus(message, type = 'info') {
     const statusEl = document.getElementById('upload-status');
-    if (statusEl) {
-      statusEl.textContent = message;
-      statusEl.className = `upload-status ${type}`;
-      statusEl.style.display = 'block';
-    }
+    statusEl.textContent = message;
+    statusEl.className = `upload-status ${type}`;
+    statusEl.style.display = 'block';
   }
 
   /**

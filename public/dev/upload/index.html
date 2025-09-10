@@ -1,31 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SyndiNet - Upload</title>
+  <title>Bizilla TV - Upload</title>
 
   <!-- Uppy CSS -->
   <link href="https://releases.transloadit.com/uppy/v4.18.2/uppy.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/upload.css">
 
-  <!-- Clerk JS SDK -->
-  <script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
-    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript">
-    </script>
-</head>
-
-<body>
-  <div id="uppy-container" class="vh-100"></div>
-  <div id="upload-status" style="display: none; padding: 10px; margin: 10px; border-radius: 4px;"></div>
-
-  <!-- JS Libraries -->
-  <script src="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
-  <script src="/js/uploadManager.js"></script>
-
-  <script>
+  <!-- Clerk JS -->
+  <script 
+    async 
+    crossorigin="anonymous" 
+    data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA" 
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
+    type="text/javascript">
   </script>
-</body>
 
+
+  <!-- Uppy JS -->
+  <script type="module">
+    import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs";
+    window.UppyModules = { Uppy, Dashboard, AwsS3 };
+  </script>
+  
+  <!-- Configuration -->
+  <script src="/js/config.js"></script>
+  
+  <!-- Upload module -->
+  <script src="/js/uploadManager.js"></script>
+</head>
+<body>
+  <h1>Upload a Video</h1>
+  <p>Upload your video content to Bizilla TV. Supported formats include MP4, MOV, AVI, and more.</p>
+  <div id="uppy-container"></div>
+  
+  <div id="upload-status" class="upload-status"></div>
+
+  <!-- Navigation link styled as a button -->
+  <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
+</body>
 </html>
