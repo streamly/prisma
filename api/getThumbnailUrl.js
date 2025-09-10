@@ -5,9 +5,9 @@ import {
   authenticateUser, 
   validateMethod, 
   errorResponse, 
-  successResponse,
-  getTypesenseClient
+  successResponse
 } from '../lib/apiHelpers.js';
+import { getTypesenseClient } from '../lib/typesenseClient.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(res);

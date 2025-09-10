@@ -1,17 +1,17 @@
 import { uploadToS3 } from '../lib/s3Client.js';
 import { 
   setCorsHeaders, 
-  handleOptions, 
   authenticateUser, 
   validateMethod, 
   errorResponse, 
-  successResponse,
-  getTypesenseClient
+  successResponse
 } from '../lib/apiHelpers.js';
+import { getTypesenseClient } from '../lib/typesenseClient.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(res);
   
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (handleOptions(req, res)) return;
   
   try {

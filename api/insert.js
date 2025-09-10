@@ -2,11 +2,11 @@ import {
   setCorsHeaders, 
   handleOptions, 
   authenticateUser, 
-  validateMethod, 
-  getTypesenseClient, 
+  validateMethod,
   errorResponse, 
-  successResponse 
+  successResponse
 } from '../lib/apiHelpers.js';
+import { getTypesenseClient } from '../lib/typesenseClient.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(res);

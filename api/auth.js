@@ -1,6 +1,6 @@
 import { createClerkClient, verifyToken } from '@clerk/backend';
 import { serialize } from 'cookie';
-import { getTypesenseClient } from '../lib/apiHelpers.js';
+import { getTypesenseClient } from '../lib/typesenseClient.js';
 
 // Initialize Clerk client
 const clerkClient = createClerkClient({
