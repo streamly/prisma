@@ -42,6 +42,15 @@
       })
       .use(Uppy.AwsS3Multipart, {
         limit: 5,
+        prepareUploadParts(file) {
+          const chunkSize = 25 * 1024 * 1024;
+          const parts = [];
+          for (let start = 0; start < file.data.size; start += chunkSize) {
+            const end = Math.min(start + chunkSize, file.data.size);
+            parts.push({ start, end });
+          }
+          return parts;
+        },
         async createMultipartUpload(file) {
           const fileKey = md5(Date.now() + '_' + file.name.replace(/\s+/g, '_'));
           uppy.setFileMeta(file.id, { fileKey });
