@@ -297,13 +297,18 @@ export class UploadManager {
         this.currentVideoId = this.generateVideoId();
       }
       
-      // Prepare metadata for Typesense (only essential fields)
+      // Prepare metadata for Typesense with proper fields
       const videoMetadata = {
         id: this.currentVideoId,
+        title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension from title
+        description: '',
         filename: `${this.currentVideoId}.${this.getFileExtension(file.name)}`,
         file_size: file.size,
         content_type: file.type,
-        duration: 0 // Will be updated later when video is processed
+        duration: 0, // Will be updated later when video is processed
+        created: Math.floor(Date.now() / 1000), // Unix timestamp for current time
+        thumbnail: null,
+        ranking: 1
       };
       
       try {

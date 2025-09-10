@@ -174,8 +174,6 @@ class SearchManager {
             filterBy.push(`duration:>=${min} && duration:<=${max}`);
           } else if (min) {
             filterBy.push(`duration:>=${min}`);
-          } else if (max) {
-            filterBy.push(`duration:<=${max}`);
           }
         }
       }
