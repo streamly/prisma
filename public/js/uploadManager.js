@@ -45,8 +45,7 @@ class UploadManager {
       autoProceed: false,
       restrictions: {
         maxNumberOfFiles: 1,
-        maxFileSize: 1771673011, // ~1.65GB
-        allowedFileTypes: ['video/mp4']
+        maxFileSize: 1771673011 // ~1.65GB
       },
       meta: { user_id: userId },
       onBeforeFileAdded: async (currentFile) => {
@@ -84,7 +83,15 @@ class UploadManager {
             URL.revokeObjectURL(video.src);
             resolve(false);
           };
-        });
+        })
+      },
+      onBeforeFileAdded: (file) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext !== 'mp4') {
+          alert('Only MP4 files are allowed.');
+          return false;
+        }
+        return file;
       }
     })
       .use(Dashboard, {

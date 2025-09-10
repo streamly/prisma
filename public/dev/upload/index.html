@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Bizilla TV - Upload</title>
@@ -9,13 +10,9 @@
   <link rel="stylesheet" href="/styles/upload.css">
 
   <!-- Clerk JS -->
-  <script 
-    async 
-    crossorigin="anonymous" 
-    data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA" 
-    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
-    type="text/javascript">
-  </script>
+  <script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript">
+    </script>
 
 
   <!-- Uppy JS -->
@@ -23,21 +20,20 @@
     import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs";
     window.UppyModules = { Uppy, Dashboard, AwsS3 };
   </script>
-  
-  <!-- Configuration -->
-  <script src="/js/config.js"></script>
-  
+
   <!-- Upload module -->
   <script src="/js/uploadManager.js"></script>
 </head>
+
 <body>
   <h1>Upload a Video</h1>
   <p>Upload your video content to Bizilla TV. Supported formats include MP4, MOV, AVI, and more.</p>
   <div id="uppy-container"></div>
-  
+
   <div id="upload-status" class="upload-status"></div>
 
   <!-- Navigation link styled as a button -->
   <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
 </body>
+
 </html>
