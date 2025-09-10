@@ -24,8 +24,12 @@ class SearchManager {
       this.typesenseManager = new TypesenseManager();
       await this.typesenseManager.initializeClient();
 
-      // Initialize modal manager
-      this.modalManager = new ModalManager();
+      // Initialize notification manager first
+      const { NotificationManager } = await import('./notificationManager.js');
+      this.notificationManager = new NotificationManager();
+      
+      // Initialize modal manager with notification manager
+      this.modalManager = new ModalManager(this.notificationManager);
       this.modalManager.setVideoManager(this);
       this.modalManager.setupEventListeners();
 
@@ -255,6 +259,10 @@ class SearchManager {
             <div class="edit pointer text-muted small text-truncate video-description"> 
               ${video.description || ''}
             </div>
+            <div class="small text-muted mt-1">
+              <span class="me-3">Duration: ${duration}</span>
+              <span>Added: ${this.formatDate(video.created)}</span>
+            </div>
           </div>
           
           <div class="col-1">
@@ -295,6 +303,30 @@ class SearchManager {
       return `${hrs}:${formattedMins}:${formattedSecs}`;
     } else {
       return `${formattedMins}:${formattedSecs}`;
+    }
+  }
+
+  formatDate(timestamp) {
+    if (!timestamp) return 'Unknown';
+    
+    const date = new Date(timestamp * 1000); // Convert from Unix timestamp
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return months === 1 ? '1 month ago' : `${months} months ago`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return years === 1 ? '1 year ago' : `${years} years ago`;
     }
   }
 
