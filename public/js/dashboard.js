@@ -142,6 +142,23 @@ $(document).on("click", ".help", function () {
   modal.show();
 });
 
+// Add video (plus button) - redirect to upload page
+$(document).on("click", ".add", function () {
+  window.location.href = '/dev/upload/';
+});
+
+// Sign out functionality
+$(document).on("click", ".logout", async function () {
+  try {
+    await Clerk.signOut();
+    window.location.href = '/dev/auth/';
+  } catch (error) {
+    console.error('Sign out error:', error);
+    // Fallback redirect even if sign out fails
+    window.location.href = '/dev/auth/';
+  }
+});
+
 // Video.js player
 const player = videojs('player', {
   autoplay: true,
@@ -186,121 +203,161 @@ function decodeHTMLEntities(text) {
   return txt.value;
 }
 
-// Typesense API key
-const apiKey = "K6WySPOHUA5hhBhXZkpPGWZaYGmpI4TJEBBfGsBf7DzBZlgD";
+// Get cookie value
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
 
-// Date calculations
-const now = new Date();
-const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
-const yesterday = today - 86400;
-const startOfWeek = today - (now.getDay() * 86400);
-const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
-
-// Initialize Typesense InstantSearch
-const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
-  server: {
-    apiKey: apiKey,
-    nodes: [{ host: "t1.tubie.cx", port: 443, protocol: "https" }],
-  },
-  additionalSearchParameters: {
-    query_by: "title,company,channel,description,tags",
-  },
-});
-
-const search = instantsearch({
-  indexName: "videos",
-  searchClient: typesenseInstantsearchAdapter.searchClient,
-  routing: false,
-  searchFunction(helper) {
-    if (helper.state.page === 0) { 
-      window.scrollTo({ top: 0, behavior: 'auto', }); 
+// Check authentication and get API key
+async function initializeSearch() {
+  try {
+    // Wait for Clerk to load
+    await Clerk.load();
+    
+    // Check if user is signed in
+    if (!Clerk.session) {
+      console.log('User not signed in, redirecting to auth...');
+      window.location.href = '/dev/auth/';
+      return;
     }
-    helper.search();
-  },
-});
+    
+    // Get API key from cookie
+    const apiKey = getCookie('apikey');
+    if (!apiKey) {
+      console.log('No API key found, redirecting to auth...');
+      window.location.href = '/dev/auth/';
+      return;
+    }
+    
+    // Date calculations
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
+    const yesterday = today - 86400;
+    const startOfWeek = today - (now.getDay() * 86400);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
 
-// Add search widgets
-search.addWidgets([
-  instantsearch.widgets.searchBox({
-    container: "#searchbox",
-    placeholder: "Search",
-    autofocus: true,
-    showReset: true,
-    showSubmit: true,
-  }),
+    // Initialize Typesense InstantSearch with cookie API key
+    const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
+      server: {
+        apiKey: apiKey,
+        nodes: [{ host: "t1.tubie.cx", port: 443, protocol: "https" }],
+      },
+      additionalSearchParameters: {
+        query_by: "title,company,channel,description,tags",
+      },
+    });
 
-  instantsearch.widgets.refinementList({
-    container: '#channel-filter',
-    attribute: 'channel',
-    searchable: true,
-    searchablePlaceholder: 'Search companies',
-    limit: 30,
-    templates: {
-      item(data) {
-        return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`;
+    return { typesenseInstantsearchAdapter, today, yesterday, startOfWeek, startOfMonth };
+  } catch (error) {
+    console.error('Search initialization error:', error);
+    window.location.href = '/dev/auth/';
+  }
+}
+
+// Initialize search when page loads
+async function startSearch() {
+  const searchConfig = await initializeSearch();
+  if (!searchConfig) return; // Auth failed, already redirected
+  
+  const { typesenseInstantsearchAdapter, today, yesterday, startOfWeek, startOfMonth } = searchConfig;
+
+  const search = instantsearch({
+    indexName: "videos",
+    searchClient: typesenseInstantsearchAdapter.searchClient,
+    routing: false,
+    searchFunction(helper) {
+      if (helper.state.page === 0) { 
+        window.scrollTo({ top: 0, behavior: 'auto', }); 
       }
-    }
-  }),
-
-  instantsearch.widgets.numericMenu({
-    container: '#duration-filter',
-    attribute: 'duration',
-    items: [
-      { label: 'Any' },
-      { label: 'Under 4 minutes', start: 1, end: 239 },
-      { label: '4 - 20 minutes', start: 240, end: 1199 },
-      { label: 'Over 20 minutes', start: 1200 },
-    ],
-  }),
-
-  instantsearch.widgets.numericMenu({
-    container: '#created-filter',
-    attribute: 'created',
-    items: [
-      { label: 'All', start: 0 },
-      { label: 'Today', start: today },
-      { label: 'Yesterday', start: yesterday, end: today },
-      { label: 'This Week', start: startOfWeek },
-      { label: 'This Month', start: startOfMonth },
-    ],
-  }),
-
-  instantsearch.widgets.currentRefinements({
-    container: '#refinements',
-    transformItems(items) {
-      if (items.length > 0) {
-        $("#clear").show();
-      } else {
-        $("#clear").hide();
-      }
-      return items;
-    }
-  }),
-
-  instantsearch.widgets.infiniteHits({
-    container: "#hits",
-    transformItems(items) {
-      return items.map((item, index) => ({
-        ...item,
-        resultPosition: index + 1,
-      }));
+      helper.search();
     },
-    templates: {
-      item(hit) {
-        hit.position = hit.__position;
+  });
 
-        const dataAttributes = Object.keys(hit).map(key => {
-          const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`;
-          let value = hit[key];
-          if (Array.isArray(value)) value = value.join('; ');
-          const safeValue = encodeURIComponent(String(value ?? ''));
-          return `${safeKey}="${safeValue}"`;
-        }).join(' ');
+  // Add search widgets
+  search.addWidgets([
+    instantsearch.widgets.searchBox({
+      container: "#searchbox",
+      placeholder: "Search",
+      autofocus: true,
+      showReset: true,
+      showSubmit: true,
+    }),
 
-        const title = decodeHTMLEntities(hit.title || "");
-        const description = decodeHTMLEntities(hit.description || "");
+    instantsearch.widgets.refinementList({
+      container: '#channel-filter',
+      attribute: 'channel',
+      searchable: true,
+      searchablePlaceholder: 'Search companies',
+      limit: 30,
+      templates: {
+        item(data) {
+          return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`;
+        }
+      }
+    }),
 
-        return `
+    instantsearch.widgets.numericMenu({
+      container: '#duration-filter',
+      attribute: 'duration',
+      items: [
+        { label: 'Any' },
+        { label: 'Under 4 minutes', start: 1, end: 239 },
+        { label: '4 - 20 minutes', start: 240, end: 1199 },
+        { label: 'Over 20 minutes', start: 1200 },
+      ],
+    }),
+
+    instantsearch.widgets.numericMenu({
+      container: '#created-filter',
+      attribute: 'created',
+      items: [
+        { label: 'All', start: 0 },
+        { label: 'Today', start: today },
+        { label: 'Yesterday', start: yesterday, end: today },
+        { label: 'This Week', start: startOfWeek },
+        { label: 'This Month', start: startOfMonth },
+      ],
+    }),
+
+    instantsearch.widgets.currentRefinements({
+      container: '#refinements',
+      transformItems(items) {
+        if (items.length > 0) {
+          $("#clear").show();
+        } else {
+          $("#clear").hide();
+        }
+        return items;
+      }
+    }),
+
+    instantsearch.widgets.infiniteHits({
+      container: "#hits",
+      transformItems(items) {
+        return items.map((item, index) => ({
+          ...item,
+          resultPosition: index + 1,
+        }));
+      },
+      templates: {
+        item(hit) {
+          hit.position = hit.__position;
+
+          const dataAttributes = Object.keys(hit).map(key => {
+            const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`;
+            let value = hit[key];
+            if (Array.isArray(value)) value = value.join('; ');
+            const safeValue = encodeURIComponent(String(value ?? ''));
+            return `${safeKey}="${safeValue}"`;
+          }).join(' ');
+
+          const title = decodeHTMLEntities(hit.title || "");
+          const description = decodeHTMLEntities(hit.description || "");
+
+          return `
 <div class="row border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
   <!-- Thumbnail (col-2) -->
   <div class="col-2 text-end">
@@ -338,33 +395,46 @@ search.addWidgets([
     </div>  
   </div>
 </div>`;
+        },
       },
-    },
-  }),
-]);
+    }),
+  ]);
 
-// Start search
-search.start();
+  // Start search
+  search.start();
+  
+  return search;
+}
 
-// Handle URL parameters
-const urlParams = new URLSearchParams(window.location.search);
-
-if (urlParams.get('v')) {
-  const v = urlParams.get('v');
-  search.helper
-    .setQuery("")
-    .setQueryParameter("filters", `id:${v}`)
-    .search();
-
+// Initialize search when DOM is ready
+$(document).ready(async function() {
+  const search = await startSearch();
+  
+  // Handle URL parameters after search is initialized
+  if (search) {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.get('v')) {
+      const v = urlParams.get('v');
+      search.helper
+        .setQuery("")
+        .setQueryParameter("filters", `id:${v}`)
+        .search();
+    }
+  }
+  
   setTimeout(function () {
     $("#vodModal").data("uploaded", 1);
     $(".edit").first().trigger("click");
   }, 1000);
-}
+});
 
 // Reload functionality
-$(document).on("click", "#reload", function (e) {
-  search.helper.setQuery("").search();
+$(document).on("click", "#reload", async function (e) {
+  const search = await startSearch();
+  if (search) {
+    search.helper.setQuery("").search();
+  }
 });
 
 // Auto-trigger load more when visible
