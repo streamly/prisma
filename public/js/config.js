@@ -16,9 +16,19 @@ export async function getVideoUrl(videoId) {
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Server error details:', errorData);
-      throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        console.error('Server error details:', errorData);
+        errorMessage += ` - ${errorData.error || 'Unknown error'}`;
+      } catch (jsonError) {
+        // Server returned HTML error page instead of JSON
+        console.error('Server returned non-JSON error:', responseText);
+        errorMessage += ` - Server error (non-JSON response)`;
+      }
+      throw new Error(errorMessage);
     }
     
     const data = await response.json();
