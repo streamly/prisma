@@ -5,6 +5,12 @@ export class ModalManager {
   constructor(notificationManager) {
     this.currentVideoData = null;
     this.notificationManager = notificationManager;
+    this.videoManager = null; // Will be set by App
+  }
+
+  // Set video manager reference (called by App after construction)
+  setVideoManager(videoManager) {
+    this.videoManager = videoManager;
   }
 
   // Setup event listeners for modal functionality
@@ -15,13 +21,7 @@ export class ModalManager {
       closeBtn.onclick = () => this.closeVideoModal();
     }
 
-    // Click outside modal to close
-    window.onclick = (event) => {
-      const modal = document.getElementById('videoModal');
-      if (event.target === modal) {
-        this.closeVideoModal();
-      }
-    };
+    // Click outside modal to close (removed duplicate from app.js)
 
     // Generate thumbnail button
     const generateThumbnailBtn = document.getElementById('generateThumbnail');
@@ -56,10 +56,10 @@ export class ModalManager {
       return;
     }
 
-    // Get video data from the search results stored in window
+    // Get video data from the search results stored in videoManager
     let videoData = null;
-    if (window.searchResults && window.searchResults.hits) {
-      videoData = window.searchResults.hits.find(hit => hit.document.id === videoId);
+    if (this.videoManager && this.videoManager.searchResults && this.videoManager.searchResults.hits) {
+      videoData = this.videoManager.searchResults.hits.find(hit => hit.document.id === videoId);
     }
 
     if (videoData) {

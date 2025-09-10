@@ -49,7 +49,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title">Video Details</h2>
-        <span class="close" onclick="closeVideoModal()">&times;</span>
+        <span class="close" onclick="modalManager.closeVideoModal()">&times;</span>
       </div>
       <div class="modal-body">
         <div class="video-player-section">
@@ -75,14 +75,18 @@
               <div class="thumbnail-preview" id="thumbnailPreview">
                 <span>Click to generate thumbnail</span>
               </div>
-              <input type="file" id="thumbnailInput" accept="image/*" style="display: none;">
+              <input type="file" id="thumbnailUpload" accept="image/*" style="display: none;">
+              <div class="thumbnail-actions">
+                <button type="button" id="generateThumbnail" class="btn btn-secondary">Generate from Video</button>
+                <button type="button" onclick="document.getElementById('thumbnailUpload').click()" class="btn btn-secondary">Upload Custom</button>
+              </div>
             </div>
           </form>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
-        <button type="button" class="btn btn-primary" id="publishVideoBtn">Publish</button>
+        <button type="button" class="btn btn-secondary" onclick="modalManager.closeVideoModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="publishBtn">Publish</button>
       </div>
     </div>
   </div>

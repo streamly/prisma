@@ -2,10 +2,12 @@ import { getVideoUrl } from './config.js';
 
 // Video management functionality
 export class VideoManager {
-  constructor(typesenseManager, notificationManager) {
+  constructor(typesenseManager, notificationManager, modalManager) {
     this.typesenseManager = typesenseManager;
     this.notificationManager = notificationManager;
+    this.modalManager = modalManager;
     this.currentVideoData = null;
+    this.searchResults = null;
   }
 
   // Load and display videos
@@ -13,10 +15,11 @@ export class VideoManager {
     try {
       await this.typesenseManager.initializeClient();
       const videos = await this.typesenseManager.searchVideos();
+      this.searchResults = { hits: videos }; // Store for modal access
       this.displayVideos(videos);
     } catch (error) {
       console.error('Error loading videos:', error);
-      document.getElementById('noVideos').style.display = 'block';
+      this.notificationManager.showNotification('Failed to load videos', 'error');
     }
   }
 
@@ -51,12 +54,12 @@ export class VideoManager {
     const fileSize = video.document.file_size ? this.formatFileSize(video.document.file_size) : 'Unknown size';
 
     card.innerHTML = `
-      <div class="video-thumbnail">
+      <div class="video-thumbnail" onclick="videoManager.editVideo('${video.document.id}')" style="cursor: pointer;">
         ${thumbnailUrl ? `<img src="${thumbnailUrl}" alt="${title}" style="width: 100%; height: 100%; object-fit: cover;">` : 'No thumbnail'}
       </div>
       <div class="video-info">
         <div class="video-title">
-          <span>${title}</span>
+          <span onclick="videoManager.editVideo('${video.document.id}')" style="cursor: pointer;">${title}</span>
           <div class="video-actions">
             <button class="dropdown-btn" onclick="videoManager.toggleDropdown('${video.document.id}')">⋮</button>
             <div class="dropdown-menu" id="dropdown-${video.document.id}">
@@ -100,7 +103,7 @@ export class VideoManager {
 
   // Edit video
   editVideo(videoId) {
-    window.modalManager.openVideoModal(videoId);
+    this.modalManager.openVideoModal(videoId);
   }
 
   // Delete video

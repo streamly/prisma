@@ -8,8 +8,16 @@ class App {
   constructor() {
     this.typesenseManager = new TypesenseManager();
     this.notificationManager = new NotificationManager();
-    this.videoManager = new VideoManager(this.typesenseManager, this.notificationManager);
     this.modalManager = new ModalManager(this.notificationManager);
+    this.videoManager = new VideoManager(this.typesenseManager, this.notificationManager, this.modalManager);
+    
+    // Set cross-references
+    this.modalManager.setVideoManager(this.videoManager);
+    
+    // Make managers globally accessible for HTML onclick handlers
+    window.app = this;
+    window.videoManager = this.videoManager;
+    window.modalManager = this.modalManager;
   }
 
   async initialize() {
