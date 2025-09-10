@@ -43,12 +43,12 @@ export class ModalManager {
   }
 
   // Construct video URL for iDrive e2 storage
-  constructVideoUrl(filename) {
-    return getVideoUrl(filename);
+  async constructVideoUrl(videoId) {
+    return await getVideoUrl(videoId);
   }
 
   // Open video modal
-  openVideoModal(videoId) {
+  async openVideoModal(videoId) {
     // Find video data from the loaded videos
     const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
     if (!videoCard) {
@@ -63,23 +63,42 @@ export class ModalManager {
     }
 
     if (videoData) {
+      // Get presigned URL for video access using video ID
+      let videoUrl = videoData.document.video_url;
+      if (!videoUrl) {
+        try {
+          videoUrl = await getVideoUrl(videoData.document.id);
+        } catch (error) {
+          console.error('Failed to get video URL:', error);
+          videoUrl = await this.constructVideoUrl(videoData.document.id);
+        }
+      }
+
       this.currentVideoData = {
         id: videoId,
         title: videoData.document.title || 'Untitled Video',
         description: videoData.document.description || '',
         filename: videoData.document.filename,
         thumbnail: videoData.document.thumbnail || '',
-        url: this.constructVideoUrl(videoData.document.filename)
+        url: videoUrl
       };
     } else {
-      // Fallback to basic data from DOM
+      // Fallback to basic data from DOM - use video ID directly
+      let videoUrl;
+      try {
+        videoUrl = await getVideoUrl(videoId);
+      } catch (error) {
+        console.error('Failed to get video URL:', error);
+        videoUrl = await this.constructVideoUrl(videoId);
+      }
+
       this.currentVideoData = {
         id: videoId,
         title: videoCard.querySelector('.video-title span').textContent,
         description: '',
-        filename: videoId + '.mp4', // Placeholder
+        filename: '', // Will be retrieved from database
         thumbnail: '',
-        url: this.constructVideoUrl(videoId + '.mp4')
+        url: videoUrl
       };
     }
 
@@ -87,12 +106,10 @@ export class ModalManager {
     document.getElementById('videoTitle').value = this.currentVideoData.title;
     document.getElementById('videoDescription').value = this.currentVideoData.description;
     
-    // Set video source (construct URL from filename)
+    // Set video source with presigned URL
     const videoElement = document.getElementById('videoElement');
     const videoSource = videoElement.querySelector('source');
-    // Use the actual video URL from the video data, or construct it properly
-    // This should be set from the backend API response with the correct iDrive e2 URL
-    videoSource.src = this.currentVideoData.url || `${this.currentVideoData.filename}`;
+    videoSource.src = this.currentVideoData.url;
     videoElement.load();
 
     // Reset thumbnail preview

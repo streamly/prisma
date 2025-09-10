@@ -1,6 +1,12 @@
 import { createClerkClient, verifyToken } from '@clerk/backend';
-import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand, ListPartsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { 
+  generateUploadUrl, 
+  createMultipartUpload, 
+  generatePartUploadUrl, 
+  completeMultipartUpload, 
+  listParts, 
+  abortMultipartUpload 
+} from '../lib/s3Client.js';
 
 // Check required environment variables
 if (!process.env.AWS_REGION || !process.env.AWS_KEY || !process.env.AWS_SECRET || !process.env.AWS_BUCKET) {
@@ -11,20 +17,7 @@ if (!process.env.AWS_REGION || !process.env.AWS_KEY || !process.env.AWS_SECRET |
     });
 }
 
-// Initialize S3 client
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'us-west-1',
-    credentials: {
-        accessKeyId: process.env.AWS_KEY,
-        secretAccessKey: process.env.AWS_SECRET
-    },
-    apiVersion: 'latest',
-    forcePathStyle: true,
-    endpoint: process.env.AWS_ENDPOINT // For S3-compatible storage
-});
-
-// Bucket name from environment variables
-const BUCKET_NAME = process.env.AWS_BUCKET;
+// S3 client and bucket are now handled by the shared lib
 
 // Initialize Clerk client
 const clerkClient = createClerkClient({
@@ -42,11 +35,7 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // Check if required environment variables are set
-    if (!BUCKET_NAME) {
-        console.error('AWS_BUCKET environment variable is not set');
-        return res.status(500).json({ error: 'Server configuration error: Missing S3 bucket name' });
-    }
+    // Environment variables are checked by the shared S3 client
 
     try {
         // Authenticate the request
@@ -114,17 +103,7 @@ async function handleGetUploadParameters(req, res, userId) {
         }
 
         const uploadKey = key || filename;
-
-        const command = new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: uploadKey,
-            ContentType: contentType,
-            Metadata: {
-                userId: userId
-            }
-        });
-
-        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        const signedUrl = await generateUploadUrl(uploadKey, contentType, userId);
 
         console.log('Generated presigned URL for single upload');
         return res.status(200).json({ url: signedUrl });
@@ -149,28 +128,13 @@ async function handleCreateMultipartUpload(req, res, userId) {
             return res.status(400).json({ error: 'Missing filename or contentType' });
         }
 
-        // Use the key provided by Uppy or generate one
         const uploadKey = key || filename;
+        console.log('Creating upload with key:', uploadKey);
 
-        console.log('Creating upload with key:', uploadKey, 'bucket:', BUCKET_NAME);
+        const result = await createMultipartUpload(uploadKey, contentType, userId);
+        console.log('Multipart upload created with ID:', result.uploadId);
 
-        const command = new CreateMultipartUploadCommand({
-            Bucket: BUCKET_NAME,
-            Key: uploadKey,
-            ContentType: contentType,
-            Metadata: {
-                userId: userId
-            }
-        });
-
-        const { UploadId } = await s3Client.send(command);
-
-        console.log('Multipart upload created with ID:', UploadId);
-
-        return res.status(200).json({
-            uploadId: UploadId,
-            key: uploadKey
-        });
+        return res.status(200).json(result);
     } catch (error) {
         console.error('Error creating multipart upload:', error);
         console.error('Error details:', error.message, error.code);
@@ -193,33 +157,12 @@ async function handleGetUploadPartURL(req, res, userId) {
             return res.status(400).json({ error: 'Missing uploadId, key, or partNumber' });
         }
 
-        const command = new UploadPartCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId,
-            PartNumber: parseInt(partNumber, 10)
-        });
-
-        console.log('Generating presigned URL with command:', {
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId,
-            PartNumber: parseInt(partNumber, 10)
-        });
-
-        // Generate a presigned URL that expires in 1 hour
-        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        const signedUrl = await generatePartUploadUrl(key, uploadId, partNumber);
 
         console.log('Successfully generated presigned URL');
         return res.status(200).json({ url: signedUrl });
     } catch (error) {
         console.error('Error generating upload part URL:', error);
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            statusCode: error.$metadata?.httpStatusCode,
-            requestId: error.$metadata?.requestId
-        });
         return res.status(500).json({
             error: 'Failed to generate upload URL',
             details: error.message
@@ -245,47 +188,16 @@ async function handleCompleteMultipartUpload(req, res, userId) {
             return res.status(400).json({ error: 'Missing uploadId, key, or parts array' });
         }
 
-        console.log('Parts to complete:', parts.map(p => ({ PartNumber: p.PartNumber, ETag: p.ETag })));
-
-        const command = new CompleteMultipartUploadCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId,
-            MultipartUpload: {
-                Parts: parts.map(part => ({
-                    ETag: part.ETag,
-                    PartNumber: part.PartNumber
-                }))
-            }
-        });
-
-        console.log('Completing multipart upload with command:', {
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId,
-            PartsCount: parts.length
-        });
-
-        const result = await s3Client.send(command);
+        const result = await completeMultipartUpload(key, uploadId, parts);
 
         console.log('Multipart upload completed successfully:', {
-            Location: result.Location,
-            ETag: result.ETag,
-            Key: key
+            Location: result.location,
+            Key: result.key
         });
 
-        return res.status(200).json({
-            location: result.Location,
-            key: key
-        });
+        return res.status(200).json(result);
     } catch (error) {
         console.error('Error completing multipart upload:', error);
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            statusCode: error.$metadata?.httpStatusCode,
-            requestId: error.$metadata?.requestId
-        });
         return res.status(500).json({
             error: 'Failed to complete upload',
             details: error.message
@@ -305,41 +217,16 @@ async function handleListParts(req, res, userId) {
             return res.status(400).json({ error: 'Missing uploadId or key' });
         }
 
-        const command = new ListPartsCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId
-        });
-
-        console.log('Listing parts with command:', {
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId
-        });
-
-        const result = await s3Client.send(command);
+        const parts = await listParts(key, uploadId);
 
         console.log('List parts result:', {
-            partsCount: result.Parts?.length || 0,
-            parts: result.Parts?.map(p => ({ PartNumber: p.PartNumber, ETag: p.ETag, Size: p.Size }))
+            partsCount: parts.length,
+            parts: parts.map(p => ({ PartNumber: p.PartNumber, ETag: p.ETag, Size: p.Size }))
         });
-
-        // Format the response to match what Uppy expects
-        const parts = (result.Parts || []).map(part => ({
-            PartNumber: part.PartNumber,
-            ETag: part.ETag,
-            Size: part.Size
-        }));
 
         return res.status(200).json({ parts });
     } catch (error) {
         console.error('Error listing parts:', error);
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            statusCode: error.$metadata?.httpStatusCode,
-            requestId: error.$metadata?.requestId
-        });
         return res.status(500).json({
             error: 'Failed to list parts',
             details: error.message
@@ -359,30 +246,12 @@ async function handleAbortMultipartUpload(req, res, userId) {
             return res.status(400).json({ error: 'Missing uploadId or key' });
         }
 
-        const command = new AbortMultipartUploadCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId
-        });
-
-        console.log('Aborting multipart upload with command:', {
-            Bucket: BUCKET_NAME,
-            Key: key,
-            UploadId: uploadId
-        });
-
-        await s3Client.send(command);
+        await abortMultipartUpload(key, uploadId);
 
         console.log('Multipart upload aborted successfully');
         return res.status(200).json({ success: true });
     } catch (error) {
         console.error('Error aborting multipart upload:', error);
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            statusCode: error.$metadata?.httpStatusCode,
-            requestId: error.$metadata?.requestId
-        });
         return res.status(500).json({
             error: 'Failed to abort upload',
             details: error.message

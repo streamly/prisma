@@ -127,8 +127,7 @@ export class VideoManager {
       if (result.success) {
         this.notificationManager.showNotification('Video deleted successfully', 'success');
         
-        // Construct video URL for iDrive e2 storage
-        const videoUrl = getVideoUrl(video.document.filename);
+        // Video deletion successful
         const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
         if (videoCard) {
           videoCard.remove();
