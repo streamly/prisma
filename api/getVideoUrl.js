@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     
     try {
       validateMethod(req, ['POST']);
+      
       const userId = await authenticateUser(req);
       
       const { videoId } = req.body;
@@ -83,12 +84,7 @@ export default async function handler(req, res) {
         });
       }
       
-      if (authError.message.includes('Authentication') || authError.message.includes('Invalid')) {
-        return res.status(401).json({
-          success: false,
-          error: 'Authentication required'
-        });
-      }
+
       
       return res.status(400).json({
         success: false,
