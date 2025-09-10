@@ -27,28 +27,47 @@ export default async function handler(req, res) {
     try {
       // Get video data from Typesense to find the filename
       const typesenseClient = getTypesenseClient();
+      console.log('Attempting to retrieve video:', videoId);
+      
       const searchResult = await typesenseClient.collections('videos').documents(videoId).retrieve();
+      console.log('Typesense result:', searchResult);
       
       if (!searchResult || !searchResult.filename) {
-        return errorResponse(res, 404, 'Video not found');
+        console.error('Video not found or missing filename:', { searchResult });
+        return errorResponse(res, 404, 'Video not found or missing filename');
       }
       
       // Check if user owns this video
       if (searchResult.uid !== userId) {
+        console.error('Access denied - user mismatch:', { videoOwner: searchResult.uid, requestingUser: userId });
         return errorResponse(res, 403, 'Access denied');
       }
       
+      console.log('Generating presigned URL for filename:', searchResult.filename);
+      
       // Generate presigned URL for video access (valid for 7 days)
       const presignedUrl = await generatePresignedUrl(searchResult.filename, 604800); // 7 days
+      
+      console.log('Presigned URL generated successfully');
       
       return successResponse(res, { 
         url: presignedUrl,
         expiresIn: 604800
       });
       
-    } catch (s3Error) {
-      console.error('Error generating presigned URL:', s3Error);
-      return errorResponse(res, 500, `Failed to generate video URL: ${s3Error.message}`);
+    } catch (dbError) {
+      console.error('Database/S3 error:', {
+        message: dbError.message,
+        httpStatus: dbError.httpStatus,
+        code: dbError.code,
+        stack: dbError.stack
+      });
+      
+      if (dbError.httpStatus === 404) {
+        return errorResponse(res, 404, 'Video not found in database');
+      }
+      
+      return errorResponse(res, 500, `Service error: ${dbError.message}`);
     }
     
   } catch (error) {
