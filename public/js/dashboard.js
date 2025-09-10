@@ -1,3 +1,5 @@
+import { getVideoUrl } from "./apiUtils";
+
 const cookies = Object.fromEntries(
     document.cookie.split('; ').map(c => c.split('='))
 );
@@ -48,24 +50,16 @@ $(document).on("click", ".edit", async function () {
     const videoId = data.id;
     if (videoId) {
         try {
-            const response = await fetch('/api/getVideoUrl', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ videoId: videoId })
-            });
+            const url = await getVideoUrl(videoId);
             
-            const result = await response.json();
-            
-            if (result.success && result.url) {
+            if (url) {
                 // Set video source using regular HTML5 video element
                 const videoElement = document.getElementById('player');
                 const videoSource = videoElement.querySelector('source');
-                videoSource.src = result.url;
+                videoSource.src = url;
                 videoElement.load();
             } else {
-                console.error('Failed to get video URL:', result.error);
+                console.error('Failed to get video URL');
             }
         } catch (error) {
             console.error('Error fetching video URL:', error);
