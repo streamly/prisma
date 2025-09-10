@@ -59,18 +59,11 @@ $(document).on("click", ".edit", async function () {
             const result = await response.json();
             
             if (result.success && result.url) {
-                // Set video source
-                if (player && player.src) {
-                    player.src({
-                        type: 'video/mp4',
-                        src: result.url
-                    });
-                    player.ready(() => {
-                        player.load();
-                    });
-                } else {
-                    console.error('Player not initialized');
-                }
+                // Set video source using regular HTML5 video element
+                const videoElement = document.getElementById('player');
+                const videoSource = videoElement.querySelector('source');
+                videoSource.src = result.url;
+                videoElement.load();
             } else {
                 console.error('Failed to get video URL:', result.error);
             }
@@ -195,12 +188,13 @@ $(document).on("click", ".logout", async function () {
     }
 });
 
-// Video.js player - initialize after DOM is ready
-let player;
-
 // Modal close handler
 $("#vodModal").on("hidden.bs.modal", function () {
-    player.pause();
+    const videoElement = document.getElementById('player');
+    if (videoElement) {
+        videoElement.pause();
+        videoElement.currentTime = 0;
+    }
     $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click');
     $(document).attr("title", "SyndiNet");
 
@@ -443,13 +437,6 @@ async function startSearch() {
 
 // Initialize search when DOM is ready
 $(document).ready(async function () {
-    // Initialize video player first
-    player = videojs('player', {
-        autoplay: false,
-        muted: false,
-        controls: true,
-    });
-
     const search = await startSearch();
 
     // Handle URL parameters after search is initialized

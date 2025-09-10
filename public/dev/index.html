@@ -7,7 +7,6 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.2/mdb.min.css" rel="stylesheet" />
   <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8.2.1/themes/satellite-min.css" crossorigin="anonymous">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video-js.min.css" rel="stylesheet">
     <!-- Clerk JS SDK -->
     <script 
     async 
@@ -148,8 +147,10 @@
           <div class="row">
             <div class="col-9 small pe-2 pb-4">
               <div class="mb-3">
-                <video id="player" controls preload="auto" data-setup="{}"
-                  class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9 bg-dark w-100 border "></video>
+                <video id="player" controls preload="auto" class="w-100 border bg-dark" style="aspect-ratio: 16/9;">
+                  <source src="" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
               </div>
               <form id="vod" data-parsley-validate>
                 <input type="hidden" name="id" id="id" required />
@@ -348,7 +349,6 @@
   <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.23.3/dist/algoliasearch-lite.umd.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4.68.1/dist/instantsearch.production.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/typesense-instantsearch-adapter@2/dist/typesense-instantsearch-adapter.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
   <script src="/js/dashboard.js"></script>
 
