@@ -46,7 +46,7 @@ class UploadManager {
       restrictions: {
         maxNumberOfFiles: 1,
         maxFileSize: 1771673011, // ~1.65GB
-        allowedFileTypes: ['video/mp4', 'video/quicktime', 'video/x-m4v']
+        allowedFileTypes: ['video/mp4']
       },
       meta: { user_id: userId },
       onBeforeFileAdded: async (currentFile) => {
