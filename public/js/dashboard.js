@@ -36,13 +36,45 @@ $(document).ready(function () {
 });
 
 // Edit video modal
-$(document).on("click", ".edit", function () {
+$(document).on("click", ".edit", async function () {
     const data = $(this).closest('.row').data();
     $("#vodModal .modal-video-title").text(decodeURIComponent(data.title));
 
     $.each(data, function (key, value) {
         $("#" + key).val(decodeURIComponent(value));
     });
+    
+    // Get video URL from API
+    const videoId = data.id;
+    if (videoId) {
+        try {
+            const response = await fetch('/api/getVideoUrl', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ videoId: videoId })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.url) {
+                // Set video source
+                player.src({
+                    type: 'video/mp4',
+                    src: result.url
+                });
+                player.ready(() => {
+                    player.load();
+                });
+            } else {
+                console.error('Failed to get video URL:', result.error);
+            }
+        } catch (error) {
+            console.error('Error fetching video URL:', error);
+        }
+    }
+    
     const modal = new mdb.Modal(document.getElementById("vodModal"));
     modal.show();
 });
