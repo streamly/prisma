@@ -398,6 +398,18 @@ export class ModalManager {
         this.currentVideoData.title = title;
         this.currentVideoData.description = description;
         
+        // Update the video object in videoManager searchResults
+        if (this.videoManager && this.videoManager.searchResults && this.videoManager.searchResults.hits) {
+          const videoIndex = this.videoManager.searchResults.hits.findIndex(hit => hit.document.id === videoId);
+          if (videoIndex !== -1) {
+            this.videoManager.searchResults.hits[videoIndex].document.title = title;
+            this.videoManager.searchResults.hits[videoIndex].document.description = description;
+            if (hasThumbnail) {
+              this.videoManager.searchResults.hits[videoIndex].document.thumbnail = this.currentVideoData.thumbnail;
+            }
+          }
+        }
+        
         // Close modal after UI updates
         this.closeVideoModal();
       } else {
