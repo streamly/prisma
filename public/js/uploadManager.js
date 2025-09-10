@@ -68,12 +68,12 @@ class UploadManager {
 
     // File validation
     this.uppy.on('file-added', async (file) => {
-      const type = file.type.toLowerCase();
       const ext = file.name.split('.').pop().toLowerCase();
+      const type = file.type.toLowerCase();
 
-      if (!['mp4', 'm4v', 'mov'].includes(ext) || !['video/mp4', 'video/quicktime', 'video/x-m4v'].includes(type)) {
+      if (!['mp4', 'mov', 'm4v'].includes(ext) || !['video/mp4', 'video/quicktime', 'video/x-m4v'].includes(type)) {
         this.uppy.removeFile(file.id);
-        alert('Only MP4 files are allowed.');
+        alert('Only MP4/MOV/M4V files are allowed.');
         return;
       }
 
@@ -245,25 +245,23 @@ class UploadManager {
 
     const uploadedFile = result.successful[0];
     const file = uploadedFile.data;
-
-    // Prefer using a stable/upload key as filename (S3 key).
-    // If you created a key in meta (e.g. file.meta.fileKey), use that; otherwise use file.name
     const filename = file.meta?.fileKey || file.name;
-
     const width = file.meta?.width || 0;
     const height = file.meta?.height || 0;
     const duration = file.meta?.duration || 0;
 
-    // If your server expects `filename` to be unique id, consider sending `id` too:
+    if (!filename || !width || !height || !duration) {
+      this.showError('Missing required metadata. Upload failed.');
+      return;
+    }
+
     const videoId = this.generateVideoId();
 
     const payload = {
-      // send the filename used in S3 (must match server expectation)
       filename,
       width,
       height,
       duration,
-      // Optional: allow server to use provided id rather than deriving it from filename
       id: videoId
     };
 
