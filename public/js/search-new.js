@@ -8,6 +8,8 @@ class SearchManager {
   constructor() {
     this.typesenseManager = null;
     this.currentQuery = '';
+    this.currentDurationFilter = '';
+    this.currentDateFilter = '';
   }
 
   async initialize() {
@@ -22,11 +24,88 @@ class SearchManager {
       // Setup search box
       this.setupSearchBox();
       
+      // Setup filters
+      this.setupFilters();
+      
       // Load initial videos
       await this.loadVideos();
       
     } catch (error) {
       console.error('Failed to initialize search:', error);
+    }
+  }
+
+  setupFilters() {
+    // Duration filter
+    const durationFilter = document.getElementById('duration-filter');
+    if (durationFilter) {
+      durationFilter.innerHTML = `
+        <div class="mb-2">
+          <input type="radio" name="duration" value="" id="duration-any" checked>
+          <label for="duration-any" class="form-label ms-1">Any</label>
+        </div>
+        <div class="mb-2">
+          <input type="radio" name="duration" value="0-240" id="duration-short">
+          <label for="duration-short" class="form-label ms-1">Under 4 minutes</label>
+        </div>
+        <div class="mb-2">
+          <input type="radio" name="duration" value="240-1200" id="duration-medium">
+          <label for="duration-medium" class="form-label ms-1">4 - 20 minutes</label>
+        </div>
+        <div class="mb-2">
+          <input type="radio" name="duration" value="1200-" id="duration-long">
+          <label for="duration-long" class="form-label ms-1">Over 20 minutes</label>
+        </div>
+      `;
+
+      // Add event listeners for duration filter
+      durationFilter.addEventListener('change', (e) => {
+        if (e.target.name === 'duration') {
+          this.currentDurationFilter = e.target.value;
+          this.performSearch(this.currentQuery);
+        }
+      });
+    }
+
+    // Date filter
+    const createdFilter = document.getElementById('created-filter');
+    if (createdFilter) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
+      const yesterday = today - 86400;
+      const startOfWeek = today - (now.getDay() * 86400);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
+
+      createdFilter.innerHTML = `
+        <div class="mb-2">
+          <input type="radio" name="created" value="" id="created-any" checked>
+          <label for="created-any" class="form-label ms-1">All</label>
+        </div>
+        <div class="mb-2">
+          <input type="radio" name="created" value="${today}" id="created-today">
+          <label for="created-today" class="form-label ms-1">Today</label>
+        </div>
+        <div class="mb-2">
+          <input type="radio" name="created" value="${yesterday}-${today}" id="created-yesterday">
+          <label for="created-yesterday" class="form-label ms-1">Yesterday</label>
+        </div>
+        <div class="mb-2">
+          <input type="radio" name="created" value="${startOfWeek}" id="created-week">
+          <label for="created-week" class="form-label ms-1">This Week</label>
+        </div>
+        <div class="mb-2">
+          <input type="radio" name="created" value="${startOfMonth}" id="created-month">
+          <label for="created-month" class="form-label ms-1">This Month</label>
+        </div>
+      `;
+
+      // Add event listeners for date filter
+      createdFilter.addEventListener('change', (e) => {
+        if (e.target.name === 'created') {
+          this.currentDateFilter = e.target.value;
+          this.performSearch(this.currentQuery);
+        }
+      });
     }
   }
 
@@ -71,7 +150,35 @@ class SearchManager {
   async performSearch(query = '') {
     try {
       this.currentQuery = query;
-      const results = await this.typesenseManager.searchVideos(query);
+      
+      // Build filter string for Typesense
+      let filterBy = [];
+      
+      // Duration filter
+      if (this.currentDurationFilter) {
+        if (this.currentDurationFilter.includes('-')) {
+          const [min, max] = this.currentDurationFilter.split('-');
+          if (min && max) {
+            filterBy.push(`duration:>=${min} && duration:<=${max}`);
+          } else if (min) {
+            filterBy.push(`duration:>=${min}`);
+          } else if (max) {
+            filterBy.push(`duration:<=${max}`);
+          }
+        }
+      }
+      
+      // Date filter
+      if (this.currentDateFilter) {
+        if (this.currentDateFilter.includes('-')) {
+          const [min, max] = this.currentDateFilter.split('-');
+          filterBy.push(`created:>=${min} && created:<=${max}`);
+        } else {
+          filterBy.push(`created:>=${this.currentDateFilter}`);
+        }
+      }
+      
+      const results = await this.typesenseManager.searchVideos(query, filterBy.join(' && '));
       this.displayResults(results);
     } catch (error) {
       console.error('Search error:', error);
@@ -113,12 +220,18 @@ class SearchManager {
           <!-- Thumbnail (col-2) -->
           <div class="col-2 text-end">
             <div class="edit pointer thumbnail-container bg-dark" alt="${video.title}" title="${video.title}">
-              <div class="img-fluid border bg-dark thumbnail-background"
-                   style="background-image:url('/api/getThumbnailUrl?videoId=${video.id}');
-                          height:69px; width:123px;
-                          background-repeat:no-repeat;
-                          background-size:cover;">
-              </div>
+              ${video.thumbnail ? 
+                `<div class="img-fluid border bg-dark thumbnail-background"
+                     style="background-image:url('/api/getThumbnailUrl?videoId=${video.id}');
+                            height:69px; width:123px;
+                            background-repeat:no-repeat;
+                            background-size:cover;">
+                 </div>` :
+                `<div class="img-fluid border bg-secondary d-flex align-items-center justify-content-center text-white"
+                     style="height:69px; width:123px; font-size:10px;">
+                   No Thumbnail
+                 </div>`
+              }
               <div class="duration">${duration}</div>
             </div>
           </div>

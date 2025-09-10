@@ -55,8 +55,8 @@ export class TypesenseManager {
     }
   }
 
-  // Search videos with optional query
-  async searchVideos(query = '') {
+  // Search videos with optional query and filters
+  async searchVideos(query = '', filterBy = '') {
     try {
       if (!this.client) {
         await this.initializeClient();
@@ -67,6 +67,10 @@ export class TypesenseManager {
         query_by: 'title,description',
         sort_by: 'ranking:desc'
       };
+
+      if (filterBy) {
+        searchParameters.filter_by = filterBy;
+      }
 
       const searchResults = await this.client.collections('videos').documents().search(searchParameters);
       return searchResults.hits.map(hit => hit);
