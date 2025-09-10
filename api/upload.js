@@ -65,23 +65,30 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: 'Invalid authentication token' });
         }
 
-        // Handle different Uppy S3 Multipart requests
-        const { query } = req;
-        const { type } = query;
+        // Handle different requests - check for action in body first, then query params
+        const { action } = req.body;
+        const { type } = req.query;
+        
+        const requestType = action || type;
 
-        switch (type) {
+        switch (requestType) {
             case 'getUploadParameters':
                 return handleGetUploadParameters(req, res, userId);
+            case 'create':
             case 'createMultipartUpload':
                 return handleCreateMultipartUpload(req, res, userId);
+            case 'sign':
             case 'getUploadPartURL':
                 return handleGetUploadPartURL(req, res, userId);
             case 'listParts':
                 return handleListParts(req, res, userId);
+            case 'complete':
             case 'completeMultipartUpload':
                 return handleCompleteMultipartUpload(req, res, userId);
             case 'abortMultipartUpload':
                 return handleAbortMultipartUpload(req, res, userId);
+            case 'insert':
+                return handleInsertMetadata(req, res, userId);
             default:
                 return res.status(400).json({ error: 'Invalid request type' });
         }
@@ -254,6 +261,69 @@ async function handleAbortMultipartUpload(req, res, userId) {
         console.error('Error aborting multipart upload:', error);
         return res.status(500).json({
             error: 'Failed to abort upload',
+            details: error.message
+        });
+    }
+}
+
+// Handle metadata insertion after upload completion
+async function handleInsertMetadata(req, res, userId) {
+    try {
+        const { filename, width, height, duration } = req.body;
+        
+        // Validate required fields
+        if (!filename || !width || !height || !duration) {
+            return res.status(400).json({ 
+                error: 'Missing required fields: filename, width, height, duration' 
+            });
+        }
+        
+        // Import Typesense client
+        const { getTypesenseClient } = await import('../lib/typesenseClient.js');
+        
+        // Use filename as ID (without extension)
+        const id = filename.replace(/\.[^/.]+$/, "");
+        
+        // Prepare document for Typesense
+        const document = {
+            id,
+            uid: userId,
+            filename,
+            title: filename.replace(/\.[^/.]+$/, ""), // Remove file extension for default title
+            description: '',
+            duration: parseInt(duration),
+            width: parseInt(width),
+            height: parseInt(height),
+            file_size: 0, // Will be updated later if needed
+            content_type: 'video/mp4',
+            thumbnail: '',
+            created: Math.floor(Date.now() / 1000), // Use 'created' field name for search filters
+            active: 1,
+            ranking: Math.floor(Date.now() / 1000) // Add ranking field for default sorting
+        };
+        
+        const typesenseClient = getTypesenseClient();
+        const result = await typesenseClient.collections('videos').documents().create(document);
+        
+        console.log('Video metadata inserted successfully:', result);
+        
+        return res.status(200).json({ 
+            success: true,
+            id: document.id,
+            message: 'Video metadata inserted successfully' 
+        });
+        
+    } catch (error) {
+        console.error('Error inserting video metadata:', error);
+        
+        if (error.message && error.message.includes('already exists')) {
+            return res.status(409).json({ 
+                error: 'Video with this ID already exists' 
+            });
+        }
+        
+        return res.status(500).json({
+            error: 'Failed to insert video metadata',
             details: error.message
         });
     }

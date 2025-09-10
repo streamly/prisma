@@ -17,17 +17,15 @@ export default async function handler(req, res) {
     validateMethod(req, ['POST']);
     const userId = await authenticateUser(req);
     
-    const { id, filename, file_size, content_type, duration } = req.body;
+    const { filename, width, height, duration, userId: uploadUserId } = req.body;
     
     // Validate required fields
-    if (!id || !filename) {
-      return errorResponse(res, 400, 'Missing required fields: id, filename');
+    if (!filename || !width || !height || !duration) {
+      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration');
     }
     
-    // Validate video content type
-    if (!content_type || !content_type.startsWith('video/')) {
-      return errorResponse(res, 400, 'Only video files are allowed');
-    }
+    // Use filename as ID (without extension)
+    const id = filename.replace(/\.[^/.]+$/, "");
     
     // Prepare document for Typesense
     const document = {
@@ -36,11 +34,13 @@ export default async function handler(req, res) {
       filename,
       title: filename.replace(/\.[^/.]+$/, ""), // Remove file extension for default title
       description: '',
-      duration: duration || 0,
-      file_size: file_size || 0,
-      content_type,
+      duration: parseInt(duration),
+      width: parseInt(width),
+      height: parseInt(height),
+      file_size: 0, // Will be updated later if needed
+      content_type: 'video/mp4',
       thumbnail: '',
-      created_at: Math.floor(Date.now() / 1000), // Set on backend
+      created: Math.floor(Date.now() / 1000), // Use 'created' field name for search filters
       active: 1,
       ranking: Math.floor(Date.now() / 1000) // Add ranking field for default sorting
     };

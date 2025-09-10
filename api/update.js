@@ -34,11 +34,13 @@ export default async function handler(req, res) {
         filename: existingDoc.filename,
         title: updateData.title || existingDoc.title,
         description: updateData.description !== undefined ? updateData.description : existingDoc.description,
-        duration: updateData.duration !== undefined ? updateData.duration : existingDoc.duration,
+        duration: updateData.duration !== undefined ? parseInt(updateData.duration) : existingDoc.duration,
+        width: updateData.width !== undefined ? parseInt(updateData.width) : existingDoc.width,
+        height: updateData.height !== undefined ? parseInt(updateData.height) : existingDoc.height,
         file_size: existingDoc.file_size,
         content_type: existingDoc.content_type,
         thumbnail: updateData.thumbnail !== undefined ? updateData.thumbnail : existingDoc.thumbnail,
-        created_at: existingDoc.created_at,
+        created: existingDoc.created || existingDoc.created_at, // Handle both field names
         active: updateData.active !== undefined ? updateData.active : existingDoc.active,
         updated_at: Math.floor(Date.now() / 1000)
       };

@@ -181,13 +181,14 @@
           
           try {
             const token = await Clerk.session.getToken();
-            const insertResp = await fetch('/api/insert', {
+            const insertResp = await fetch('/api/upload', {
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
               },
               body: JSON.stringify({
+                action: 'insert',
                 filename: fileKey,
                 width: file.meta.width,
                 height: file.meta.height,
