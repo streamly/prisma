@@ -1,4 +1,4 @@
-class VideoMetadataValidator extends Uppy.Plugin {
+class VideoMetadataValidator extends window.UppyModules.Uppy.Plugin {
   constructor(uppy, opts) {
     super(uppy, opts);
     this.id = opts.id || 'VideoMetadataValidator';
@@ -102,7 +102,51 @@ class UploadManager {
         maxFileSize: 1771673011, // ~1.65GB
         allowedFileTypes: ['video/mp4']
       },
-      meta: { user_id: userId }
+      meta: { user_id: userId },
+      onBeforeFileAdded: async (currentFile) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = URL.createObjectURL(currentFile.data);
+
+        return new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+            const duration = video.duration;
+            const ratio = video.videoWidth / video.videoHeight;
+
+            URL.revokeObjectURL(video.src);
+
+            if (duration < 60 || Math.abs(ratio - 16 / 9) > 0.05) {
+              alert('Video must be at least 1 minute long and 16:9 aspect ratio.');
+              resolve(false);
+              return;
+            }
+
+            // Set metadata before the file is added
+            currentFile.meta = {
+              ...currentFile.meta,
+              width: video.videoWidth,
+              height: video.videoHeight,
+              duration: Math.round(duration),
+              uid: userId,
+              fileKey: currentFile.name // or use a hash
+            };
+
+            resolve(true);
+          };
+
+          video.onerror = () => {
+            URL.revokeObjectURL(video.src);
+            resolve(false);
+          };
+
+          const ext = file.name.split('.').pop().toLowerCase();
+          if (ext !== 'mp4') {
+            alert('Only MP4 files are allowed.');
+            return false;
+          }
+          return file;
+        })
+      }
     })
       .use(Dashboard, {
         inline: true,
@@ -118,8 +162,7 @@ class UploadManager {
         signPart: this.signPart.bind(this),
         completeMultipartUpload: this.completeMultipartUpload.bind(this),
         abortMultipartUpload: this.abortMultipartUpload.bind(this)
-      })
-      .use(VideoMetadataValidator)
+      });
 
     this.setupEventListeners();
   }
