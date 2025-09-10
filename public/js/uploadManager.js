@@ -323,7 +323,6 @@ class UploadManager {
         ranking: 1
       };
   
-
       try {
         // Insert video metadata to Typesense
         const response = await fetch('/api/insert', {
