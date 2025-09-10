@@ -8,6 +8,10 @@
 
 <script>
   window.addEventListener('load', async () => {
+    while (!window.Clerk) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
     // Ensure Clerk is loaded and get token
     async function ensureClerkReady() {
       if (!window.Clerk) throw new Error('Clerk not loaded');
