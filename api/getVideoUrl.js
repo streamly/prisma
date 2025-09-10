@@ -1,4 +1,4 @@
-import { generatePresignedUrl } from '../lib/s3Client.js';
+import { generateVideoPresignedUrl } from '../lib/s3Client.js';
 import { 
   setCorsHeaders, 
   handleOptions, 
@@ -10,85 +10,116 @@ import {
 } from '../lib/apiHelpers.js';
 
 export default async function handler(req, res) {
-  setCorsHeaders(res);
-  
-  if (handleOptions(req, res)) return;
-  
   try {
-    validateMethod(req, ['POST']);
-    const userId = await authenticateUser(req);
+    setCorsHeaders(res);
     
-    const { videoId } = req.body;
-    
-    if (!videoId) {
-      return errorResponse(res, 400, 'Missing videoId parameter');
-    }
+    if (handleOptions(req, res)) return;
     
     try {
-      // Get video data from Typesense to find the filename
-      const typesenseClient = getTypesenseClient();
-      console.log('Attempting to retrieve video:', videoId);
+      validateMethod(req, ['POST']);
+      const userId = await authenticateUser(req);
       
-      const searchResult = await typesenseClient.collections('videos').documents(videoId).retrieve();
-      console.log('Typesense result:', searchResult);
+      const { videoId } = req.body;
       
-      if (!searchResult || !searchResult.filename) {
-        console.error('Video not found or missing filename:', { searchResult });
-        return errorResponse(res, 404, 'Video not found or missing filename');
+      if (!videoId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing videoId parameter'
+        });
       }
       
-      // Check if user owns this video
-      if (searchResult.uid !== userId) {
-        console.error('Access denied - user mismatch:', { videoOwner: searchResult.uid, requestingUser: userId });
-        return errorResponse(res, 403, 'Access denied');
+      try {
+        const typesenseClient = getTypesenseClient();
+        console.log('Generating presigned URL for video:', videoId);
+        
+        // Generate presigned URL with ownership check (valid for 7 days)
+        const presignedUrl = await generateVideoPresignedUrl(videoId, userId, typesenseClient, 604800);
+        
+        console.log('Presigned URL generated successfully');
+        
+        return res.status(200).json({
+          success: true,
+          url: presignedUrl,
+          expiresIn: 604800
+        });
+        
+      } catch (dbError) {
+        console.error('Database/S3 error:', {
+          message: dbError.message,
+          httpStatus: dbError.httpStatus,
+          code: dbError.code,
+          stack: dbError.stack
+        });
+        
+        if (dbError.httpStatus === 404 || dbError.message.includes('not found')) {
+          return res.status(404).json({
+            success: false,
+            error: 'Video not found in database'
+          });
+        }
+        
+        if (dbError.message.includes('Access denied')) {
+          return res.status(403).json({
+            success: false,
+            error: 'Access denied'
+          });
+        }
+        
+        return res.status(500).json({
+          success: false,
+          error: `Service error: ${dbError.message}`,
+          details: {
+            message: dbError.message,
+            stack: dbError.stack
+          }
+        });
       }
       
-      console.log('Generating presigned URL for filename:', searchResult.filename);
+    } catch (authError) {
+      console.error('Authentication/validation error:', authError);
       
-      // Generate presigned URL for video access (valid for 7 days)
-      const presignedUrl = await generatePresignedUrl(searchResult.filename, 604800); // 7 days
+      if (authError.message === 'Method not allowed') {
+        return res.status(405).json({
+          success: false,
+          error: 'Method not allowed'
+        });
+      }
       
-      console.log('Presigned URL generated successfully');
+      if (authError.message.includes('Authentication') || authError.message.includes('Invalid')) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
       
-      return successResponse(res, { 
-        url: presignedUrl,
-        expiresIn: 604800
+      return res.status(400).json({
+        success: false,
+        error: `Validation error: ${authError.message}`,
+        details: {
+          message: authError.message,
+          stack: authError.stack
+        }
       });
-      
-    } catch (dbError) {
-      console.error('Database/S3 error:', {
-        message: dbError.message,
-        httpStatus: dbError.httpStatus,
-        code: dbError.code,
-        stack: dbError.stack
+    }
+    
+  } catch (criticalError) {
+    console.error('Critical handler error:', criticalError);
+    
+    // Ensure we always return JSON, even for critical errors
+    try {
+      return res.status(500).json({
+        success: false,
+        error: `Critical server error: ${criticalError.message}`,
+        details: {
+          message: criticalError.message,
+          stack: criticalError.stack,
+          name: criticalError.name
+        }
       });
-      
-      if (dbError.httpStatus === 404) {
-        return errorResponse(res, 404, 'Video not found in database');
-      }
-      
-      return errorResponse(res, 500, `Service error: ${dbError.message}`);
+    } catch (responseError) {
+      // Last resort - if even JSON response fails
+      console.error('Failed to send JSON response:', responseError);
+      res.status(500).end('Internal Server Error');
     }
-    
-  } catch (error) {
-    console.error('Get video URL API error:', error);
-    
-    if (error.message === 'Method not allowed') {
-      return errorResponse(res, 405, error.message);
-    }
-    if (error.message.includes('Authentication')) {
-      return errorResponse(res, 401, error.message);
-    }
-    
-    // Send detailed error for development debugging
-    return res.status(500).json({
-      success: false,
-      error: `Internal server error: ${error.message}`,
-      details: {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      }
-    });
   }
 }

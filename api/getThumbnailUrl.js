@@ -1,4 +1,4 @@
-import { generatePresignedUrl } from '../lib/s3Client.js';
+import { generateThumbnailPresignedUrl } from '../lib/s3Client.js';
 import { 
   setCorsHeaders, 
   handleOptions, 
@@ -25,21 +25,10 @@ export default async function handler(req, res) {
     }
     
     try {
-      // Get video data from Typesense to find the thumbnail filename
       const typesenseClient = getTypesenseClient();
-      const searchResult = await typesenseClient.collections('videos').documents(videoId).retrieve();
       
-      if (!searchResult || !searchResult.thumbnail) {
-        return errorResponse(res, 404, 'Thumbnail not found');
-      }
-      
-      // Check if user owns this video
-      if (searchResult.uid !== userId) {
-        return errorResponse(res, 403, 'Access denied');
-      }
-      
-      // Generate presigned URL for thumbnail access (valid for 7 days)
-      const presignedUrl = await generatePresignedUrl(searchResult.thumbnail, 604800); // 7 days
+      // Generate presigned URL for thumbnail with ownership check (valid for 7 days)
+      const presignedUrl = await generateThumbnailPresignedUrl(videoId, userId, typesenseClient, 604800);
       
       return successResponse(res, { 
         url: presignedUrl,
