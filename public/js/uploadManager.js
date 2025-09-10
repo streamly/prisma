@@ -48,7 +48,44 @@ class UploadManager {
         maxFileSize: 1771673011, // ~1.65GB
         allowedFileTypes: ['video/mp4', 'video/quicktime', 'video/x-m4v']
       },
-      meta: { user_id: userId }
+      meta: { user_id: userId },
+      onBeforeFileAdded: async (currentFile) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = URL.createObjectURL(currentFile.data);
+
+        return new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+            const duration = video.duration;
+            const ratio = video.videoWidth / video.videoHeight;
+
+            URL.revokeObjectURL(video.src);
+
+            if (duration < 60 || Math.abs(ratio - 16 / 9) > 0.05) {
+              alert('Video must be at least 1 minute long and 16:9 aspect ratio.');
+              resolve(false);
+              return;
+            }
+
+            // Set metadata before the file is added
+            currentFile.meta = {
+              ...currentFile.meta,
+              width: video.videoWidth,
+              height: video.videoHeight,
+              duration: Math.round(duration),
+              uid: userId,
+              fileKey: currentFile.name // or use a hash
+            };
+
+            resolve(true);
+          };
+
+          video.onerror = () => {
+            URL.revokeObjectURL(video.src);
+            resolve(false);
+          };
+        });
+      }
     })
       .use(Dashboard, {
         inline: true,
@@ -65,24 +102,6 @@ class UploadManager {
         completeMultipartUpload: this.completeMultipartUpload.bind(this),
         abortMultipartUpload: this.abortMultipartUpload.bind(this)
       });
-
-    // File validation
-    this.uppy.on('file-added', async (file) => {
-      const ext = file.name.split('.').pop().toLowerCase();
-      const type = file.type.toLowerCase();
-
-      if (!['mp4', 'mov', 'm4v'].includes(ext) || !['video/mp4', 'video/quicktime', 'video/x-m4v'].includes(type)) {
-        this.uppy.removeFile(file.id);
-        alert('Only MP4/MOV/M4V files are allowed.');
-        return;
-      }
-
-      const isValid = await this.validateVideoFile(file);
-      if (!isValid) {
-        this.uppy.removeFile(file.id);
-        alert('Video must be at least 1 minute long and 16:9 aspect ratio.');
-      }
-    });
 
     this.setupEventListeners();
   }
