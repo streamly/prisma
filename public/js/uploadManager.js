@@ -44,7 +44,7 @@ class UploadManager {
     this.uppy = new Uppy({
       autoProceed: false,
       restrictions: {
-        allowedFileTypes: ['video/mp4', 'video/mpeg', 'video/mpeg-4'],
+        allowedFileTypes: ['video/mp4'],
         maxNumberOfFiles: 1,
         maxFileSize: 1771673011 // ~1.65GB
       },
@@ -74,6 +74,15 @@ class UploadManager {
         completeMultipartUpload: this.completeMultipartUpload.bind(this),
         abortMultipartUpload: this.abortMultipartUpload.bind(this)
       });
+
+    this.uppy.on('file-added', (file) => {
+      console.log('File added:', file);
+      if (!file.name.toLowerCase().endsWith('.mp4')) {
+        this.uppy.removeFile(file.id);
+        alert('Only MP4 files are allowed.');
+        return;
+      }
+    });
 
     this.setupEventListeners();
   }
