@@ -62,15 +62,10 @@ export default async function handler(req, res) {
         
         const typesenseClient = getTypesenseClient();
         
-        // Test if the base search key works first
-        console.log('Testing base search key...');
-        await typesenseClient.collections('videos').retrieve();
-        console.log('Base search key works, generating scoped key...');
-        
         const keyParams = {
           filter_by: `uid:${userId}`,
           include_fields: "id,uid,title,description,duration,file_size,thumbnail,created_at,active,filename,content_type",
-          expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+          expires_at: Math.floor(Date.now() / 1000) + 604800, // 1 week expiry
         };
         
         console.log('Key generation parameters:', keyParams);

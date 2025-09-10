@@ -19,6 +19,14 @@ export class VideoManager {
       this.displayVideos(videos);
     } catch (error) {
       console.error('Error loading videos:', error);
+      
+      // Check if it's an authentication error (expired API key)
+      if (error.message && error.message.includes('401') && error.message.includes('x-typesense-api-key')) {
+        console.log('Typesense API key expired, signing out user...');
+        await Clerk.signOut({ redirectUrl: '/dev/auth/' });
+        return;
+      }
+      
       this.notificationManager.showNotification('Failed to load videos', 'error');
     }
   }

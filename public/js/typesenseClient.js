@@ -55,6 +55,35 @@ export class TypesenseManager {
     }
   }
 
+  // Search videos with optional query
+  async searchVideos(query = '') {
+    try {
+      if (!this.client) {
+        await this.initializeClient();
+      }
+
+      const searchParameters = {
+        q: query || '*',
+        query_by: 'title,description',
+        sort_by: 'ranking:desc'
+      };
+
+      const searchResults = await this.client.collections('videos').documents().search(searchParameters);
+      return searchResults.hits.map(hit => hit);
+    } catch (error) {
+      console.error('Error searching videos:', error);
+      
+      // Check if it's an authentication error (expired API key)
+      if (error.message && error.message.includes('401') && error.message.includes('x-typesense-api-key')) {
+        console.log('Typesense API key expired, signing out user...');
+        await Clerk.signOut({ redirectUrl: '/dev/auth/' });
+        return [];
+      }
+      
+      throw error;
+    }
+  }
+
   // Request new API key from auth endpoint
   async requestNewApiKey() {
     try {
