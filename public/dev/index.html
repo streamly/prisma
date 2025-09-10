@@ -78,18 +78,14 @@
               <div class="thumbnail-preview" id="thumbnailPreview">
                 <span>Click to generate thumbnail</span>
               </div>
-              <input type="file" id="thumbnailUpload" accept="image/*" style="display: none;">
-              <div class="thumbnail-actions">
-                <button type="button" id="generateThumbnail" class="btn btn-secondary">Generate from Video</button>
-                <button type="button" onclick="document.getElementById('thumbnailUpload').click()" class="btn btn-secondary">Upload Custom</button>
-              </div>
+              <button type="button" id="generateThumbnail" class="btn btn-primary">Generate Thumbnail</button>
             </div>
           </form>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="modalManager.closeVideoModal()">Cancel</button>
-        <button type="button" class="btn btn-primary" id="publishBtn">Publish</button>
+        <button type="button" class="btn btn-primary" id="saveBtn">Save</button>
       </div>
     </div>
   </div>

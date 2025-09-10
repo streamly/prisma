@@ -29,11 +29,6 @@ export class ModalManager {
       generateThumbnailBtn.onclick = () => this.generateThumbnail();
     }
 
-    // Thumbnail upload input
-    const thumbnailUpload = document.getElementById('thumbnailUpload');
-    if (thumbnailUpload) {
-      thumbnailUpload.onchange = (event) => this.handleThumbnailUpload(event);
-    }
 
     // Save button (renamed from publish)
     const saveBtn = document.getElementById('saveBtn');
