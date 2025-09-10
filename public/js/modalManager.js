@@ -364,10 +364,13 @@ export class ModalManager {
 
       if (result.success) {
         this.notificationManager.showNotification('Video saved successfully', 'success');
-        this.closeVideoModal();
         
-        // Update the video card in the grid immediately
-        const videoCard = document.querySelector(`[data-video-id="${this.currentVideoData.id}"]`);
+        // Store video ID before closing modal (which nulls currentVideoData)
+        const videoId = this.currentVideoData.id;
+        const hasThumbnail = this.currentVideoData.thumbnail;
+        
+        // Update the video card in the grid immediately BEFORE closing modal
+        const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
         if (videoCard) {
           const titleElement = videoCard.querySelector('.video-title span');
           if (titleElement) {
@@ -381,19 +384,22 @@ export class ModalManager {
           }
           
           // Update thumbnail if changed
-          if (this.currentVideoData.thumbnail) {
+          if (hasThumbnail) {
             const thumbnailImg = videoCard.querySelector('.video-thumbnail img');
             if (thumbnailImg) {
               // Force reload thumbnail with cache busting
-              const thumbnailUrl = `/api/getThumbnailUrl?videoId=${this.currentVideoData.id}&t=${Date.now()}`;
+              const thumbnailUrl = `/api/getThumbnailUrl?videoId=${videoId}&t=${Date.now()}`;
               thumbnailImg.src = thumbnailUrl;
             }
           }
         }
         
-        // Update current video data
+        // Update current video data before closing
         this.currentVideoData.title = title;
         this.currentVideoData.description = description;
+        
+        // Close modal after UI updates
+        this.closeVideoModal();
       } else {
         throw new Error(result.error || 'Failed to save video');
       }
