@@ -94,33 +94,74 @@ class SearchManager {
     this.search.addWidgets([
       instantsearch.widgets.searchBox({
         container: '#searchbox',
-        placeholder: 'Search videos...',
-        showReset: false,
-        showSubmit: false,
-        cssClasses: {
-          input: 'form-control'
-        }
+        placeholder: 'Search',
+        autofocus: true,
+        showReset: true,
+        showSubmit: true
       })
     ]);
 
-    // Stats
+    // Company filter
     this.search.addWidgets([
-      instantsearch.widgets.stats({
-        container: '#stats',
+      instantsearch.widgets.refinementList({
+        container: '#channel-filter',
+        attribute: 'channel',
+        searchable: true,
+        searchablePlaceholder: 'Search companies',
+        limit: 30,
         templates: {
-          text: `
-            {{#hasNoResults}}No results{{/hasNoResults}}
-            {{#hasOneResult}}1 result{{/hasOneResult}}
-            {{#hasManyResults}}{{#helpers.formatNumber}}{{nbHits}}{{/helpers.formatNumber}} results{{/hasManyResults}}
-            found in {{processingTimeMS}}ms
-          `
+          item(data) {
+            return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${data.label} (${data.count})</label>`;
+          }
         }
       })
     ]);
 
-    // Hits
+    // Duration filter
     this.search.addWidgets([
-      instantsearch.widgets.hits({
+      instantsearch.widgets.numericMenu({
+        container: '#duration-filter',
+        attribute: 'duration',
+        items: [
+          { label: 'Any' },
+          { label: 'Under 4 minutes', start: 1, end: 239 },
+          { label: '4 - 20 minutes', start: 240, end: 1199 },
+          { label: 'Over 20 minutes', start: 1200 },
+        ]
+      })
+    ]);
+
+    // Date filter
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
+    const yesterday = today - 86400;
+    const startOfWeek = today - (now.getDay() * 86400);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000;
+
+    this.search.addWidgets([
+      instantsearch.widgets.numericMenu({
+        container: '#created-filter',
+        attribute: 'created_at',
+        items: [
+          { label: 'All', start: 0 },
+          { label: 'Today', start: today },
+          { label: 'Yesterday', start: yesterday, end: today },
+          { label: 'This Week', start: startOfWeek },
+          { label: 'This Month', start: startOfMonth },
+        ]
+      })
+    ]);
+
+    // Current refinements
+    this.search.addWidgets([
+      instantsearch.widgets.currentRefinements({
+        container: '#refinements'
+      })
+    ]);
+
+    // Hits with infinite scroll
+    this.search.addWidgets([
+      instantsearch.widgets.infiniteHits({
         container: '#hits',
         templates: {
           item: this.getHitTemplate(),
@@ -133,8 +174,8 @@ class SearchManager {
           `
         },
         cssClasses: {
-          list: 'row g-4',
-          item: 'col-lg-3 col-md-4 col-sm-6'
+          list: '',
+          item: ''
         }
       })
     ]);
@@ -142,35 +183,41 @@ class SearchManager {
 
   getHitTemplate() {
     return `
-      <div class="modern-video-card" data-video-id="{{id}}">
-        <div class="modern-video-thumbnail" onclick="openVideoModal('{{id}}')">
-          {{#thumbnail}}
-            <img src="/api/getThumbnailUrl?videoId={{id}}" alt="{{title}}" loading="lazy">
-          {{/thumbnail}}
-          {{^thumbnail}}
-            <div class="d-flex align-items-center justify-content-center h-100 bg-dark text-white">
-              <i class="bx bx-play-circle" style="font-size: 3rem;"></i>
+      <div class="row border-0 bg-transparent mb-3 edit" data-id="{{id}}" data-title="{{title}}" data-description="{{description}}" data-duration="{{duration}}" data-channel="{{channel}}" type="button" id="{{id}}">
+        <!-- Thumbnail (col-2) -->
+        <div class="col-2 text-end">
+          <div class="edit pointer thumbnail-container bg-dark" alt="{{title}}" title="{{title}}">
+            <div class="img-fluid border bg-dark thumbnail-background"
+                 style="background-image:url('/api/getThumbnailUrl?videoId={{id}}');
+                        height:69px; width:123px;
+                        background-repeat:no-repeat;
+                        background-size:cover;">
             </div>
-          {{/thumbnail}}
+            <div class="duration">{{#duration}}{{duration}}s{{/duration}}</div>
+          </div>
         </div>
-        <div class="modern-video-info">
-          <div class="modern-video-title" onclick="openVideoModal('{{id}}')">
-            {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}
+
+        <!-- Title + Channel (col) -->
+        <div class="col">
+          <h6 class="edit title-clamp m-0" title="{{title}}">{{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}</h6>
+          <div class="edit pointer text-muted small text-truncate"> 
+            {{#channel}}{{channel}}{{/channel}}
           </div>
-          {{#description}}
-            <div class="modern-video-description">
-              {{#helpers.highlight}}{ "attribute": "description" }{{/helpers.highlight}}
-            </div>
-          {{/description}}
-          <div class="modern-video-meta">
-            {{#duration}}Duration: {{duration}}s{{/duration}}
-          </div>
-          <div class="modern-video-meta">
-            {{#file_size}}Size: {{file_size}} bytes{{/file_size}}
-          </div>
-          <div class="modern-video-meta">
-            {{#created_at}}Uploaded: {{created_at}}{{/created_at}}
-          </div>
+        </div>
+        
+        <div class="col-1">
+          <div class="dropdown">
+            <a class="btn btn-link bg-transparent p-0 m-0" href="#" title="More" data-mdb-toggle="dropdown" aria-expanded="false">
+              <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a type="button" class="dropdown-item edit">Edit</a></li>
+              <li><a type="button" class="dropdown-item analytics">Analytics</a></li>    
+              <li><a type="button" class="dropdown-item conversions">Conversions</a></li> 
+              <li><a type="button" class="dropdown-item billing">Billing</a></li> 
+              <li><a type="button" class="dropdown-item trash">Trash</a></li>              
+            </ul>
+          </div>  
         </div>
       </div>
     `;

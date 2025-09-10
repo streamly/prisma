@@ -43,29 +43,28 @@
   <nav class="navbar navbar-expand-lg nav-icons bg-white fixed-top shadow-sm">
     <div class="container-fluid">
       <!-- Left section -->
-      <div class="d-flex align-items-center ps-3">
+      <div class="d-flex align-items-center ps-5">
         <a class="me-4" href="/dev/">
           <img src="/dev/syndinet-sm.jpg" height="40" class="" title="SyndiNet">
         </a>
-        <div class="search-container">
-          <div id="searchbox"></div>
-        </div>
+        <div id="searchbox" style="width:300px;"></div>
       </div>
 
       <!-- Right section -->
-      <div class="d-flex align-items-center pe-3">
-        <button class="btn btn-primary me-2" id="uploadBtn" style="display: none;">
-          <i class="bx bx-upload me-1"></i>Upload
-        </button>
+      <div class="d-flex align-items-center pe-5 ms-auto">
+        <a class="btn btn-link bg-transparent p-0 m-0 add" role="button" type="button" title="Add a Video" href="/dev/upload/"><i class="bx bx-plus bx-sm mx-4"></i></a>
+        <a class="btn btn-link bg-transparent p-0 m-0 analytics" role="button" type="button" title="Analytics"><i class="bx bx-bar-chart bx-sm mx-4"></i></a>
+        <a class="btn btn-link bg-transparent p-0 m-0 conversions" role="button" type="button" title="Conversions"><i class="bx bx-user-voice bx-sm mx-4"></i></a>
+
         <div class="dropdown">
-          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-mdb-toggle="dropdown" style="display: none;">
-            <i class="bx bx-user-circle me-1"></i>
-            <span id="userName">User</span>
-          </button>
+          <a class="btn btn-link bg-transparent p-0 m-0" href="#" title="More" data-mdb-toggle="dropdown" aria-expanded="false">
+            <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
+          </a>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="/dev/upload/"><i class="bx bx-upload me-2"></i>Upload Video</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#" id="signOutBtn"><i class="bx bx-log-out me-2"></i>Sign Out</a></li>
+            <li><a type="button" class="dropdown-item billing">Billing</a></li>
+            <li><a type="button" class="dropdown-item profile">Profile</a></li>
+            <li><a type="button" class="dropdown-item help">Help</a></li>
+            <li><a type="button" class="dropdown-item logout" id="signOutBtn">Sign Out</a></li>
           </ul>
         </div>
         <button class="btn btn-primary" id="signInBtn">Sign In</button>
@@ -73,27 +72,23 @@
     </div>
   </nav>
 
-  <!-- Main Content -->
-  <div class="container-fluid mt-4">
+  <!-- content -->
+  <div class="container-fluid p-4 mb-5">
     <div class="row">
-      <!-- Search Stats -->
-      <div class="col-12 mb-3">
-        <div id="stats"></div>
+      <div class="col-2">
+        <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Company</h5>
+        <div id="channel-filter" class="ps-2"></div>
+
+        <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Duration</h5>
+        <div id="duration-filter" class="ps-2"></div>
+
+        <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Date Added</h5>
+        <div id="created-filter" class="ps-2 mb-5"></div>
+        <div class="p-5 m-5"></div>
+        <div id="refinements" style="display:none;"></div>
       </div>
-      
-      <!-- Video Results -->
-      <div class="col-12">
-        <div id="hits"></div>
-        <div id="loading" class="loading-spinner" style="display: none;">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-        <div id="no-results" class="no-results" style="display: none;">
-          <i class="bx bx-search-alt-2" style="font-size: 3rem; color: #ddd;"></i>
-          <h4>No videos found</h4>
-          <p>Try adjusting your search terms</p>
-        </div>
+      <div class="col p-0">
+        <div id="hits" class=""></div>
       </div>
     </div>
   </div>
