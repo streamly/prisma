@@ -74,6 +74,8 @@ export class VideoManager {
     const duration = video.document.duration || 'Unknown';
     const fileSize = video.document.file_size ? this.formatFileSize(video.document.file_size) : 'Unknown size';
 
+    const description = video.document.description || '';
+    
     card.innerHTML = `
       <div class="video-thumbnail" onclick="videoManager.editVideo('${video.document.id}')" style="cursor: pointer;">
         ${thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${title}" style="width: 100%; height: 100%; object-fit: cover;">` : 'No thumbnail'}
@@ -89,6 +91,7 @@ export class VideoManager {
             </div>
           </div>
         </div>
+        <div class="video-description">${description}</div>
         <div class="video-meta">Duration: ${duration}</div>
         <div class="video-meta">Size: ${fileSize}</div>
       </div>
