@@ -82,9 +82,15 @@ class UploadManager {
       });
 
     this.uppy.on('file-added', (file) => {
-      this.uppy.setFileMeta(file.id, { uid });
-
       const video = document.createElement('video');
+      video.preload = 'metadata';
+
+      // Make sure file.data is a Blob/File
+      if (!(file.data instanceof Blob)) {
+        console.warn('File is not a Blob, skipping validation');
+        return;
+      }
+
       video.src = URL.createObjectURL(file.data);
 
       video.addEventListener('loadedmetadata', () => {
@@ -105,7 +111,7 @@ class UploadManager {
         URL.revokeObjectURL(video.src);
       });
     });
-
+    
     this.setupEventListeners();
   }
 
@@ -303,10 +309,10 @@ class UploadManager {
       let width = file.meta?.width || 0;
       let height = file.meta?.height || 0;
       let duration = file.meta?.duration || 0;
-  
+
       // Generate video ID
       const videoId = this.generateVideoId();
-  
+
       // Prepare full metadata for Typesense
       const videoMetadata = {
         id: videoId,
@@ -322,7 +328,7 @@ class UploadManager {
         thumbnail: null,
         ranking: 1
       };
-  
+
       try {
         // Insert video metadata to Typesense
         const response = await fetch('/api/insert', {
