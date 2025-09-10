@@ -18,14 +18,13 @@ export default async function handler(req, res) {
       validateMethod(req, ['POST']);
       const userId = await authenticateUser(req);
       
-      // Parse multipart form data
-      const formData = await parseFormData(req);
-      const { videoId, thumbnail, timestamp } = formData;
+      // Parse request data (blob or form data)
+      const { videoId, thumbnailBuffer, timestamp } = await parseRequestData(req);
       
-      if (!videoId || !thumbnail) {
+      if (!videoId || !thumbnailBuffer) {
         return res.status(400).json({
           success: false,
-          error: 'Missing videoId or thumbnail'
+          error: 'Missing videoId or thumbnail data'
         });
       }
       
@@ -41,41 +40,8 @@ export default async function handler(req, res) {
           });
         }
         
-        // Process image with Sharp to optimize to 5-6KB
-        let buffer = thumbnail;
-        if (typeof thumbnail === 'string') {
-          // If base64, convert to buffer
-          buffer = Buffer.from(thumbnail.split(',')[1], 'base64');
-        }
-        
-        // Optimize image with Sharp
-        const optimizedBuffer = await sharp(buffer)
-          .jpeg({ 
-            quality: 60,
-            progressive: true,
-            mozjpeg: true
-          })
-          .resize(240, 180, { 
-            fit: 'inside',
-            withoutEnlargement: true
-          })
-          .toBuffer();
-        
-        // If still too large, reduce quality further
-        let finalBuffer = optimizedBuffer;
-        if (optimizedBuffer.length > 6144) { // 6KB
-          finalBuffer = await sharp(buffer)
-            .jpeg({ 
-              quality: 40,
-              progressive: true,
-              mozjpeg: true
-            })
-            .resize(200, 150, { 
-              fit: 'inside',
-              withoutEnlargement: true
-            })
-            .toBuffer();
-        }
+        // Compress image with Sharp to 10KB max
+        let finalBuffer = await compressImageTo10KB(thumbnailBuffer);
         
         // Save as videoId.jpg
         const filename = `${videoId}.jpg`;
@@ -96,7 +62,7 @@ export default async function handler(req, res) {
         console.log('Thumbnail processed and uploaded:', {
           videoId,
           filename,
-          originalSize: buffer.length,
+          originalSize: thumbnailBuffer.length,
           optimizedSize: finalBuffer.length,
           timestamp
         });
@@ -105,7 +71,7 @@ export default async function handler(req, res) {
           success: true,
           message: 'Thumbnail processed and saved successfully',
           filename,
-          originalSize: buffer.length,
+          originalSize: thumbnailBuffer.length,
           optimizedSize: finalBuffer.length
         });
         
@@ -148,8 +114,8 @@ export default async function handler(req, res) {
   }
 }
 
-// Simple multipart form parser for thumbnail upload
-async function parseFormData(req) {
+// Parse request data - handles both blob and form data
+async function parseRequestData(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let totalLength = 0;
@@ -167,38 +133,51 @@ async function parseFormData(req) {
     req.on('end', () => {
       try {
         const buffer = Buffer.concat(chunks);
-        const boundary = req.headers['content-type'].split('boundary=')[1];
+        const contentType = req.headers['content-type'] || '';
         
-        if (!boundary) {
-          reject(new Error('Invalid multipart data'));
-          return;
-        }
-        
-        const parts = buffer.toString('binary').split(`--${boundary}`);
-        const formData = {};
-        
-        for (const part of parts) {
-          if (part.includes('Content-Disposition')) {
-            const nameMatch = part.match(/name="([^"]+)"/);
-            if (!nameMatch) continue;
-            
-            const fieldName = nameMatch[1];
-            const contentStart = part.indexOf('\r\n\r\n') + 4;
-            const contentEnd = part.lastIndexOf('\r\n');
-            
-            if (fieldName === 'thumbnail') {
-              // Extract binary data for thumbnail
-              const binaryStart = buffer.indexOf('\r\n\r\n', buffer.indexOf(`name="${fieldName}"`)) + 4;
-              const binaryEnd = buffer.indexOf(`\r\n--${boundary}`, binaryStart);
-              formData[fieldName] = buffer.slice(binaryStart, binaryEnd);
-            } else {
-              // Extract text data
-              formData[fieldName] = part.substring(contentStart, contentEnd);
+        // Handle multipart form data
+        if (contentType.includes('multipart/form-data')) {
+          const boundary = contentType.split('boundary=')[1];
+          if (!boundary) {
+            reject(new Error('Invalid multipart data'));
+            return;
+          }
+          
+          const parts = buffer.toString('binary').split(`--${boundary}`);
+          const formData = {};
+          
+          for (const part of parts) {
+            if (part.includes('Content-Disposition')) {
+              const nameMatch = part.match(/name="([^"]+)"/);
+              if (!nameMatch) continue;
+              
+              const fieldName = nameMatch[1];
+              
+              if (fieldName === 'thumbnail') {
+                // Extract binary data for thumbnail
+                const binaryStart = buffer.indexOf('\r\n\r\n', buffer.indexOf(`name="${fieldName}"`)) + 4;
+                const binaryEnd = buffer.indexOf(`\r\n--${boundary}`, binaryStart);
+                formData.thumbnailBuffer = buffer.slice(binaryStart, binaryEnd);
+              } else {
+                // Extract text data
+                const contentStart = part.indexOf('\r\n\r\n') + 4;
+                const contentEnd = part.lastIndexOf('\r\n');
+                formData[fieldName] = part.substring(contentStart, contentEnd);
+              }
             }
           }
+          
+          resolve(formData);
+        } 
+        // Handle raw blob data with query parameters
+        else {
+          const url = new URL(req.url, `http://${req.headers.host}`);
+          resolve({
+            videoId: url.searchParams.get('videoId'),
+            timestamp: url.searchParams.get('timestamp'),
+            thumbnailBuffer: buffer
+          });
         }
-        
-        resolve(formData);
       } catch (error) {
         reject(error);
       }
@@ -206,4 +185,49 @@ async function parseFormData(req) {
     
     req.on('error', reject);
   });
+}
+
+// Compress image to 10KB maximum using Sharp
+async function compressImageTo10KB(buffer) {
+  const maxSize = 10240; // 10KB
+  let quality = 80;
+  let width = 240;
+  let height = 180;
+  
+  // Try different compression settings until under 10KB
+  while (quality > 10) {
+    try {
+      const compressed = await sharp(buffer)
+        .jpeg({ 
+          quality,
+          progressive: true,
+          mozjpeg: true
+        })
+        .resize(width, height, { 
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .toBuffer();
+      
+      if (compressed.length <= maxSize) {
+        return compressed;
+      }
+      
+      // Reduce quality and dimensions
+      quality -= 10;
+      if (quality <= 40) {
+        width = Math.max(160, width - 20);
+        height = Math.max(120, height - 15);
+      }
+    } catch (error) {
+      console.error('Sharp compression error:', error);
+      throw new Error('Image compression failed');
+    }
+  }
+  
+  // Final attempt with minimum settings
+  return await sharp(buffer)
+    .jpeg({ quality: 10, progressive: true })
+    .resize(160, 120, { fit: 'inside' })
+    .toBuffer();
 }

@@ -183,7 +183,21 @@ export class ModalManager {
         return;
       }
       
-      // Send to backend for processing
+      // Display preview immediately from canvas
+      const url = URL.createObjectURL(blob);
+      const thumbnailPreview = document.getElementById('thumbnailPreview');
+      thumbnailPreview.innerHTML = `
+        <img src="${url}" alt="Generated thumbnail">
+        <div class="thumbnail-info">Size: ${(blob.size / 1024).toFixed(1)}KB</div>
+      `;
+      
+      // Store thumbnail data
+      this.currentVideoData.thumbnailBlob = blob;
+      this.currentVideoData.thumbnailTimestamp = videoElement.currentTime;
+      
+      this.notificationManager.showNotification('Thumbnail generated successfully', 'success');
+      
+      // Send to backend for processing (optional - for saving to S3)
       await this.uploadThumbnailToCapture(blob);
       
     } catch (error) {
@@ -225,44 +239,48 @@ export class ModalManager {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('videoId', this.currentVideoData.id);
-      formData.append('thumbnail', blob, 'thumbnail.jpg');
-      formData.append('timestamp', document.getElementById('videoElement').currentTime || 0);
+      // Build query parameters for blob upload
+      const params = new URLSearchParams({
+        videoId: this.currentVideoData.id
+      });
       
-      const response = await fetch('/api/capture', {
+      if (this.currentVideoData.thumbnailTimestamp !== undefined) {
+        params.append('timestamp', this.currentVideoData.thumbnailTimestamp.toString());
+      }
+
+      // Send raw blob data directly
+      const response = await fetch(`/api/capture?${params}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${await Clerk.session.getToken()}`
+          'Authorization': `Bearer ${await Clerk.session.getToken()}`,
+          'Content-Type': 'application/octet-stream'
         },
-        body: formData
+        body: blob
       });
 
       const result = await response.json();
 
       if (result.success) {
-        // Display preview using IMAGE_HOST
-        const imageUrl = `${process.env.IMAGE_HOST || 'https://f6b3.c13.e2-3.dev/videos'}/${this.currentVideoData.id}.jpg?t=${Date.now()}`;
-        const thumbnailPreview = document.getElementById('thumbnailPreview');
-        thumbnailPreview.innerHTML = `
-          <img src="${imageUrl}" alt="Generated thumbnail">
-          <div class="thumbnail-info">Size: ${(blob.size / 1024).toFixed(1)}KB → Optimized</div>
-        `;
+        console.log('Thumbnail uploaded and compressed:', result);
+        this.currentVideoData.thumbnail = result.filename;
         
-        this.currentVideoData.thumbnail = `${this.currentVideoData.id}.jpg`;
-        this.notificationManager.showNotification('Thumbnail generated and optimized successfully', 'success');
+        // Show compression info
+        if (result.originalSize && result.optimizedSize) {
+          const compressionRatio = ((result.originalSize - result.optimizedSize) / result.originalSize * 100).toFixed(1);
+          console.log(`Thumbnail compressed: ${(result.originalSize/1024).toFixed(1)}KB → ${(result.optimizedSize/1024).toFixed(1)}KB (${compressionRatio}% reduction)`);
+        }
       } else {
-        throw new Error(result.error || 'Failed to process thumbnail');
+        console.error('Thumbnail upload failed:', result.error);
+        this.notificationManager.showNotification('Failed to save thumbnail to S3', 'error');
       }
     } catch (error) {
       console.error('Error uploading thumbnail:', error);
-      this.notificationManager.showNotification('Failed to process thumbnail', 'error');
+      this.notificationManager.showNotification('Failed to upload thumbnail', 'error');
     }
   }
 
-  // Handle thumbnail file upload
-  handleThumbnailUpload(event) {
-    const file = event.target.files[0];
+  // Handle custom thumbnail file upload
+  handleCustomThumbnail(file) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -280,44 +298,6 @@ export class ModalManager {
     reader.readAsDataURL(file);
   }
 
-  // Upload thumbnail to backend
-  async uploadThumbnail() {
-    if (!this.currentVideoData || !this.currentVideoData.thumbnailBlob) {
-      this.notificationManager.showNotification('Please generate a thumbnail first', 'error');
-      return;
-    }
-
-    try {
-      const base64Data = await this.blobToBase64(this.currentVideoData.thumbnailBlob);
-      
-      const response = await fetch('/api/uploadThumbnail', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await Clerk.session.getToken()}`
-        },
-        body: JSON.stringify({
-          videoId: this.currentVideoData.id,
-          thumbnailData: base64Data,
-          timestamp: this.currentVideoData.thumbnailTimestamp || 0
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        this.currentVideoData.thumbnail = result.thumbnailFilename;
-        this.notificationManager.showNotification('Thumbnail uploaded successfully', 'success');
-        return result.thumbnailFilename;
-      } else {
-        throw new Error(result.error || 'Failed to upload thumbnail');
-      }
-    } catch (error) {
-      console.error('Error uploading thumbnail:', error);
-      this.notificationManager.showNotification('Failed to upload thumbnail', 'error');
-      throw error;
-    }
-  }
 
   // Convert blob to base64
   blobToBase64(blob) {
@@ -345,10 +325,8 @@ export class ModalManager {
     }
 
     try {
-      // Upload thumbnail if one was generated
-      if (this.currentVideoData.thumbnailBlob && !this.currentVideoData.thumbnail) {
-        await this.uploadThumbnail();
-      }
+      // Thumbnail is already uploaded via uploadThumbnailToCapture during generation
+      // No need to upload again here
 
       const updateData = {
         id: this.currentVideoData.id,
@@ -376,19 +354,34 @@ export class ModalManager {
         this.notificationManager.showNotification('Video saved successfully', 'success');
         this.closeVideoModal();
         
-        // Update the video card in the grid
+        // Update the video card in the grid immediately
         const videoCard = document.querySelector(`[data-video-id="${this.currentVideoData.id}"]`);
         if (videoCard) {
           const titleElement = videoCard.querySelector('.video-title span');
           if (titleElement) {
             titleElement.textContent = title;
           }
+          
+          // Update description if visible
+          const descElement = videoCard.querySelector('.video-description');
+          if (descElement) {
+            descElement.textContent = description;
+          }
+          
+          // Update thumbnail if changed
+          if (this.currentVideoData.thumbnail) {
+            const thumbnailImg = videoCard.querySelector('.video-thumbnail img');
+            if (thumbnailImg) {
+              // Force reload thumbnail with cache busting
+              const thumbnailUrl = `/api/getThumbnailUrl?videoId=${this.currentVideoData.id}&t=${Date.now()}`;
+              thumbnailImg.src = thumbnailUrl;
+            }
+          }
         }
         
-        // Refresh video manager if available
-        if (this.videoManager) {
-          this.videoManager.refreshCurrentView();
-        }
+        // Update current video data
+        this.currentVideoData.title = title;
+        this.currentVideoData.description = description;
       } else {
         throw new Error(result.error || 'Failed to save video');
       }

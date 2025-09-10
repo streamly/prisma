@@ -50,6 +50,11 @@ export class VideoManager {
     });
   }
 
+  // Refresh current view after updates
+  refreshCurrentView() {
+    this.loadVideos();
+  }
+
   // Create a video card element
   async createVideoCard(video) {
     const card = document.createElement('div');
