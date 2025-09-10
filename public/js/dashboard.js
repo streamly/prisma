@@ -175,7 +175,10 @@ $("#vodModal").on("hidden.bs.modal", function () {
     const uploaded = $(this).data('uploaded');
     if (uploaded) {
         $(this).removeData('uploaded');
-        location.href = location.pathname;
+        // Remove URL parameters but keep search results
+        const url = new URL(window.location);
+        url.searchParams.delete('v');
+        window.history.replaceState({}, '', url);
     }
 });
 
@@ -420,13 +423,14 @@ $(document).ready(async function () {
                 .setQuery("")
                 .setQueryParameter("filters", `id:${v}`)
                 .search();
+            
+            // Only auto-open modal if there's a specific video ID in URL
+            setTimeout(function () {
+                $("#vodModal").data("uploaded", 1);
+                $(".edit").first().trigger("click");
+            }, 1000);
         }
     }
-
-    setTimeout(function () {
-        $("#vodModal").data("uploaded", 1);
-        $(".edit").first().trigger("click");
-    }, 1000);
 });
 
 // Reload functionality
