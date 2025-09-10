@@ -2,6 +2,9 @@
  * Search functionality using InstantSearch.js and Typesense
  */
 
+import { TYPESENSE_HOST } from './config.js';
+import { TypesenseManager } from './typesenseClient.js';
+
 class SearchManager {
   constructor() {
     this.search = null;
