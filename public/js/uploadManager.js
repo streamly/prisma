@@ -229,51 +229,70 @@ class UploadManager {
       return;
     }
 
-    if (result.successful?.length > 0) {
-      const uploadedFile = result.successful[0];
-      const file = uploadedFile.data;
-
-      const videoId = this.generateVideoId();
-      const metadata = {
-        id: videoId,
-        title: file.name.replace(/\.[^/.]+$/, ""),
-        description: '',
-        filename: file.name,
-        file_size: file.size,
-        content_type: file.type,
-        duration: file.meta?.duration || 0,
-        width: file.meta?.width || 0,
-        height: file.meta?.height || 0,
-        created: Math.floor(Date.now() / 1000),
-        thumbnail: null,
-        ranking: 1
-      };
-
-      try {
-        const response = await fetch('/api/insert', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await Clerk.session.getToken()}`
-          },
-          body: JSON.stringify(metadata)
-        });
-
-        const insertResult = await response.json();
-        if (insertResult.success) {
-          this.showStatus('Upload complete! Redirecting...', 'success');
-          setTimeout(() => {
-            window.location.href = `/dev/?v=${videoId}`;
-          }, 1000);
-        } else {
-          throw new Error(insertResult.error || 'Insert failed');
-        }
-      } catch (error) {
-        console.error('Failed to insert metadata:', error);
-        this.showError('Upload successful but metadata failed. Please try again.');
-      }
-    } else {
+    if (!result.successful?.length) {
       this.showError('No files uploaded.');
+      return;
+    }
+
+    const uploadedFile = result.successful[0];
+    const file = uploadedFile.data;
+
+    // Prefer using a stable/upload key as filename (S3 key).
+    // If you created a key in meta (e.g. file.meta.fileKey), use that; otherwise use file.name
+    const filename = file.meta?.fileKey || file.name;
+
+    const width = file.meta?.width || 0;
+    const height = file.meta?.height || 0;
+    const duration = file.meta?.duration || 0;
+
+    // If your server expects `filename` to be unique id, consider sending `id` too:
+    const videoId = this.generateVideoId();
+
+    const payload = {
+      // send the filename used in S3 (must match server expectation)
+      filename,
+      width,
+      height,
+      duration,
+      // Optional: allow server to use provided id rather than deriving it from filename
+      id: videoId
+    };
+
+    try {
+      const token = await Clerk.session.getToken();
+      const resp = await fetch('/api/insert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await resp.json();
+
+      if (!resp.ok) {
+        console.error('Insert failed', json);
+        const msg = json?.error || json?.message || resp.statusText;
+        this.showError(`Failed to save metadata: ${msg}`);
+        return;
+      }
+
+      // server returns { success: true, id }
+      if (json.success) {
+        this.showStatus('Upload and metadata saved! Redirecting...', 'success');
+        setTimeout(() => {
+          // prefer redirect to the id returned by server (if present)
+          const idToOpen = json.id || videoId || filename.replace(/\.[^/.]+$/, '');
+          window.location.href = `/dev/?v=${encodeURIComponent(idToOpen)}`;
+        }, 900);
+      } else {
+        console.error('Insert API responded but success=false', json);
+        this.showError('Metadata save failed. Check server logs.');
+      }
+    } catch (err) {
+      console.error('Network / unexpected error inserting metadata:', err);
+      this.showError('Upload succeeded but saving metadata failed. Please try again later.');
     }
   }
 

@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     }
     
     // Use filename as ID (without extension)
-    const id = filename.replace(/\.[^/.]+$/, "");
+    const id = req.body.id || filename.replace(/\.[^/.]+$/, "");
     
     // Prepare document for Typesense
     const document = {
