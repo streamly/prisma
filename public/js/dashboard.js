@@ -243,7 +243,10 @@ function getCookie(name) {
 // Check authentication and get API key
 async function initializeSearch() {
     try {
-        // Wait for Clerk to load
+        // Wait for Clerk to be available and load
+        if (typeof Clerk === 'undefined') {
+            throw new Error('Clerk is not loaded');
+        }
         await Clerk.load();
 
         // Check if user is signed in
@@ -435,8 +438,25 @@ async function startSearch() {
     return search;
 }
 
+// Wait for Clerk to load before initializing
+function waitForClerk() {
+    return new Promise((resolve) => {
+        if (typeof Clerk !== 'undefined') {
+            resolve();
+        } else {
+            const checkClerk = setInterval(() => {
+                if (typeof Clerk !== 'undefined') {
+                    clearInterval(checkClerk);
+                    resolve();
+                }
+            }, 100);
+        }
+    });
+}
+
 // Initialize search when DOM is ready
 $(document).ready(async function () {
+    await waitForClerk();
     const search = await startSearch();
 
     // Handle URL parameters after search is initialized
