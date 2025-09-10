@@ -35,10 +35,10 @@ export class ModalManager {
       thumbnailUpload.onchange = (event) => this.handleThumbnailUpload(event);
     }
 
-    // Publish button
-    const publishBtn = document.getElementById('publishBtn');
-    if (publishBtn) {
-      publishBtn.onclick = () => this.publishVideo();
+    // Save button (renamed from publish)
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+      saveBtn.onclick = () => this.saveVideo();
     }
   }
 
@@ -132,20 +132,17 @@ export class ModalManager {
     this.currentVideoData = null;
   }
 
-  // Generate thumbnail from video at current timestamp
+  // Generate thumbnail from current video frame
   async generateThumbnail() {
-    const videoElement = document.getElementById('videoElement');
-    if (videoElement.videoWidth === 0) {
-      this.notificationManager.showNotification('Please wait for video to load', 'info');
-      return;
-    }
+    const videoElement = document.getElementById('videoPlayer');
+    if (!videoElement) return;
 
     try {
-      // Create canvas to capture frame
+      // Create canvas with CORS-safe approach
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      // Set canvas size (limit to reasonable dimensions for compression)
+      // Set max dimensions to keep file size down
       const maxWidth = 320;
       const maxHeight = 240;
       const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
@@ -162,11 +159,11 @@ export class ModalManager {
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
       
-      // Draw current frame
+      // Draw current frame - this works because video is from same origin
       ctx.drawImage(videoElement, 0, 0, canvasWidth, canvasHeight);
       
-      // Convert to compressed blob
-      const blob = await this.compressThumbnail(canvas);
+      // Convert canvas to blob with error handling for CORS
+      const blob = await this.canvasToBlob(canvas);
       
       if (blob.size > 10240) { // 10KB limit
         this.notificationManager.showNotification('Thumbnail too large. Try a different frame.', 'error');
@@ -193,23 +190,70 @@ export class ModalManager {
     }
   }
 
-  // Compress thumbnail to ensure it's under 10KB
-  async compressThumbnail(canvas) {
-    return new Promise((resolve) => {
+  // Convert canvas to blob with CORS safety
+  async canvasToBlob(canvas) {
+    return new Promise((resolve, reject) => {
       let quality = 0.8;
       
       const tryCompress = () => {
-        canvas.toBlob((blob) => {
-          if (blob.size <= 10240 || quality <= 0.1) {
-            resolve(blob);
+        try {
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Failed to create blob from canvas'));
+              return;
+            }
+            
+            if (blob.size <= 10240 || quality <= 0.1) {
+              resolve(blob);
+            } else {
+              quality -= 0.1;
+              tryCompress();
+            }
+          }, 'image/jpeg', quality);
+        } catch (error) {
+          // If canvas is tainted, try alternative approach
+          if (error.name === 'SecurityError') {
+            this.generateThumbnailFromVideoElement(canvas)
+              .then(resolve)
+              .catch(reject);
           } else {
-            quality -= 0.1;
-            tryCompress();
+            reject(error);
           }
-        }, 'image/jpeg', quality);
+        }
       };
       
       tryCompress();
+    });
+  }
+  
+  // Alternative thumbnail generation for CORS issues
+  async generateThumbnailFromVideoElement(canvas) {
+    // Create a new video element with crossOrigin attribute
+    const videoElement = document.getElementById('videoPlayer');
+    const tempVideo = document.createElement('video');
+    tempVideo.crossOrigin = 'anonymous';
+    tempVideo.src = videoElement.src;
+    tempVideo.currentTime = videoElement.currentTime;
+    
+    return new Promise((resolve, reject) => {
+      tempVideo.onloadeddata = () => {
+        try {
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to generate thumbnail'));
+            }
+          }, 'image/jpeg', 0.8);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      tempVideo.onerror = () => reject(new Error('Failed to load video for thumbnail'));
     });
   }
 
@@ -241,7 +285,6 @@ export class ModalManager {
     }
 
     try {
-      // Convert blob to base64
       const base64Data = await this.blobToBase64(this.currentVideoData.thumbnailBlob);
       
       const response = await fetch('/api/uploadThumbnail', {
@@ -253,22 +296,23 @@ export class ModalManager {
         body: JSON.stringify({
           videoId: this.currentVideoData.id,
           thumbnailData: base64Data,
-          timestamp: this.currentVideoData.thumbnailTimestamp
+          timestamp: this.currentVideoData.thumbnailTimestamp || 0
         })
       });
 
       const result = await response.json();
 
       if (result.success) {
-        this.notificationManager.showNotification('Thumbnail uploaded successfully', 'success');
-        // Update current video data with thumbnail filename
         this.currentVideoData.thumbnail = result.thumbnailFilename;
+        this.notificationManager.showNotification('Thumbnail uploaded successfully', 'success');
+        return result.thumbnailFilename;
       } else {
         throw new Error(result.error || 'Failed to upload thumbnail');
       }
     } catch (error) {
       console.error('Error uploading thumbnail:', error);
-      this.notificationManager.showNotification(`Failed to upload thumbnail: ${error.message}`, 'error');
+      this.notificationManager.showNotification('Failed to upload thumbnail', 'error');
+      throw error;
     }
   }
 
@@ -282,9 +326,12 @@ export class ModalManager {
     });
   }
 
-  // Publish video (update details)
-  async publishVideo() {
-    if (!this.currentVideoData) return;
+  // Save video metadata (unified save function)
+  async saveVideo() {
+    if (!this.currentVideoData || !this.currentVideoData.id) {
+      this.notificationManager.showNotification('No video data available', 'error');
+      return;
+    }
 
     const title = document.getElementById('videoTitle').value.trim();
     const description = document.getElementById('videoDescription').value.trim();
@@ -306,11 +353,9 @@ export class ModalManager {
         description: description
       };
 
-      // If thumbnail was generated/uploaded, include it
-      if (this.currentVideoData.thumbnailBlob) {
-        // In a real implementation, you'd upload the thumbnail to storage first
-        // For now, we'll just include a placeholder
-        updateData.thumbnail = 'thumbnail-url-placeholder';
+      // Include thumbnail if available
+      if (this.currentVideoData.thumbnail) {
+        updateData.thumbnail = this.currentVideoData.thumbnail;
       }
 
       const response = await fetch('/api/update', {
@@ -325,21 +370,28 @@ export class ModalManager {
       const result = await response.json();
 
       if (result.success) {
-        this.notificationManager.showNotification('Video details updated successfully', 'success');
+        this.notificationManager.showNotification('Video saved successfully', 'success');
         this.closeVideoModal();
         
         // Update the video card in the grid
         const videoCard = document.querySelector(`[data-video-id="${this.currentVideoData.id}"]`);
         if (videoCard) {
           const titleElement = videoCard.querySelector('.video-title span');
-          titleElement.textContent = title;
+          if (titleElement) {
+            titleElement.textContent = title;
+          }
+        }
+        
+        // Refresh video manager if available
+        if (this.videoManager) {
+          this.videoManager.refreshCurrentView();
         }
       } else {
-        throw new Error(result.error || 'Failed to update video');
+        throw new Error(result.error || 'Failed to save video');
       }
     } catch (error) {
-      console.error('Failed to update video:', error);
-      this.notificationManager.showNotification('Failed to update video details', 'error');
+      console.error('Failed to save video:', error);
+      this.notificationManager.showNotification('Failed to save video', 'error');
     }
   }
 }
