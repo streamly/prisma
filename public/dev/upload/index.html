@@ -7,6 +7,7 @@
 
   <!-- Uppy CSS -->
   <link href="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/upload.css">
   
   <!-- Clerk JS SDK -->
   <script 
@@ -16,205 +17,34 @@
     src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
     type="text/javascript">
   </script>
-</head>
-<body>
-  <div id="uppy-container" class="vh-100"></div>
 
   <!-- JS Libraries -->
   <script src="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="/js/authGuard.js"></script>
+  <script src="/js/uploadManager.js"></script>
+</head>
+<body>
+  <h1>Upload a Video</h1>
+  <p>Upload your video content to SyndiNet. Supported formats include MP4.</p>
+  <div id="uppy-container"></div>
+  
+  <div id="upload-status" class="upload-status"></div>
+
+  <!-- Navigation link styled as a button -->
+  <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
 
   <script>
-    // Wait for Clerk to load
-    async function waitForClerk() {
-      return new Promise((resolve) => {
-        if (typeof Clerk !== 'undefined') {
-          resolve();
-        } else {
-          const checkClerk = setInterval(() => {
-            if (typeof Clerk !== 'undefined') {
-              clearInterval(checkClerk);
-              resolve();
-            }
-          }, 100);
-        }
-      });
-    }
-
-    // Get authenticated user ID
-    async function getUserId() {
-      await waitForClerk();
-      await Clerk.load();
+    // Initialize upload manager when page loads
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Initialize auth guard first
+      const authGuard = new AuthGuard();
+      await authGuard.init();
       
-      if (!Clerk.session || !Clerk.user) {
-        Clerk.redirectToSignIn({ redirectUrl: window.location.href });
-        return null;
-      }
-      
-      return Clerk.user.id;
-    }
-
-    // Initialize Uppy
-    async function initUppy() {
-      const userId = await getUserId();
-      if (!userId) return;
-
-      const uppy = new Uppy.Core({
-        restrictions: {
-          minNumberOfFiles: 1,
-          maxNumberOfFiles: 1,
-          maxFileSize: 1771673011, // ~1.65GB
-          minFileSize: 1000,
-          allowedFileTypes: ['video/mp4']
-        },
-        autoProceed: false
-      })
-      .use(Uppy.Dashboard, {
-        target: '#uppy-container',
-        inline: true,
-        height: '75vh',
-        width: '100%',
-        proudlyDisplayPoweredByUppy: false,
-        note: 'Your video must be MP4, 1min–1.65GB. Business content only.',
-        locale: {
-          strings: {
-            poweredBy: '',
-            dropPasteFiles: 'Drag and drop a video or %{browseFiles}'
-          }
-        }
-      })
-      .use(Uppy.AwsS3Multipart, {
-        limit: 5,
-        async createMultipartUpload(file) {
-          const fileKey = md5(Date.now() + '_' + file.name.replace(/\s+/g, '_'));
-          uppy.setFileMeta(file.id, { fileKey });
-
-          const token = await Clerk.session.getToken();
-          const resp = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-              action: 'create',
-              filename: fileKey, 
-              contentType: file.type 
-            })
-          });
-
-          if (!resp.ok) throw new Error('Failed to init multipart upload');
-          return resp.json(); // { uploadId, key }
-        },
-        async signPart(file, { key, uploadId, partNumber }) {
-          const token = await Clerk.session.getToken();
-          const resp = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-              action: 'sign',
-              key, 
-              uploadId, 
-              partNumber 
-            })
-          });
-
-          if (!resp.ok) throw new Error('Failed to sign part');
-          const { url } = await resp.json();
-          return { url };
-        },
-        async completeMultipartUpload(file, { key, uploadId, parts }) {
-          const token = await Clerk.session.getToken();
-          const resp = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-              action: 'complete',
-              key, 
-              uploadId, 
-              parts 
-            })
-          });
-
-          if (!resp.ok) throw new Error('Failed to complete upload');
-          return resp.json();
-        }
-      });
-
-      // Validate video metadata on file add
-      uppy.on('file-added', (file) => {
-        uppy.setFileMeta(file.id, { userId });
-
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(file.data);
-
-        video.addEventListener('loadedmetadata', () => {
-          const duration = video.duration;
-
-          if (duration <= 59) {
-            uppy.removeFile(file.id);
-            alert("Video must be at least 1 minute long.");
-          } else {
-            uppy.setFileMeta(file.id, {
-              width: video.videoWidth,
-              height: video.videoHeight,
-              duration: Math.round(duration)
-            });
-          }
-
-          URL.revokeObjectURL(video.src);
-        });
-      });
-
-      // Send metadata to insert API after successful upload
-      uppy.on('complete', async (result) => {
-        if (result.successful.length) {
-          const file = result.successful[0];
-          const fileKey = file.meta.fileKey;
-          
-          try {
-            const token = await Clerk.session.getToken();
-            const insertResp = await fetch('/api/upload', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                action: 'insert',
-                filename: fileKey,
-                width: file.meta.width,
-                height: file.meta.height,
-                duration: file.meta.duration,
-                userId: file.meta.userId
-              })
-            });
-
-            if (insertResp.ok) {
-              const insertResult = await insertResp.json();
-              // Redirect to dashboard with success
-              window.location.href = "/dev/index.html?uploaded=1";
-            } else {
-              console.error('Failed to insert video metadata');
-              alert('Upload completed but failed to save metadata. Please contact support.');
-            }
-          } catch (error) {
-            console.error('Error inserting video metadata:', error);
-            alert('Upload completed but failed to save metadata. Please contact support.');
-          }
-        }
-      });
-    }
-
-    // Initialize when page loads
-    document.addEventListener('DOMContentLoaded', initUppy);
+      // Initialize upload manager
+      const uploadManager = new UploadManager('#uppy-container', '#upload-status');
+      await uploadManager.init();
+    });
   </script>
 </body>
 </html>
