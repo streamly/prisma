@@ -15,10 +15,10 @@ export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
   
   try {
-    validateMethod(req, ['GET']);
+    validateMethod(req, ['POST']);
     const userId = await authenticateUser(req);
     
-    const { videoId } = req.query;
+    const { videoId } = req.body;
     
     if (!videoId) {
       return errorResponse(res, 400, 'Missing videoId parameter');

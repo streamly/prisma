@@ -6,14 +6,19 @@ export const TYPESENSE_HOST = 't1.tubie.cx';
 // Get video URL using video ID
 export async function getVideoUrl(videoId) {
   try {
-    const response = await fetch(`/api/getVideoUrl?videoId=${videoId}`, {
+    const response = await fetch('/api/getVideoUrl', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${await Clerk.session.getToken()}`
-      }
+      },
+      body: JSON.stringify({ videoId })
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json();
+      console.error('Server error details:', errorData);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Unknown error'}`);
     }
     
     const data = await response.json();
@@ -27,17 +32,22 @@ export async function getVideoUrl(videoId) {
 // Get thumbnail URL using video ID
 export async function getThumbnailUrl(videoId) {
   try {
-    const response = await fetch(`/api/getThumbnailUrl?videoId=${videoId}`, {
+    const response = await fetch('/api/getThumbnailUrl', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${await Clerk.session.getToken()}`
-      }
+      },
+      body: JSON.stringify({ videoId })
     });
     
     if (!response.ok) {
       if (response.status === 404) {
         return null; // No thumbnail available
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json();
+      console.error('Thumbnail server error details:', errorData);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Unknown error'}`);
     }
     
     const data = await response.json();

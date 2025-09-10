@@ -15,10 +15,10 @@ export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
   
   try {
-    validateMethod(req, ['GET']);
+    validateMethod(req, ['POST']);
     const userId = await authenticateUser(req);
     
-    const { videoId } = req.query;
+    const { videoId } = req.body;
     
     if (!videoId) {
       return errorResponse(res, 400, 'Missing videoId parameter');
@@ -79,6 +79,16 @@ export default async function handler(req, res) {
     if (error.message.includes('Authentication')) {
       return errorResponse(res, 401, error.message);
     }
-    return errorResponse(res, 500, `Internal server error: ${error.message}`);
+    
+    // Send detailed error for development debugging
+    return res.status(500).json({
+      success: false,
+      error: `Internal server error: ${error.message}`,
+      details: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      }
+    });
   }
 }
