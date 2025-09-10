@@ -1,4 +1,4 @@
-import { getVideoUrl } from './config.js';
+import { getVideoUrl, getThumbnailUrl } from './config.js';
 
 // Video management functionality
 export class VideoManager {
@@ -36,26 +36,34 @@ export class VideoManager {
     noVideos.style.display = 'none';
     videoGrid.innerHTML = '';
 
-    videos.forEach(video => {
-      const videoCard = this.createVideoCard(video);
+    videos.forEach(async (video) => {
+      const videoCard = await this.createVideoCard(video);
       videoGrid.appendChild(videoCard);
     });
   }
 
   // Create a video card element
-  createVideoCard(video) {
+  async createVideoCard(video) {
     const card = document.createElement('div');
     card.className = 'video-card';
     card.dataset.videoId = video.document.id;
 
-    const thumbnailUrl = video.document.thumbnail || '';
+    // Get thumbnail URL if available
+    let thumbnailSrc = null;
+    try {
+      if (video.document.thumbnail) {
+        thumbnailSrc = await getThumbnailUrl(video.document.id);
+      }
+    } catch (error) {
+      console.error('Error loading thumbnail:', error);
+    }
     const title = video.document.title || 'Untitled Video';
     const duration = video.document.duration || 'Unknown';
     const fileSize = video.document.file_size ? this.formatFileSize(video.document.file_size) : 'Unknown size';
 
     card.innerHTML = `
       <div class="video-thumbnail" onclick="videoManager.editVideo('${video.document.id}')" style="cursor: pointer;">
-        ${thumbnailUrl ? `<img src="${thumbnailUrl}" alt="${title}" style="width: 100%; height: 100%; object-fit: cover;">` : 'No thumbnail'}
+        ${thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${title}" style="width: 100%; height: 100%; object-fit: cover;">` : 'No thumbnail'}
       </div>
       <div class="video-info">
         <div class="video-title">

@@ -132,34 +132,85 @@ export class ModalManager {
     this.currentVideoData = null;
   }
 
-  // Generate thumbnail from video
-  generateThumbnail() {
+  // Generate thumbnail from video at current timestamp
+  async generateThumbnail() {
     const videoElement = document.getElementById('videoElement');
     if (videoElement.videoWidth === 0) {
       this.notificationManager.showNotification('Please wait for video to load', 'info');
       return;
     }
 
-    // Create canvas to capture frame
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-    
-    // Draw current frame
-    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-    
-    // Convert to blob and display
-    canvas.toBlob((blob) => {
+    try {
+      // Create canvas to capture frame
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas size (limit to reasonable dimensions for compression)
+      const maxWidth = 320;
+      const maxHeight = 240;
+      const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+      
+      let canvasWidth = Math.min(videoElement.videoWidth, maxWidth);
+      let canvasHeight = Math.min(videoElement.videoHeight, maxHeight);
+      
+      if (canvasWidth / canvasHeight > aspectRatio) {
+        canvasWidth = canvasHeight * aspectRatio;
+      } else {
+        canvasHeight = canvasWidth / aspectRatio;
+      }
+      
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      
+      // Draw current frame
+      ctx.drawImage(videoElement, 0, 0, canvasWidth, canvasHeight);
+      
+      // Convert to compressed blob
+      const blob = await this.compressThumbnail(canvas);
+      
+      if (blob.size > 10240) { // 10KB limit
+        this.notificationManager.showNotification('Thumbnail too large. Try a different frame.', 'error');
+        return;
+      }
+      
+      // Display preview
       const url = URL.createObjectURL(blob);
       const thumbnailPreview = document.getElementById('thumbnailPreview');
-      thumbnailPreview.innerHTML = `<img src="${url}" alt="Generated thumbnail">`;
+      thumbnailPreview.innerHTML = `
+        <img src="${url}" alt="Generated thumbnail">
+        <div class="thumbnail-info">Size: ${(blob.size / 1024).toFixed(1)}KB</div>
+      `;
       
       // Store thumbnail data for upload
       this.currentVideoData.thumbnailBlob = blob;
+      this.currentVideoData.thumbnailTimestamp = videoElement.currentTime;
+      
       this.notificationManager.showNotification('Thumbnail generated successfully', 'success');
-    }, 'image/jpeg', 0.8);
+      
+    } catch (error) {
+      console.error('Error generating thumbnail:', error);
+      this.notificationManager.showNotification('Failed to generate thumbnail', 'error');
+    }
+  }
+
+  // Compress thumbnail to ensure it's under 10KB
+  async compressThumbnail(canvas) {
+    return new Promise((resolve) => {
+      let quality = 0.8;
+      
+      const tryCompress = () => {
+        canvas.toBlob((blob) => {
+          if (blob.size <= 10240 || quality <= 0.1) {
+            resolve(blob);
+          } else {
+            quality -= 0.1;
+            tryCompress();
+          }
+        }, 'image/jpeg', quality);
+      };
+      
+      tryCompress();
+    });
   }
 
   // Handle thumbnail file upload
@@ -182,6 +233,55 @@ export class ModalManager {
     reader.readAsDataURL(file);
   }
 
+  // Upload thumbnail to backend
+  async uploadThumbnail() {
+    if (!this.currentVideoData || !this.currentVideoData.thumbnailBlob) {
+      this.notificationManager.showNotification('Please generate a thumbnail first', 'error');
+      return;
+    }
+
+    try {
+      // Convert blob to base64
+      const base64Data = await this.blobToBase64(this.currentVideoData.thumbnailBlob);
+      
+      const response = await fetch('/api/uploadThumbnail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await Clerk.session.getToken()}`
+        },
+        body: JSON.stringify({
+          videoId: this.currentVideoData.id,
+          thumbnailData: base64Data,
+          timestamp: this.currentVideoData.thumbnailTimestamp
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        this.notificationManager.showNotification('Thumbnail uploaded successfully', 'success');
+        // Update current video data with thumbnail filename
+        this.currentVideoData.thumbnail = result.thumbnailFilename;
+      } else {
+        throw new Error(result.error || 'Failed to upload thumbnail');
+      }
+    } catch (error) {
+      console.error('Error uploading thumbnail:', error);
+      this.notificationManager.showNotification(`Failed to upload thumbnail: ${error.message}`, 'error');
+    }
+  }
+
+  // Convert blob to base64
+  blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
   // Publish video (update details)
   async publishVideo() {
     if (!this.currentVideoData) return;
@@ -195,6 +295,11 @@ export class ModalManager {
     }
 
     try {
+      // Upload thumbnail if one was generated
+      if (this.currentVideoData.thumbnailBlob && !this.currentVideoData.thumbnail) {
+        await this.uploadThumbnail();
+      }
+
       const updateData = {
         id: this.currentVideoData.id,
         title: title,
