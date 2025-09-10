@@ -44,20 +44,11 @@ class UploadManager {
     this.uppy = new Uppy({
       autoProceed: false,
       restrictions: {
-        allowedFileTypes: ['video/mp4'],
         maxNumberOfFiles: 1,
-        maxFileSize: 1771673011 // ~1.65GB
+        maxFileSize: 1771673011, // ~1.65GB
+        allowedFileTypes: ['video/mp4', 'video/quicktime', 'video/x-m4v']
       },
-      meta: { user_id: userId },
-      onBeforeFileAdded: async (currentFile, files) => {
-        // Validate video before accepting
-        const isValid = await this.validateVideoFile(currentFile);
-        if (!isValid) {
-          alert("Video must be at least 1 minute long and 16:9 aspect ratio.");
-          return false; // reject file
-        }
-        return true;
-      }
+      meta: { user_id: userId }
     })
       .use(Dashboard, {
         inline: true,
@@ -66,7 +57,7 @@ class UploadManager {
       })
       .use(AwsS3, {
         shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
-        getChunkSize: (file) => 25 * 1024 * 1024, // 25MB chunks = fewer parts
+        getChunkSize: (file) => 25 * 1024 * 1024,
         getUploadParameters: this.getUploadParameters.bind(this),
         createMultipartUpload: this.createMultipartUpload.bind(this),
         listParts: this.listParts.bind(this),
@@ -75,12 +66,21 @@ class UploadManager {
         abortMultipartUpload: this.abortMultipartUpload.bind(this)
       });
 
-    this.uppy.on('file-added', (file) => {
-      console.log('File added:', file);
-      if (!file.name.toLowerCase().endsWith('.mp4')) {
+    // File validation
+    this.uppy.on('file-added', async (file) => {
+      const type = file.type.toLowerCase();
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      if (!['mp4', 'm4v', 'mov'].includes(ext) || !['video/mp4', 'video/quicktime', 'video/x-m4v'].includes(type)) {
         this.uppy.removeFile(file.id);
         alert('Only MP4 files are allowed.');
         return;
+      }
+
+      const isValid = await this.validateVideoFile(file);
+      if (!isValid) {
+        this.uppy.removeFile(file.id);
+        alert('Video must be at least 1 minute long and 16:9 aspect ratio.');
       }
     });
 
