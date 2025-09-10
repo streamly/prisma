@@ -1,57 +1,3 @@
-class VideoMetadataValidator extends window.UppyModules.Uppy.Plugin {
-  constructor(uppy, opts) {
-    super(uppy, opts);
-    this.id = opts.id || 'VideoMetadataValidator';
-    this.type = 'modifier';
-  }
-
-  async validate(file) {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.src = URL.createObjectURL(file.data);
-
-      video.onloadedmetadata = () => {
-        const duration = video.duration;
-        const ratio = video.videoWidth / video.videoHeight;
-
-        URL.revokeObjectURL(video.src);
-
-        if (duration < 60 || Math.abs(ratio - 16 / 9) > 0.05) {
-          reject(new Error('Video must be at least 1 minute long and 16:9 aspect ratio.'));
-        } else {
-          resolve({
-            width: video.videoWidth,
-            height: video.videoHeight,
-            duration: Math.round(duration),
-            fileKey: file.name // or hash for S3
-          });
-        }
-      };
-
-      video.onerror = () => {
-        URL.revokeObjectURL(video.src);
-        reject(new Error('Failed to read video metadata.'));
-      };
-    });
-  }
-
-  install() {
-    this.uppy.addPreProcessor(async (fileIDs) => {
-      for (const id of fileIDs) {
-        const file = this.uppy.getFile(id);
-        try {
-          const meta = await this.validate(file);
-          this.uppy.setFileMeta(id, { ...file.meta, ...meta });
-        } catch (err) {
-          this.uppy.removeFile(id, err.message);
-        }
-      }
-    });
-  }
-}
-
-
 /**
  * UploadManager - Handles video upload functionality using Uppy 4.x
  */
@@ -93,6 +39,60 @@ class UploadManager {
 
   initializeUppy() {
     const { Uppy, Dashboard, AwsS3 } = window.UppyModules;
+
+    class VideoMetadataValidator extends window.UppyModules.Uppy.Plugin {
+      constructor(uppy, opts) {
+        super(uppy, opts);
+        this.id = opts.id || 'VideoMetadataValidator';
+        this.type = 'modifier';
+      }
+
+      async validate(file) {
+        return new Promise((resolve, reject) => {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.src = URL.createObjectURL(file.data);
+
+          video.onloadedmetadata = () => {
+            const duration = video.duration;
+            const ratio = video.videoWidth / video.videoHeight;
+
+            URL.revokeObjectURL(video.src);
+
+            if (duration < 60 || Math.abs(ratio - 16 / 9) > 0.05) {
+              reject(new Error('Video must be at least 1 minute long and 16:9 aspect ratio.'));
+            } else {
+              resolve({
+                width: video.videoWidth,
+                height: video.videoHeight,
+                duration: Math.round(duration),
+                fileKey: file.name // or hash for S3
+              });
+            }
+          };
+
+          video.onerror = () => {
+            URL.revokeObjectURL(video.src);
+            reject(new Error('Failed to read video metadata.'));
+          };
+        });
+      }
+
+      install() {
+        this.uppy.addPreProcessor(async (fileIDs) => {
+          for (const id of fileIDs) {
+            const file = this.uppy.getFile(id);
+            try {
+              const meta = await this.validate(file);
+              this.uppy.setFileMeta(id, { ...file.meta, ...meta });
+            } catch (err) {
+              this.uppy.removeFile(id, err.message);
+            }
+          }
+        });
+      }
+    }
+
     const userId = this.user.id;
 
     this.uppy = new Uppy({
@@ -162,7 +162,8 @@ class UploadManager {
         signPart: this.signPart.bind(this),
         completeMultipartUpload: this.completeMultipartUpload.bind(this),
         abortMultipartUpload: this.abortMultipartUpload.bind(this)
-      });
+      })
+      .use(VideoMetadataValidator)
 
     this.setupEventListeners();
   }
