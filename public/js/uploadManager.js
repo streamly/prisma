@@ -6,6 +6,7 @@ export class UploadManager {
     this.uppy = null;
     this.user = null;
     this.isInitialized = false;
+    this.currentVideoId = null; // Store video ID for consistent use
   }
 
   /**
@@ -109,6 +110,14 @@ export class UploadManager {
    */
   async getUploadParameters(file) {
     const token = await Clerk.session.getToken();
+    
+    // Generate video ID once and store it
+    if (!this.currentVideoId) {
+      this.currentVideoId = this.generateVideoId();
+    }
+    
+    const uniqueFilename = `${this.currentVideoId}.${this.getFileExtension(file.name)}`;
+    
     const response = await fetch('/api/upload?type=getUploadParameters', {
       method: 'POST',
       headers: {
@@ -119,7 +128,7 @@ export class UploadManager {
       body: JSON.stringify({
         filename: file.name,
         contentType: file.type,
-        key: file.name
+        key: uniqueFilename
       })
     });
     
@@ -144,6 +153,14 @@ export class UploadManager {
    */
   async createMultipartUpload(file) {
     const token = await Clerk.session.getToken();
+    
+    // Use the same video ID generated earlier
+    if (!this.currentVideoId) {
+      this.currentVideoId = this.generateVideoId();
+    }
+    
+    const uniqueFilename = `${this.currentVideoId}.${this.getFileExtension(file.name)}`;
+    
     const response = await fetch('/api/upload?type=createMultipartUpload', {
       method: 'POST',
       headers: {
@@ -154,7 +171,7 @@ export class UploadManager {
       body: JSON.stringify({
         filename: file.name,
         contentType: file.type,
-        key: file.name
+        key: uniqueFilename
       })
     });
     
@@ -275,10 +292,15 @@ export class UploadManager {
       const uploadedFile = result.successful[0];
       const file = uploadedFile.data;
       
+      // Use the same video ID that was used for upload
+      if (!this.currentVideoId) {
+        this.currentVideoId = this.generateVideoId();
+      }
+      
       // Prepare metadata for Typesense (only essential fields)
       const videoMetadata = {
-        id: this.generateVideoId(),
-        filename: file.name,
+        id: this.currentVideoId,
+        filename: `${this.currentVideoId}.${this.getFileExtension(file.name)}`,
         file_size: file.size,
         content_type: file.type,
         duration: 0 // Will be updated later when video is processed
@@ -299,6 +321,8 @@ export class UploadManager {
         
         if (result.success) {
           this.showStatus('Upload and processing complete! Redirecting...', 'success');
+          // Reset video ID for next upload
+          this.currentVideoId = null;
           // Redirect to video details page
           setTimeout(() => {
             window.location.href = `/dev/?v=${videoMetadata.id}`;
@@ -326,6 +350,13 @@ export class UploadManager {
    */
   generateVideoId() {
     return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  /**
+   * Get file extension from filename
+   */
+  getFileExtension(filename) {
+    return filename.split('.').pop().toLowerCase();
   }
 
   /**
