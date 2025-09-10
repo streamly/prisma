@@ -56,22 +56,19 @@ class SearchManager {
         page: (params.page || 0) + 1
       };
 
-      const response = await this.typesenseClient
-        .collections('videos')
-        .documents()
-        .search(searchParams);
+      const response = await this.typesenseManager.searchVideos(query || '');
 
       return {
         results: [{
-          hits: response.hits.map(hit => ({
+          hits: response.map(hit => ({
             objectID: hit.document.id,
             ...hit.document
           })),
-          nbHits: response.found,
+          nbHits: response.length,
           page: params.page || 0,
-          nbPages: Math.ceil(response.found / (params.hitsPerPage || 12)),
+          nbPages: Math.ceil(response.length / (params.hitsPerPage || 12)),
           hitsPerPage: params.hitsPerPage || 12,
-          processingTimeMS: response.search_time_ms
+          processingTimeMS: 0
         }]
       };
     } catch (error) {
