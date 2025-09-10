@@ -13,7 +13,7 @@ class UploadManager {
    */
   async initialize() {
     if (this.isInitialized) return;
-    
+
     try {
       // Wait for Clerk to initialize
       await Clerk.load();
@@ -28,10 +28,10 @@ class UploadManager {
 
       // Wait for Uppy modules to load
       await this.waitForUppyModules();
-      
+
       // Initialize Uppy
       this.initializeUppy();
-      
+
       this.isInitialized = true;
     } catch (error) {
       console.error("Error initializing upload page:", error);
@@ -54,7 +54,7 @@ class UploadManager {
   initializeUppy() {
     const { Uppy, Dashboard, AwsS3 } = window.UppyModules;
     const userId = this.user.id;
-    
+
     this.uppy = new Uppy({
       autoProceed: false,
       restrictions: {
@@ -62,23 +62,46 @@ class UploadManager {
         maxNumberOfFiles: 1
       },
       meta: { user_id: userId }
-    });
+    })
+      .use(Dashboard, {
+        inline: true,
+        target: '#uppy-container',
+        note: 'Upload your video file.'
+      })
+      .use(AwsS3, {
+        shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
+        getChunkSize: (file) => 10 * 1024 * 1024, // 10MB chunks
+        getUploadParameters: this.getUploadParameters.bind(this),
+        createMultipartUpload: this.createMultipartUpload.bind(this),
+        listParts: this.listParts.bind(this),
+        signPart: this.signPart.bind(this),
+        completeMultipartUpload: this.completeMultipartUpload.bind(this),
+        abortMultipartUpload: this.abortMultipartUpload.bind(this)
+      });
 
-    this.uppy.use(Dashboard, {
-      inline: true,
-      target: '#uppy-container',
-      note: 'Upload your video file.'
-    });
+    this.uppy.on('file-added', (file) => {
+      this.uppy.setFileMeta(file.id, { uid });
 
-    this.uppy.use(AwsS3, {
-      shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
-      getChunkSize: (file) => 10 * 1024 * 1024, // 10MB chunks
-      getUploadParameters: this.getUploadParameters.bind(this),
-      createMultipartUpload: this.createMultipartUpload.bind(this),
-      listParts: this.listParts.bind(this),
-      signPart: this.signPart.bind(this),
-      completeMultipartUpload: this.completeMultipartUpload.bind(this),
-      abortMultipartUpload: this.abortMultipartUpload.bind(this)
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file.data);
+
+      video.addEventListener('loadedmetadata', () => {
+        const aspectRatio = (video.videoWidth / video.videoHeight).toFixed(2);
+        const duration = video.duration;
+
+        if (aspectRatio !== (16 / 9).toFixed(2) || duration <= 59) {
+          this.uppy.removeFile(file.id);
+          alert("Video must be at least 1 minute long and 16:9 aspect ratio.");
+        } else {
+          this.uppy.setFileMeta(file.id, {
+            width: video.videoWidth,
+            height: video.videoHeight,
+            duration: Math.round(duration)
+          });
+        }
+
+        URL.revokeObjectURL(video.src);
+      });
     });
 
     this.setupEventListeners();
@@ -96,7 +119,7 @@ class UploadManager {
 
     // Handle upload completion
     this.uppy.on('complete', this.handleUploadComplete.bind(this));
-    
+
     // Handle upload errors
     this.uppy.on('error', (error) => {
       console.error('Upload error:', error);
@@ -122,12 +145,12 @@ class UploadManager {
         key: file.name
       })
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(`Failed to get upload parameters: ${errorData.error || response.statusText}`);
     }
-    
+
     const data = await response.json();
     return {
       method: 'PUT',
@@ -157,12 +180,12 @@ class UploadManager {
         key: file.name
       })
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(`Failed to create multipart upload: ${errorData.error || response.statusText}`);
     }
-    
+
     const data = await response.json();
     return {
       uploadId: data.uploadId,
@@ -196,12 +219,12 @@ class UploadManager {
         'X-User-Email': this.user.emailAddress
       }
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(`Failed to get upload URL: ${errorData.error || response.statusText}`);
     }
-    
+
     const data = await response.json();
     return {
       url: data.url
@@ -226,12 +249,12 @@ class UploadManager {
         parts
       })
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(`Failed to complete upload: ${errorData.error || response.statusText}`);
     }
-    
+
     const data = await response.json();
     return {
       location: data.location
@@ -262,7 +285,7 @@ class UploadManager {
    */
   async handleUploadComplete(result) {
     console.log('Upload complete! Successful:', result.successful, 'Failed:', result.failed);
-    
+
     if (result.failed && result.failed.length > 0) {
       // There were failed uploads - show error and don't redirect
       const firstError = result.failed[0].error;
@@ -271,10 +294,10 @@ class UploadManager {
     } else if (result.successful && result.successful.length > 0) {
       // All uploads successful - insert metadata to Typesense
       this.showStatus('Upload complete! Processing video metadata...', 'success');
-      
+
       const uploadedFile = result.successful[0];
       const file = uploadedFile.data;
-      
+
       // Prepare metadata for Typesense (only essential fields)
       const videoMetadata = {
         id: this.generateVideoId(),
@@ -283,7 +306,7 @@ class UploadManager {
         content_type: file.type,
         duration: 0 // Will be updated later when video is processed
       };
-      
+
       try {
         // Insert video metadata to Typesense
         const response = await fetch('/api/insert', {
@@ -294,9 +317,9 @@ class UploadManager {
           },
           body: JSON.stringify(videoMetadata)
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
           this.showStatus('Upload and processing complete! Redirecting...', 'success');
           // Redirect to video details page
@@ -309,7 +332,7 @@ class UploadManager {
       } catch (error) {
         console.error('Failed to insert video metadata:', error);
         this.showError('Upload successful but failed to process metadata. Please try again.');
-        
+
         // Still redirect to dashboard after a delay
         setTimeout(() => {
           window.location.href = '/dev/';
