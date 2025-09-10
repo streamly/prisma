@@ -33,7 +33,11 @@ export class ModalManager {
     // Save button (renamed from publish)
     const saveBtn = document.getElementById('saveBtn');
     if (saveBtn) {
-      saveBtn.onclick = () => this.saveVideo();
+      saveBtn.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.saveVideo();
+      };
     }
   }
 
@@ -311,16 +315,24 @@ export class ModalManager {
 
   // Save video metadata (unified save function)
   async saveVideo() {
+    // Prevent multiple simultaneous calls
+    if (this.isSaving) {
+      return;
+    }
+    
     if (!this.currentVideoData || !this.currentVideoData.id) {
       this.notificationManager.showNotification('No video data available', 'error');
       return;
     }
+    
+    this.isSaving = true;
 
     const title = document.getElementById('videoTitle').value.trim();
     const description = document.getElementById('videoDescription').value.trim();
 
     if (!title) {
       this.notificationManager.showNotification('Please enter a title', 'error');
+      this.isSaving = false;
       return;
     }
 
@@ -388,6 +400,8 @@ export class ModalManager {
     } catch (error) {
       console.error('Failed to save video:', error);
       this.notificationManager.showNotification('Failed to save video', 'error');
+    } finally {
+      this.isSaving = false;
     }
   }
 }
