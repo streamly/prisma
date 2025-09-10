@@ -3,6 +3,7 @@
  */
 
 import { TypesenseManager } from './typesenseClient.js';
+import { ModalManager } from './modalManager.js';
 
 class SearchManager {
   constructor() {
@@ -10,6 +11,8 @@ class SearchManager {
     this.currentQuery = '';
     this.currentDurationFilter = '';
     this.currentDateFilter = '';
+    this.modalManager = null;
+    this.searchResults = null;
   }
 
   async initialize() {
@@ -20,6 +23,11 @@ class SearchManager {
       // Use existing TypesenseManager which handles API keys automatically
       this.typesenseManager = new TypesenseManager();
       await this.typesenseManager.initializeClient();
+
+      // Initialize modal manager
+      this.modalManager = new ModalManager();
+      this.modalManager.setVideoManager(this);
+      this.modalManager.setupEventListeners();
 
       // Setup search box
       this.setupSearchBox();
@@ -179,6 +187,7 @@ class SearchManager {
       }
       
       const results = await this.typesenseManager.searchVideos(query, filterBy.join(' && '));
+      this.searchResults = { hits: results }; // Store for modal manager
       this.displayResults(results);
     } catch (error) {
       console.error('Search error:', error);
@@ -210,13 +219,15 @@ class SearchManager {
       const duration = this.formatDuration(video.duration);
       
       return `
-        <div class="row border-0 bg-transparent mb-3 edit" 
+        <div class="row border-0 bg-transparent mb-3 edit video-row" 
              data-id="${video.id}" 
+             data-video-id="${video.id}"
              data-title="${encodeURIComponent(video.title || '')}" 
              data-description="${encodeURIComponent(video.description || '')}" 
              data-duration="${video.duration || 0}" 
              type="button" 
-             id="${video.id}">
+             id="${video.id}"
+             style="cursor: pointer;">
           <!-- Thumbnail (col-2) -->
           <div class="col-2 text-end">
             <div class="edit pointer thumbnail-container bg-dark" alt="${video.title}" title="${video.title}">
@@ -238,8 +249,10 @@ class SearchManager {
 
           <!-- Title + Description (col) -->
           <div class="col">
-            <h6 class="edit title-clamp m-0" title="${video.title}">${video.title || 'Untitled'}</h6>
-            <div class="edit pointer text-muted small text-truncate"> 
+            <h6 class="edit title-clamp m-0 video-title" title="${video.title}">
+              <span>${video.title || 'Untitled'}</span>
+            </h6>
+            <div class="edit pointer text-muted small text-truncate video-description"> 
               ${video.description || ''}
             </div>
           </div>
@@ -263,6 +276,9 @@ class SearchManager {
     }).join('');
 
     hitsContainer.innerHTML = videosHtml;
+    
+    // Add click event listeners to video rows
+    this.setupVideoClickListeners();
   }
 
   formatDuration(seconds) {
@@ -281,12 +297,29 @@ class SearchManager {
       return `${formattedMins}:${formattedSecs}`;
     }
   }
+
+  setupVideoClickListeners() {
+    const videoRows = document.querySelectorAll('.video-row');
+    videoRows.forEach(row => {
+      row.addEventListener('click', (e) => {
+        // Don't open modal if clicking on dropdown
+        if (e.target.closest('.dropdown')) {
+          return;
+        }
+        
+        const videoId = row.dataset.videoId;
+        if (videoId && this.modalManager) {
+          this.modalManager.openVideoModal(videoId);
+        }
+      });
+    });
+  }
 }
 
 // Global function to open video modal
 window.openVideoModal = async (videoId) => {
-  if (window.modalManager) {
-    await window.modalManager.openVideoModal(videoId);
+  if (window.searchManager && window.searchManager.modalManager) {
+    await window.searchManager.modalManager.openVideoModal(videoId);
   }
 };
 
