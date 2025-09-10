@@ -3,9 +3,7 @@ import {
   setCorsHeaders, 
   handleOptions, 
   authenticateUser, 
-  validateMethod, 
-  errorResponse, 
-  successResponse
+  validateMethod
 } from '../lib/apiHelpers.js';
 import { getTypesenseClient } from '../lib/typesenseClient.js';
 
