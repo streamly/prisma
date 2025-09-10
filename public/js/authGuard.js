@@ -1,8 +1,5 @@
 // Simple auth protection - redirects to sign-in if not authenticated
-async function protectPage() {
-    // Skip auth check if we're on the auth page
-    if (window.location.pathname.includes('/auth/')) return;
-    
+async function protectPage() {    
     try {
         await Clerk.load();
         
