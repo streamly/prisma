@@ -59,9 +59,11 @@ class UploadManager {
       autoProceed: false,
       restrictions: {
         allowedFileTypes: ['video/*'],
-        maxNumberOfFiles: 1
+        maxNumberOfFiles: 1,
+        maxFileSize: 1771673011, // ~1.65GB
       },
-      meta: { user_id: userId }
+      meta: { user_id: userId },
+      note: 'Your video must be MP4, 16:9, minimum 1 min, maximum 1.65GB. Business content only.'
     })
       .use(Dashboard, {
         inline: true,
@@ -298,14 +300,29 @@ class UploadManager {
       const uploadedFile = result.successful[0];
       const file = uploadedFile.data;
 
-      // Prepare metadata for Typesense (only essential fields)
+      let width = file.meta?.width || 0;
+      let height = file.meta?.height || 0;
+      let duration = file.meta?.duration || 0;
+  
+      // Generate video ID
+      const videoId = this.generateVideoId();
+  
+      // Prepare full metadata for Typesense
       const videoMetadata = {
-        id: this.generateVideoId(),
+        id: videoId,
+        title: file.name.replace(/\.[^/.]+$/, ""), // filename without extension
+        description: '',
         filename: file.name,
         file_size: file.size,
         content_type: file.type,
-        duration: 0 // Will be updated later when video is processed
+        duration,
+        width,
+        height,
+        created: Math.floor(Date.now() / 1000), // Unix timestamp
+        thumbnail: null,
+        ranking: 1
       };
+  
 
       try {
         // Insert video metadata to Typesense
