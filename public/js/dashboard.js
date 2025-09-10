@@ -185,10 +185,12 @@ $("#publish").on("click", async function () {
         active: 1
     };
 
+    const token = await ensureClerkReady()
+
     try {
         const response = await fetch("/api/update", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(payload)
         });
 
@@ -214,10 +216,12 @@ $(document).on("click", ".trash", async function (e) {
         id: $("#id").val(),
     };
 
+    const token = await ensureClerkReady()
+
     try {
         const response = await fetch("/api/delete", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(payload),
         });
 
