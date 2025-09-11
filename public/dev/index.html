@@ -423,7 +423,7 @@
 
       updateRemoveButtons()
 
-      const apiKey = decodeURIComponent(await window.cookieStore.get('apiKey'))
+      const apiKey = (await window.cookieStore.get('apiKey')).value
 
       if (!apiKey) {
         console.error('Typesense API key is missing')
