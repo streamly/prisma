@@ -378,7 +378,7 @@
   </div>
 
   <script>
-    $(document).ready(async function () {
+    window.addEventListener('DOMContentLoaded', async function () {
       await Clerk.load()
 
       if (!Clerk.user) {
