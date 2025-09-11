@@ -297,9 +297,6 @@
 
           const uploadedFile = result.successful[0]
           const meta = uploadedFile.meta
-
-          console.log('File', file, file.meta, uploadedFile)
-
           const videoId = meta.videoId
 
           if (!videoId) {
@@ -326,7 +323,7 @@
             if (json.success) {
               showStatus('Upload and metadata saved! Redirecting...', 'success')
               setTimeout(() => {
-                const idToOpen = json.id || videoId || filename.replace(/\.[^/.]+$/, '')
+                const idToOpen = videoId
                 window.location.href = `/dev/?v=${encodeURIComponent(idToOpen)}`
               }, 900)
             } else {
