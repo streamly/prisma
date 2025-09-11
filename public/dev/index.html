@@ -542,6 +542,8 @@
             item(hit) {
               hit.position = hit.__position
 
+              console.log('Hit data', hit)
+
               const dataAttributes = Object.keys(hit).map(key => {
                 const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`
                 let value = hit[key]
@@ -697,6 +699,7 @@
         })
 
         const result = await response.json()
+        console.log('Payload', payload)
         console.log('Update result', result)
       } catch (err) {
         alert("Request failed: " + err.message)
