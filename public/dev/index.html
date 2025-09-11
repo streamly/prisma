@@ -381,13 +381,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
   <script>
 
-    const cookies = Object.fromEntries(
-      document.cookie.split('; ').map(c => c.split('='))
-    )
-
-    //alert(cookies.user_fullname);    // Elena Albegova
-    //alert(cookies.user_token_public); // xyz
-
     // add company
     $(document).ready(function () {
       // Add new company input
@@ -485,11 +478,9 @@
       }
     })
 
-    // delete video
     $(document).on("click", ".trash", async function (e) {
       e.preventDefault()
 
-      // Collect values
       const payload = {
         id: $("#id").val(),
       }
@@ -497,7 +488,7 @@
       try {
         const response = await fetch("/api/delete", {
           method: "POST", // if your API expects DELETE, change this to "DELETE"
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json",  },
           body: JSON.stringify(payload),
         })
 
@@ -517,29 +508,9 @@
       }
     })
 
-
-
-
-    // old code
     $(document).on('click', '#xxxpublish', function (e) {
-
-
-      //alert(333)
-      //return;
-
-
-
-      //alert(  $(this).data('active') )
       e.preventDefault() // Prevent default form submission
       const formData = $('#post').serializeArray()
-
-
-
-
-
-
-      // Validate the form before submitting
-
       if ($('#vod').parsley().isValid()) {
         $.ajax({
           type: "POST",
@@ -661,7 +632,7 @@
       return txt.value
     }
 
-    const apiKey = cookies.get('apiKey')
+    const apiKey = await window.cookieStore.get('apiKey')
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000 // Start of today
     const yesterday = today - 86400 // Start of yesterday
