@@ -121,6 +121,10 @@
   <script type="module">
     import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
 
+    function generateVideoId() {
+      return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.mp4'
+    }
+
     export default class VideoProcessor extends BasePlugin {
       constructor(uppy, opts = {}) {
         super(uppy, opts)
@@ -215,10 +219,6 @@
 
       function showError(message) {
         showStatus(message, 'error')
-      }
-
-      function generateVideoId() {
-        return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.mp4'
       }
 
       async function getUploadParameters(file) {
