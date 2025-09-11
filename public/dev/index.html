@@ -552,6 +552,8 @@
       controls: true,
     })
 
+    let search
+
     window.addEventListener('DOMContentLoaded', async function () {
       // Add new company input
       $('#add-company').click(function () {
@@ -604,7 +606,7 @@
         },
       })
 
-      const search = instantsearch({
+      search = instantsearch({
         indexName: "videos",
         searchClient: typesenseInstantsearchAdapter.searchClient,
         routing: false,
@@ -757,6 +759,7 @@
           $(".edit").first().trigger("click")
         }, 1000)
       }
+
       $(document).on("click", "#reload", function (e) {
         search.helper.setQuery("").search()
 
