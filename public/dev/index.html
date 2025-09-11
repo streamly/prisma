@@ -679,12 +679,7 @@
       }
 
       try {
-        const token = await Clerk.session.getToken()
-
-        if (!token) {
-          alert('Error: Authentication token is missing')
-        }
-
+        const token = await getClerkToken()
         const response = await fetch("/api/update", {
           method: "POST",
           headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
@@ -692,7 +687,7 @@
         })
 
         const result = await response.json()
-        console.log(result)
+        console.log(result, token)
 
         if (result.success) {
           alert("Update successful")
