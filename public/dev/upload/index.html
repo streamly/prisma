@@ -165,14 +165,6 @@
                 size: file.data.size
               })
 
-              this.uppy.setFileMeta(file.id, {
-                ...file.meta,
-                width,
-                height,
-                duration: Math.round(duration),
-                size
-              })
-
               resolve(true)
             } else {
               resolve(false)
