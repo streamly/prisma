@@ -705,7 +705,7 @@
   <div class="col-2 text-end">
     <div class="edit pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
       <div class="img-fluid border bg-dark thumbnail-background"
-           style="background-image:url('/images/${hit.id}.jpg');
+           style="background-image:url('/videos/${hit.id}.jpg');
                   height:69px;  width:123px;
                   background-repeat:no-repeat;
                   background-size:cover;">
@@ -985,40 +985,45 @@
       // Draw video frame on canvas
       canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height)
 
-      // Convert canvas to Blob (JPEG)
-      canvas.toBlob(async function (blob) {
-        if (!blob) {
-          console.error("Failed to get canvas blob")
-          return
-        }
+      var dataUrl = canvas.toDataURL()
 
-        try {
-          // Step 1: Request presigned URL from Vercel backend
-          const resp = await fetch(`/api/capture?filename=${encodeURIComponent(id + ".jpg")}`)
-          const data = await resp.json()
-          const { url } = data
+      $('#thumbnail').attr('src', dataUrl)
+      $('#image-' + id).css({ "background-image": `url(${dataUrl})` })
 
-          // Step 2: Upload directly to S3
-          const upload = await fetch(url, {
-            method: "PUT",
-            headers: { "Content-Type": "image/jpeg" },
-            body: blob
-          })
+      //   // Convert canvas to Blob (JPEG)
+      //   canvas.toBlob(async function (blob) {
+      //     if (!blob) {
+      //       console.error("Failed to get canvas blob")
+      //       return
+      //     }
 
-          if (upload.ok) {
-            console.log("Thumbnail uploaded successfully")
+      //     try {
+      //       // Step 1: Request presigned URL from Vercel backend
+      //       const resp = await fetch(`/api/capture?filename=${encodeURIComponent(id + ".jpg")}`)
+      //       const data = await resp.json()
+      //       const { url } = data
 
-            const imgUrl = `https://f6b3.c13.e2-3.dev/videos/${id}.jpg?t=${new Date().getTime()}`
-            $('#thumbnail').attr('src', imgUrl)
-            $(`#image-${id}`).css("background-image", `url(${imgUrl})`)
-            $(`.play[data-id="${id}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
-          } else {
-            console.error("? Upload failed")
-          }
-        } catch (err) {
-          console.error("Error fetching presigned URL or uploading:", err)
-        }
-      }, "image/jpeg", 0.9) // JPEG quality 0.9
+      //       // Step 2: Upload directly to S3
+      //       const upload = await fetch(url, {
+      //         method: "PUT",
+      //         headers: { "Content-Type": "image/jpeg" },
+      //         body: blob
+      //       })
+
+      //       if (upload.ok) {
+      //         console.log("Thumbnail uploaded successfully")
+
+      //         const imgUrl = `https://f6b3.c13.e2-3.dev/videos/${id}.jpg?t=${new Date().getTime()}`
+      //         $('#thumbnail').attr('src', imgUrl)
+      //         $(`#image-${id}`).css("background-image", `url(${imgUrl})`)
+      //         $(`.play[data-id="${id}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
+      //       } else {
+      //         console.error("? Upload failed")
+      //       }
+      //     } catch (err) {
+      //       console.error("Error fetching presigned URL or uploading:", err)
+      //     }
+      //   }, "image/jpeg", 0.9) // JPEG quality 0.9
     });
 
   </script>
