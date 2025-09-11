@@ -45,8 +45,10 @@ export default async function handler(req, res) {
   }
 
   const now = Math.floor(Date.now() / 1000)
+
+  // Merge user-provided fields into the update
   const updateDocument = {
-    id: updateData.id,
+    id: existingDoc.id,
     uid: existingDoc.uid,
     height: updateData.height !== undefined ? parseInt(updateData.height, 10) : existingDoc.height,
     width: updateData.width !== undefined ? parseInt(updateData.width, 10) : existingDoc.width,
@@ -55,7 +57,14 @@ export default async function handler(req, res) {
     created: existingDoc.created,
     modified: now,
     active: updateData.active !== undefined ? updateData.active : existingDoc.active,
-    ranking: existingDoc.ranking
+    ranking: existingDoc.ranking,
+    title: updateData.title ?? existingDoc.title,
+    description: updateData.description ?? existingDoc.description,
+    category: updateData.category ?? existingDoc.category,
+    company: updateData.company ?? existingDoc.company,
+    tags: updateData.tags ?? existingDoc.tags,
+    cpv: updateData.cpv !== undefined ? parseFloat(updateData.cpv) : existingDoc.cpv,
+    budget: updateData.budget !== undefined ? parseFloat(updateData.budget) : existingDoc.budget
   }
 
   try {
@@ -67,6 +76,7 @@ export default async function handler(req, res) {
 
     return successResponse(res, {
       id: updateData.id,
+      document: result,
       message: 'Video details updated successfully'
     })
   } catch (err) {
