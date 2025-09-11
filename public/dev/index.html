@@ -390,11 +390,21 @@
     $(document).on('click', '.dropdown-item.logout', async function (e) {
       e.preventDefault()
 
-      await Clerk.signOut({ redirectUrl: '/dev'})
+      await Clerk.signOut({ redirectUrl: '/dev' })
     })
   </script>
 
   <script>
+    async function getClerkToken() {
+      await Clerk.load()
+
+      if (!Clerk.user) {
+        throw new Error('Missing Clerk token')
+      }
+
+      return Clerk.session.getToken()
+    }
+
     window.addEventListener('DOMContentLoaded', async function () {
       // Add new company input
       $('#add-company').click(function () {
@@ -669,9 +679,10 @@
       }
 
       try {
+        const token = await Clerk.session.getToken()
         const response = await fetch("/api/update", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(payload)
         })
 
