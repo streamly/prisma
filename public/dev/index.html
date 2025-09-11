@@ -430,29 +430,14 @@
                   </div>
                 </div>
 
-                <button type="button" id="generate-thumbnail" data-optimizer="" data-uid="" data-id=""
+                <button type="button" id="generate-thumbnail disabled" data-optimizer="" data-uid="" data-id="" disabled
                   class="btn btn-dark mb-3 shadow-none w-100 mt-3">
                   GENERATE THUMBNAIL
                 </button>
-
                 <canvas id="canvas" style="display:none;"></canvas>
               </div>
-
-
             </div>
           </div>
-
-
-
-
-
-
-
-
-
-
-
-
         </div>
       </div>
     </div>
@@ -546,10 +531,29 @@
       return Clerk.session.getToken()
     }
 
+    let hasPlayed = false
     const player = videojs('player', {
       autoplay: false,
       muted: false,
       controls: true,
+    })
+
+    player.on('play', () => {
+      console.log('play')
+      hasPlayed = true
+    })
+
+    player.on('pause', () => {
+      console.log('pause')
+      if (hasPlayed) {
+        $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
+      }
+    })
+
+    player.on('loadedmetadata', () => {
+      console.log('loadedmetadata')
+      hasPlayed = false
+      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
     })
 
     let search
