@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Bizilla TV - Upload</title>
@@ -9,32 +10,252 @@
   <link rel="stylesheet" href="/styles/upload.css">
 
   <!-- Clerk JS -->
-  <script 
-    async 
-    crossorigin="anonymous" 
-    data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA" 
-    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
-    type="text/javascript">
-  </script>
+  <script defer crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript">
+    </script>
 
 
   <!-- Uppy JS -->
   <script type="module">
-    import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs";
+    import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
     window.UppyModules = { Uppy, Dashboard, AwsS3 };
   </script>
-  
+
   <!-- Upload module -->
   <script src="/js/uploadManager.js"></script>
 </head>
+
 <body>
   <h1>Upload a Video</h1>
   <p>Upload your video content to Bizilla TV. Supported formats include MP4, MOV, AVI, and more.</p>
   <div id="uppy-container"></div>
-  
   <div id="upload-status" class="upload-status"></div>
-
-  <!-- Navigation link styled as a button -->
   <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
+
+  <script>
+    window.addEventListener('load', async () => {
+      try {
+        await Clerk.load()
+
+        if (!Clerk.user) {
+          Clerk.redirectToSignIn({ redirectUrl: '/dev/auth/' })
+          return
+        }
+      } catch (error) {
+        window.location.href = '/dev'
+      }
+    });
+  </script>
+
+  <script>
+    window.addEventListener('load', async () => {
+      let uid = (await window.cookieStore.get('uid')).value
+
+      if (!uid) {
+        throw new Error('Missing uid cookie')
+      }
+
+      // Helper: show status
+      function showStatus(message, type = 'info') {
+        const statusEl = document.getElementById('upload-status')
+        if (statusEl) {
+          statusEl.textContent = message
+          statusEl.className = `upload-status ${type}`
+          statusEl.style.display = 'block'
+        }
+      }
+
+      function showError(message) {
+        showStatus(message, 'error')
+      }
+
+      function generateVideoId() {
+        return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+      }
+
+      async function waitForUppyModules() {
+        while (!window.UppyModules) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
+
+      async function validateVideoFile(file) {
+        return new Promise((resolve) => {
+          const video = document.createElement('video')
+          video.preload = 'metadata'
+          video.src = URL.createObjectURL(file.data)
+
+          video.onloadedmetadata = () => {
+            const duration = video.duration
+            const ratio = video.videoWidth / video.videoHeight
+            URL.revokeObjectURL(video.src)
+
+            if (duration >= 60 && Math.abs(ratio - 16 / 9) < 0.05) {
+              uppy.setFileMeta(file.id, {
+                width: video.videoWidth,
+                height: video.videoHeight,
+                duration: Math.round(duration),
+                uid: user.id
+              })
+              resolve(true)
+            } else {
+              resolve(false)
+            }
+          }
+
+          video.onerror = () => {
+            URL.revokeObjectURL(video.src)
+            resolve(false)
+          }
+        })
+      }
+
+      async function getUploadParameters(file) {
+        const token = await Clerk.session.getToken()
+        const res = await fetch('/api/upload?type=getUploadParameters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.name })
+        })
+        if (!res.ok) throw new Error('Failed to get upload parameters')
+        const data = await res.json()
+        return { method: 'PUT', url: data.url, headers: { 'Content-Type': file.type } }
+      }
+
+      async function createMultipartUpload(file) {
+        const token = await Clerk.session.getToken()
+        const res = await fetch('/api/upload?type=createMultipartUpload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.name })
+        })
+        return await res.json()
+      }
+
+      async function listParts(file, { uploadId, key }) {
+        const token = await Clerk.session.getToken()
+        const res = await fetch(`/api/upload?type=listParts&uploadId=${uploadId}&key=${encodeURIComponent(key)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        const data = await res.json()
+        return data.parts || []
+      }
+
+      async function signPart(file, { uploadId, key, partNumber }) {
+        const token = await Clerk.session.getToken()
+        const res = await fetch(`/api/upload?type=getUploadPartURL&uploadId=${uploadId}&key=${encodeURIComponent(key)}&partNumber=${partNumber}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        const data = await res.json()
+        return { url: data.url }
+      }
+
+      async function completeMultipartUpload(file, { uploadId, key, parts }) {
+        const token = await Clerk.session.getToken()
+        const res = await fetch('/api/upload?type=completeMultipartUpload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ uploadId, key, parts })
+        })
+        return await res.json()
+      }
+
+      async function abortMultipartUpload(file, { uploadId, key }) {
+        const token = await Clerk.session.getToken()
+        await fetch('/api/upload?type=abortMultipartUpload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ uploadId, key })
+        })
+      }
+
+      async function handleUploadComplete(result) {
+        console.log('Upload complete!', result)
+
+        if (result.failed?.length > 0) {
+          showError(`Upload failed: ${result.failed[0].error?.message || 'Unknown error'}`)
+          return
+        }
+
+        if (!result.successful?.length) {
+          showError('No files uploaded.')
+          return
+        }
+
+        const uploadedFile = result.successful[0]
+        const file = uploadedFile.data
+
+        const filename = file.meta?.fileKey || file.name
+        const width = file.meta?.width || 0
+        const height = file.meta?.height || 0
+        const duration = file.meta?.duration || 0
+        const videoId = generateVideoId()
+
+        const payload = { filename, width, height, duration, id: videoId }
+
+        try {
+          const token = await Clerk.session.getToken()
+          const resp = await fetch('/api/insert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+          })
+          const json = await resp.json()
+          if (json.success) {
+            showStatus('Upload and metadata saved! Redirecting...', 'success')
+            setTimeout(() => {
+              const idToOpen = json.id || videoId || filename.replace(/\.[^/.]+$/, '')
+              window.location.href = `/dev/?v=${encodeURIComponent(idToOpen)}`
+            }, 900)
+          } else {
+            showError('Metadata save failed. Check server logs.')
+          }
+        } catch (err) {
+          console.error(err)
+          showError('Upload succeeded but saving metadata failed. Please try again later.')
+        }
+      }
+
+      // Initialize Clerk and Uppy
+      try {
+        await waitForUppyModules()
+        const { Uppy, Dashboard, AwsS3 } = window.UppyModules
+
+        const uppy = new Uppy({
+          autoProceed: false,
+          restrictions: {
+            allowedFileTypes: ['.mp4', '.MP4'],
+            maxNumberOfFiles: 1,
+            maxFileSize: 1771673011 // ~1.65GB
+          },
+          meta: { uid },
+          onBeforeFileAdded: async (file) => {
+            const isValid = await validateVideoFile(file)
+            if (!isValid) alert("Video must be at least 1 minute long and 16:9 aspect ratio.")
+            return isValid
+          }
+        })
+          .use(Dashboard, { inline: true, target: '#uppy-container', note: 'Your video must be MP4, 16:9, minimum 1 min, maximum 1.65GB. Business content only.' })
+          .use(AwsS3, {
+            shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
+            getChunkSize: (file) => 25 * 1024 * 1024,
+            getUploadParameters,
+            createMultipartUpload,
+            listParts,
+            signPart,
+            completeMultipartUpload,
+            abortMultipartUpload
+          })
+
+        uppy.on('upload-progress', file => showStatus(`Uploading: ${file.progress?.percentage || 0}% complete`, 'info'))
+        uppy.on('complete', handleUploadComplete)
+        uppy.on('error', error => showError(error.message || 'Upload failed'))
+      } catch (error) {
+        console.error('Error initializing upload page:', error)
+        showError(`Error: ${error.message || 'Failed to initialize uploader'}`)
+      }
+    });
+  </script>
 </body>
+
 </html>
