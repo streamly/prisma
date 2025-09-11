@@ -406,6 +406,13 @@
     }
 
     window.addEventListener('DOMContentLoaded', async function () {
+      const player = videojs('player', {
+        autoplay: true,
+        muted: false,
+        controls: true,
+      })
+
+
       // Add new company input
       $('#add-company').click(function () {
         const newInput = $('#company-wrapper .company-input:first').clone()
@@ -646,13 +653,17 @@
       const data = $(this).closest('.row').data()
       $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
 
-
       $.each(data, function (key, value) {
         $("#" + key).val(decodeURIComponent(value))
       })
+
+      player.src({
+        src: `https://cdn.tubie.cx/${data.id}/playlist.m3u8`,
+        type: 'application/x-mpegURL'
+      })
+
       const modal = new mdb.Modal(document.getElementById("vodModal"))
       modal.show()
-
     })
 
     // performance
@@ -793,13 +804,6 @@
 
     })
 
-    const player = videojs('player', {
-      autoplay: true,
-      muted: false,
-      controls: true,
-
-    })
-
     // modal close
     $("#vodModal").on("hidden.bs.modal", function () {
       player.pause()
@@ -811,9 +815,6 @@
         $(this).removeData('uploaded')
         location.href = location.pathname
       }
-
-
-
     })
 
     function duration(seconds) {
