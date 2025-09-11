@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <title>SyndiNet - Upload</title>
+  <link rel="icon" type="image/jpeg" href="/favicon.jpg">
 
   <style>
     body {
@@ -302,6 +303,8 @@
           if (!videoId) {
             throw new Error('Missing video metadata id')
           }
+
+          console.log('File', file, file.meta, uploadedFile)
 
           const filename = file.meta?.fileKey || file.name
           const width = file.meta?.width || 0
