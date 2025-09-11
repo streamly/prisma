@@ -158,10 +158,21 @@
 
             if (duration >= this.minDuration && Math.abs(ratio - this.aspectRatio) < this.tolerance) {
               this.uppy.setFileMeta(file.id, {
+                ...file.meta,
                 width: video.videoWidth,
                 height: video.videoHeight,
-                duration: Math.round(duration)
+                duration: Math.round(duration),
+                size: file.data.size
               })
+
+              this.uppy.setFileMeta(file.id, {
+                ...file.meta,
+                width,
+                height,
+                duration: Math.round(duration),
+                size
+              })
+
               resolve(true)
             } else {
               resolve(false)
@@ -287,9 +298,10 @@
         const width = file.meta?.width || 0
         const height = file.meta?.height || 0
         const duration = file.meta?.duration || 0
+        const size = file.meta?.size || 0
         const videoId = generateVideoId()
 
-        const payload = { filename, width, height, duration, id: videoId }
+        const payload = { filename, width, height, size, duration, id: videoId }
 
         try {
           const token = await Clerk.session.getToken()
