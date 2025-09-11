@@ -431,6 +431,7 @@
                   </div>
                 </div>
 
+                <canvas id="thumbnail-canvas" style="display:none;"></canvas>
                 <button type="button" id="generate-thumbnail" data-optimizer="" data-uid="" data-id=""
                   class="btn btn-dark mb-3 shadow-none w-100 mt-3">
                   GENERATE THUMBNAIL
@@ -979,7 +980,7 @@
       console.log("Generate thumbnail clicked")
 
       var id = $(this).data("id")
-      var canvas = document.getElementById("canvas")
+      var canvas = document.getElementById("thumbnail-canvas")
       var video = document.querySelectorAll("video")[0]
 
       // Set canvas size
