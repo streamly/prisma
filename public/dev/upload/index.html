@@ -296,27 +296,25 @@
           }
 
           const uploadedFile = result.successful[0]
-          const file = uploadedFile.data
+          const meta = uploadedFile.meta
 
           console.log('File', file, file.meta, uploadedFile)
 
-          const videoId = file.meta.videoId
+          const videoId = meta.videoId
 
           if (!videoId) {
             throw new Error('Missing video metadata id')
           }
 
-          const filename = file.meta?.fileKey || file.name
-          const width = file.meta?.width || 0
-          const height = file.meta?.height || 0
-          const duration = file.meta?.duration || 0
-          const size = file.meta?.size || 0
+          const filename = uploadedFile.name
+          const width = meta?.width || 0
+          const height = meta?.height || 0
+          const duration = meta?.duration || 0
+          const size = meta?.size || 0
 
           const payload = { filename, width, height, size, duration, id: videoId }
 
           console.log('Sended payload', payload)
-          console.log('File data', file, file.meta)
-
           try {
             const token = await Clerk.session.getToken()
             const resp = await fetch('/api/insert', {
