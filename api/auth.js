@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       process.env.TYPESENSE_SEARCH_KEY,
       {
         filter_by: `uid:${uidHash}`,
-        include_fields: "id,uid,height,width,size,duration,created,modified,active",
+        include_fields: "id,uid,height,width,size,duration,created,modified,active,title,description,company,channel,tags",
         expires_at: Math.floor(Date.now() / 1000) + 604800, // 1 week
       }
     )
