@@ -5,19 +5,78 @@
   <title>Bizilla TV - Auth</title>
   <link rel="stylesheet" href="/styles/auth.css">
   <script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
-    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
-
-  <!-- Auth module -->
-  <script type="module" src="/js/authManager.js"></script>
-
-  <!-- Auth Guard -->
-  <script type="module" src="/js/authGuard.js"></script>
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript">
+  </script>
 </head>
 
 <body>
   <div id="auth-container">
     <p>Loading authentication...</p>
   </div>
+
+  <script>
+    window.addEventListener("load", async () => {
+      try {
+        // Load Clerk
+        await Clerk.load()
+
+        const session = Clerk.session
+        if (!session) {
+          console.log("No active session found, redirecting to sign-in")
+          Clerk.redirectToSignIn({ redirectUrl: window.location.href })
+          return
+        }
+
+        // Get session token
+        const sessionToken = await session.getToken()
+
+        // Get user info
+        const user = Clerk.user
+        const userId = user.id
+        const fullName = user.fullName
+        const email = user.emailAddress
+
+        // Send token to backend for verification
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({ userId, fullName, email }),
+          credentials: 'include' // ensure backend cookies are set
+        })
+
+        const data = await response.json()
+
+        if (data.authenticated) {
+          console.log('Authentication successful, redirecting...')
+          window.location.href = '/dev/index.html'
+        } else {
+          console.error('Authentication failed:', data.error)
+          window.location.href = '/dev/index.html'
+        }
+
+      } catch (error) {
+        console.error('Authentication error:', error)
+        window.location.href = '/dev/index.html'
+      }
+
+      // Optional: Sign out button listener
+      const logoutBtn = document.querySelector('.dropdown-item.logout')
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+          e.preventDefault()
+          try {
+            await Clerk.signOut()
+            window.location.href = '/dev/auth/' // redirect after sign out
+          } catch (err) {
+            console.error('Sign out failed:', err)
+          }
+        })
+      }
+    });
+  </script>
 </body>
 
 </html>
