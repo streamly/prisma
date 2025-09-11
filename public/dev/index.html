@@ -435,7 +435,12 @@
                   class="btn btn-dark mb-3 shadow-none w-100 mt-3">
                   GENERATE THUMBNAIL
                 </button>
-                <canvas id="canvas" style="display:none;"></canvas>
+                <button type="button" id="save-thumbnail" data-optimizer="" data-uid="" data-id=""
+                  class="btn btn-dark mb-3 shadow-none w-100 mt-3">
+                  SAVE THUMBNAIL
+                </button>
+                <button>
+                  <canvas id="canvas" style="display:none;"></canvas>
               </div>
             </div>
           </div>
@@ -536,21 +541,6 @@
       autoplay: false,
       muted: false,
       controls: true,
-    })
-
-    // THUMBNAIL BUTTON
-
-    $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
-
-    player.on('play', () => {
-      console.log('play')
-      $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
-    })
-
-    player.on('loadedmetadata', () => {
-      console.log('loadedmetadata')
-      hasPlayed = false
-      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
     })
 
     let search
@@ -818,8 +808,6 @@
     // performance
     $(document).on("click", "#performance", function () {
       $(".performance").toggle()
-
-
     })
 
     // update video
@@ -971,6 +959,23 @@
       return txt.value
     }
 
+    // THUMBNAIL GENERATION
+
+    let generatedThumbnailUrl = null
+    let generatedThumbnailBlob = null
+
+    $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
+
+    player.on('play', () => {
+      console.log('play')
+      $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
+    })
+
+    player.on('loadedmetadata', () => {
+      console.log('loadedmetadata')
+      hasPlayed = false
+      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
+    })
 
     $(document).on('click', '#generate-thumbnail', async function () {
       console.log("Generate thumbnail clicked")
@@ -986,46 +991,80 @@
       // Draw video frame on canvas
       canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height)
 
-      var dataUrl = canvas.toDataURL()
+      generatedThumbnailUrl = canvas.toDataURL("image/jpeg", 0.9)
 
-      $('#thumbnail').attr('src', dataUrl).show()
-      $('#image-' + id).css({ "background-image": `url(${dataUrl})` })
+      canvas.toBlob(blob => {
+        generatedThumbnailBlob = blob
+      })
 
-      //   // Convert canvas to Blob (JPEG)
-      //   canvas.toBlob(async function (blob) {
-      //     if (!blob) {
-      //       console.error("Failed to get canvas blob")
-      //       return
+      $('#thumbnail').attr('src', generatedThumbnailUrl).show()
+      $('#image-' + id).css({ "background-image": `url(${generatedThumbnailUrl})` })
+
+      $('#save-thumbnail').prop('disabled', false).removeClass('disabled')
+    })
+
+    $('#save-thumbnail').prop('disabled', true).addClass('disabled')
+
+    $(document).on('click', '#save-thumbnail', async function () {
+      if (!generatedThumbnailBlob) {
+        alert('You have to generate thumbnail first')
+
+        return
+      }
+
+      const id = $(this).data("id")
+      const formData = new FormData()
+      formData.append('thumbnail', generatedThumbnailBlob, `${id}.jpg`)
+      formData.append('id', id)
+
+      try {
+        const result = await res.json()
+
+        if (result.success) {
+          $(".btn-close").trigger("click")
+        } else {
+          alert('Saving failed', result.error)
+        }
+      } catch (error) {
+        console.error('Error saving thumbnail', error)
+        alert('Saving failed', error)
+      }
+
+      // // Convert canvas to Blob (JPEG)
+      // canvas.toBlob(async function (blob) {
+      //   if (!blob) {
+      //     console.error("Failed to get canvas blob")
+      //     return
+      //   }
+
+      //   try {
+      //     // Step 1: Request presigned URL from Vercel backend
+      //     const resp = await fetch(`/api/capture?filename=${encodeURIComponent(id + ".jpg")}`)
+      //     const data = await resp.json()
+      //     const { url } = data
+
+      //     // Step 2: Upload directly to S3
+      //     const upload = await fetch(url, {
+      //       method: "PUT",
+      //       headers: { "Content-Type": "image/jpeg" },
+      //       body: blob
+      //     })
+
+      //     if (upload.ok) {
+      //       console.log("Thumbnail uploaded successfully")
+
+      //       const imgUrl = `https://f6b3.c13.e2-3.dev/videos/${id}.jpg?t=${new Date().getTime()}`
+      //       $('#thumbnail').attr('src', imgUrl)
+      //       $(`#image-${id}`).css("background-image", `url(${imgUrl})`)
+      //       $(`.play[data-id="${id}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
+      //     } else {
+      //       console.error("? Upload failed")
       //     }
-
-      //     try {
-      //       // Step 1: Request presigned URL from Vercel backend
-      //       const resp = await fetch(`/api/capture?filename=${encodeURIComponent(id + ".jpg")}`)
-      //       const data = await resp.json()
-      //       const { url } = data
-
-      //       // Step 2: Upload directly to S3
-      //       const upload = await fetch(url, {
-      //         method: "PUT",
-      //         headers: { "Content-Type": "image/jpeg" },
-      //         body: blob
-      //       })
-
-      //       if (upload.ok) {
-      //         console.log("Thumbnail uploaded successfully")
-
-      //         const imgUrl = `https://f6b3.c13.e2-3.dev/videos/${id}.jpg?t=${new Date().getTime()}`
-      //         $('#thumbnail').attr('src', imgUrl)
-      //         $(`#image-${id}`).css("background-image", `url(${imgUrl})`)
-      //         $(`.play[data-id="${id}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
-      //       } else {
-      //         console.error("? Upload failed")
-      //       }
-      //     } catch (err) {
-      //       console.error("Error fetching presigned URL or uploading:", err)
-      //     }
-      //   }, "image/jpeg", 0.9) // JPEG quality 0.9
-    });
+      //   } catch (err) {
+      //     console.error("Error fetching presigned URL or uploading:", err)
+      //   }
+      // }, "image/jpeg", 0.9) // JPEG quality 0.9
+    })
 
   </script>
 </body>
