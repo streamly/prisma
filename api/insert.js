@@ -37,7 +37,8 @@ export default async function handler(req, res) {
       duration: parseInt(duration),
       created: now,
       modified: now,
-      active: 0
+      active: 0,
+      ranking: 0
     }
 
     try {
