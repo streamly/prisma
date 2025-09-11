@@ -736,35 +736,35 @@
       }
     })
 
-    $(document).on('click', '#xxxpublish', function (e) {
-      e.preventDefault() // Prevent default form submission
-      const formData = $('#post').serializeArray()
-      if ($('#vod').parsley().isValid()) {
-        $.ajax({
-          type: "POST",
-          url: "/api/update",
-          data: formData,
-          dataType: "json",
-          success: function (response) {
-            //alert(response.status )
+    // $(document).on('click', '#xxxpublish', function (e) {
+    //   e.preventDefault() // Prevent default form submission
+    //   const formData = $('#post').serializeArray()
+    //   if ($('#vod').parsley().isValid()) {
+    //     $.ajax({
+    //       type: "POST",
+    //       url: "/api/update",
+    //       data: formData,
+    //       dataType: "json",
+    //       success: function (response) {
+    //         //alert(response.status )
 
-            //console.log("Response:", response);
-            setTimeout(function () {
-              window.location = "/"
-            }, 2000)
+    //         //console.log("Response:", response);
+    //         setTimeout(function () {
+    //           window.location = "/"
+    //         }, 2000)
 
-          },
-          error: function (xhr, status, error) {
-            alert(error)
-            console.error("Error:", error)
-            alert("Failed to submit post.")
-          }
-        })
-      } else {
-        alert("Form incomplete.")
-        console.log("Validation failed.")
-      }
-    })
+    //       },
+    //       error: function (xhr, status, error) {
+    //         alert(error)
+    //         console.error("Error:", error)
+    //         alert("Failed to submit post.")
+    //       }
+    //     })
+    //   } else {
+    //     alert("Form incomplete.")
+    //     console.log("Validation failed.")
+    //   }
+    // })
 
 
 
