@@ -8,6 +8,7 @@ import {
   successResponse
 } from '../lib/apiHelpers.js';
 import { getTypesenseClient } from '../lib/typesenseClient.js';
+import md5 from 'md5'
 
 export default async function handler(req, res) {
   setCorsHeaders(res);
@@ -17,6 +18,7 @@ export default async function handler(req, res) {
   try {
     validateMethod(req, ['GET']);
     const userId = await authenticateUser(req);
+    const uidHash = md5(userId)
     
     const { videoId } = req.query;
     
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
       const typesenseClient = getTypesenseClient();
       
       // Generate presigned URL for thumbnail with ownership check (valid for 7 days)
-      const presignedUrl = await generateThumbnailPresignedUrl(videoId, userId, typesenseClient, 604800);
+      const presignedUrl = await generateThumbnailPresignedUrl(videoId, uidHash, typesenseClient, 604800);
       
       return successResponse(res, { 
         url: presignedUrl,

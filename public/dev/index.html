@@ -9,17 +9,23 @@
   <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8.2.1/themes/satellite-min.css"
     crossorigin="anonymous">
-  <!-- Clerk JS SDK -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video-js.min.css" rel="stylesheet">
+
+  <!-- Clerk-->
   <script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
-    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript">
-    </script>
-  <script src="https://cdn.jsdelivr.net/npm/typesense@2/dist/typesense.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4.56.10/dist/instantsearch.production.min.js"></script>
-
-
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
 
   <link href="/dev/style.css" rel="stylesheet">
+  <style>
+    body {
+      padding-top: 65px;
+    }
 
+    .dropdown-menu {
+      z-index: 2000;
+      /* higher than navbar (default 1030) */
+    }
+  </style>
 </head>
 
 <body>
@@ -29,19 +35,22 @@
     <div class="container-fluid">
       <!-- Left section -->
       <div class="d-flex align-items-center ps-5">
-        <a class="me-4" href="/dev/">
+
+
+        <a class="me-4" href="/">
           <img src="/dev/syndinet-sm.jpg" height="40" class="" title="SyndiNet">
         </a>
+
         <div id="searchbox" style="width:300px;"></div>
       </div>
 
       <!-- Right section -->
       <div class="d-flex align-items-center pe-5 ms-auto">
-        <a class="btn btn-link bg-transparent p-0 m-0 add" role="button" type="button" title="Add a Video"><i
-            class="bx bx-plus bx-sm mx-4"></i></a>
+        <a class="btn btn-link bg-transparent p-0 m-0 add" role="button" type="button" title="Add a Video"
+          href="/dev/upload"><i class="bx bx-plus bx-sm mx-4"></i></a>
         <a class="btn btn-link bg-transparent p-0 m-0 analytics" role="button" type="button" title="Analytics"><i
             class="bx bx-bar-chart bx-sm mx-4"></i></a>
-        <a class="btn btn-link bg-transparent p-0 m-0 conversions" button" type="button" title="Conversions"><i
+        <a class="btn btn-link bg-transparent p-0 m-0 conversions" button type="button" title="Conversions"><i
             class="bx bx-user-voice bx-sm mx-4"></i></a>
 
         <div class="dropdown">
@@ -59,6 +68,7 @@
       </div>
     </div>
   </nav>
+
 
   <!-- content -->
   <div class="container-fluid p-4 mb-5 ">
@@ -81,55 +91,17 @@
     </div>
   </div>
 
-  <!-- Video Details Modal -->
-  <div id="videoModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Video Details</h2>
-        <span class="close" onclick="modalManager.closeVideoModal()">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div class="video-player-section">
-          <div class="video-player" id="videoPlayer">
-            <video controls style="width: 100%; height: 100%;" id="videoElement">
-              <source src="" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        </div>
-        <div class="video-form">
-          <form id="videoDetailsForm">
-            <div class="form-group">
-              <label for="videoTitle">Title</label>
-              <input type="text" id="videoTitle" name="title" required>
-            </div>
-            <div class="form-group">
-              <label for="videoDescription">Description</label>
-              <textarea id="videoDescription" name="description" placeholder="Enter video description..."></textarea>
-            </div>
-            <div class="thumbnail-section">
-              <label>Thumbnail</label>
-              <div class="thumbnail-preview" id="thumbnailPreview">
-                <span>Click to generate thumbnail</span>
-              </div>
-              <button type="button" id="generateThumbnail" class="btn btn-primary">Generate Thumbnail</button>
-            </div>
-          </form>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="modalManager.closeVideoModal()">Cancel</button>
-        <button type="button" class="btn btn-primary" id="saveBtn">Save</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Footer -->
   <footer class="small m-0 p-0 text-center small text-muted">
     &copy; <span id="year"></span> SyndiNet. All rights reserved. &bull;
     <a href="terms.html" target="_window">Terms of Service</a> &bull;
     <a href="privacy.html" target="_window">Privacy Policy</a>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
   </footer>
+
 
   <!-- vodModal -->
   <div class="modal fade" id="vodModal" tabindex="-1" aria-labelledby="vodModalLabel" aria-hidden="true"
@@ -143,21 +115,28 @@
             aria-label="Close"></button>
         </div>
         <div class="modal-body px-5 py-4">
+
+
           <div class="row">
             <div class="col-9 small pe-2 pb-4">
+
               <div class="mb-3">
-                <video id="player" controls preload="auto" class="w-100 border bg-dark" style="aspect-ratio: 16/9;">
-                  <source src="" type="video/mp4">
-                  Your browser does not support the video tag.
-                </video>
+                <video id="player" controls preload="auto" data-setup="{}"
+                  class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9 bg-dark w-100 border "></video>
               </div>
               <form id="vod" data-parsley-validate>
-                <input type="hidden" name="id" id="id" required />
+
+
+                <input type="hidden" name="id" id="id" equired />
+
+
                 <div class="mb-3">
                   <label for="title">Title</label>
                   <input id="title" type="text" name="title" required maxLength="150"
                     class="form-control text-trim border validate" />
                 </div>
+
+
                 <div class="mb-3">
                   <label for="type">Type</label>
                   <select id="type" name="category[]" required class="form-control text-trim border validate" />
@@ -198,6 +177,7 @@
                   <option value="Workshop">Workshop</option>
                   </select>
                 </div>
+
                 <div class="mb-3">
                   <label for="audience">Audience</label>
                   <select id="audience" name="audience[]" required class="form-control text-trim border validate" />
@@ -208,13 +188,20 @@
                   <option>NGO/Non-Profit
                     </select>
                 </div>
+
+
                 <div class="mb-3">
                   <label for="description">Description</label>
+
                   <textarea id="description" name="description" rows="6" required maxLength="500"
                     class="form-control border text-trim validate"></textarea>
                 </div>
+
+
+
                 <div class="mb-3">
                   <label for="company">Company</label>
+
                   <div class="">
                     <div id="company-wrapper">
                       <div class="input-group mb-2 company-input">
@@ -228,13 +215,24 @@
                     <button type="button" id="add-company"
                       class="btn btn-link btn-sm bg-transparent p-0 m-0 float-end">Add A Company</button>
                   </div>
+
+
+
+
+
                 </div>
+
+
+
+
                 <div class="mb-3">
                   <label for="tags">Keywords</label>
                   <input id="tags" type="text" name="tags" required maxLength="100"
                     class="form-control border validate" />
                 </div>
+
                 <div class="performance" style="display:none;">
+
                   <div class="mb-3">
                     <label for="cpv" class="">CPV Bid (per minute) <i class='bx bx-help-circle'
                         title="Set a cost-per-view (CPV) bid of $0.05 per minute or higher to amplify your video's reach. Higher bids elevate your content in recommendations, driving greater visibility, engagement, and conversions."></i>
@@ -254,11 +252,18 @@
                   <input class="form-check-input" type="checkbox" value="" id="performance" xdisabled />
                   <label class="form-check-label" for="performance">Ad-free performance marketing</label>
                 </div>
+
+
+
+
                 <button id="publish" data-active="1" type="button"
                   class="btn btn-dark shadow-none ms-0 me-4 px-4">Publish</button>
+
+
               </form>
             </div>
             <div class="col-3 pe-0">
+              <!-- Image placeholder -->
               <div class="small pb-3">
                 <div class="image-container">
                   <img id="thumbnail" class="img-fluid w-100 border" src="" height="169" title="Thumbnail" />
@@ -270,14 +275,30 @@
                     </div>
                   </div>
                 </div>
+
                 <button type="button" id="generate-thumbnail" data-optimizer="" data-uid="" data-id=""
                   class="btn btn-dark mb-3 shadow-none w-100 mt-3">
                   GENERATE THUMBNAIL
                 </button>
+
                 <canvas id="canvas" style="display:none;"></canvas>
               </div>
+
+
             </div>
           </div>
+
+
+
+
+
+
+
+
+
+
+
+
         </div>
       </div>
     </div>
@@ -343,17 +364,531 @@
     </div>
   </div>
 
+
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.2/mdb.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- JS -->
+
   <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.23.3/dist/algoliasearch-lite.umd.js"
     crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4.68.1/dist/instantsearch.production.min.js"
     crossorigin="anonymous"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/typesense-instantsearch-adapter@2/dist/typesense-instantsearch-adapter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
-  <script src="/js/dashboard.js" type="module"></script>
+  <script>
 
+    const cookies = Object.fromEntries(
+      document.cookie.split('; ').map(c => c.split('='))
+    )
+
+    //alert(cookies.user_fullname);    // Elena Albegova
+    //alert(cookies.user_token_public); // xyz
+
+    // add company
+    $(document).ready(function () {
+      // Add new company input
+      $('#add-company').click(function () {
+        const newInput = $('#company-wrapper .company-input:first').clone()
+        newInput.find('input').val('') // clear value
+        $('#company-wrapper').append(newInput)
+        updateRemoveButtons()
+      })
+
+      // Remove company input
+      $('#company-wrapper').on('click', '.remove-company', function () {
+        if ($('#company-wrapper .company-input').length > 1) {
+          $(this).closest('.company-input').remove()
+        }
+        updateRemoveButtons()
+      })
+
+      // Show/hide remove buttons if only 1 input left
+      function updateRemoveButtons() {
+        if ($('#company-wrapper .company-input').length === 1) {
+          $('#company-wrapper .company-input .remove-company').hide()
+        } else {
+          $('#company-wrapper .company-input .remove-company').show()
+        }
+      }
+
+      updateRemoveButtons()
+    })
+
+
+
+
+
+
+    // edit
+    $(document).on("click", ".edit", function () {
+      const data = $(this).closest('.row').data()
+      $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
+
+
+      $.each(data, function (key, value) {
+        $("#" + key).val(decodeURIComponent(value))
+      })
+      const modal = new mdb.Modal(document.getElementById("vodModal"))
+      modal.show()
+
+    })
+
+    // performance
+    $(document).on("click", "#performance", function () {
+      $(".performance").toggle()
+
+
+    })
+
+    // update video
+    $('#vod').parsley()
+    $("#publish").on("click", async function () {
+      // Collect values
+      const payload = {
+        id: $("#id").val(),
+        title: $("#title").val(),
+        description: $("#description").val(),
+        category: $("#category").val(),
+        company: $("#company").val(),
+        tags: $("#tags").val().split(','),
+        cpv: parseFloat($("#cpv").val()),
+        budget: parseFloat($("#budget").val()),
+        active: 1
+      }
+
+      try {
+        const response = await fetch("/api/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+
+        const result = await response.json()
+        console.log(result)
+
+        if (result.success) {
+          alert("Update successful")
+
+          $(".btn-close").trigger('click')
+
+
+
+        } else {
+          alert("Error: " + result.error)
+        }
+      } catch (err) {
+        alert("Request failed: " + err.message)
+      }
+    })
+
+    // delete video
+    $(document).on("click", ".trash", async function (e) {
+      e.preventDefault()
+
+      // Collect values
+      const payload = {
+        id: $("#id").val(),
+      }
+
+      try {
+        const response = await fetch("/api/delete", {
+          method: "POST", // if your API expects DELETE, change this to "DELETE"
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+
+        const result = await response.json()
+        console.log(result)
+
+        if (result.success) {
+          alert("Delete successful")
+
+          // Close modal/offcanvas
+          $(".btn-close").trigger("click")
+        } else {
+          alert("Error: " + result.error)
+        }
+      } catch (err) {
+        alert("Request failed: " + err.message)
+      }
+    })
+
+
+
+
+    // old code
+    $(document).on('click', '#xxxpublish', function (e) {
+
+
+      //alert(333)
+      //return;
+
+
+
+      //alert(  $(this).data('active') )
+      e.preventDefault() // Prevent default form submission
+      const formData = $('#post').serializeArray()
+
+
+
+
+
+
+      // Validate the form before submitting
+
+      if ($('#vod').parsley().isValid()) {
+        $.ajax({
+          type: "POST",
+          url: "/api/update",
+          data: formData,
+          dataType: "json",
+          success: function (response) {
+            //alert(response.status )
+
+            //console.log("Response:", response);
+            setTimeout(function () {
+              window.location = "/"
+            }, 2000)
+
+          },
+          error: function (xhr, status, error) {
+            alert(error)
+            console.error("Error:", error)
+            alert("Failed to submit post.")
+          }
+        })
+      } else {
+        alert("Form incomplete.")
+        console.log("Validation failed.")
+      }
+    })
+
+
+
+    // analytics
+    $(document).on("click", ".analytics", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("analyticsModal"))
+      modal.show()
+
+    })
+
+    // conversions
+    $(document).on("click", ".conversions", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("conversionsModal"))
+      modal.show()
+
+    })
+
+    // billing
+    $(document).on("click", ".billing", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("billingModal"))
+      modal.show()
+
+    })
+
+    // help
+    $(document).on("click", ".help", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("helpModal"))
+      modal.show()
+
+    })
+
+
+
+
+
+
+
+    const player = videojs('player', {
+      autoplay: true,
+      muted: false,
+      controls: true,
+
+    })
+
+    // modal close
+    $("#vodModal").on("hidden.bs.modal", function () {
+      player.pause()
+      $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
+      $(document).attr("title", "SyndiNet")
+
+      const uploaded = $(this).data('uploaded')
+      if (uploaded) {
+        $(this).removeData('uploaded')
+        location.href = location.pathname
+      }
+
+
+
+    })
+
+
+
+
+
+    function duration(seconds) {
+      if (!seconds || isNaN(seconds)) return "0:00" // guard
+
+      const hrs = Math.floor(seconds / 3600)
+      const mins = Math.floor((seconds % 3600) / 60)
+      const secs = Math.floor(seconds % 60)
+
+      const formattedMins = mins < 10 ? "0" + mins : mins
+      const formattedSecs = secs < 10 ? "0" + secs : secs
+
+      if (hrs > 0) {
+        return `${hrs}:${formattedMins}:${formattedSecs}`
+      } else {
+        return `${formattedMins}:${formattedSecs}`
+      }
+    }
+
+    function decodeHTMLEntities(text) {
+      const txt = document.createElement("textarea")
+      txt.innerHTML = text
+      return txt.value
+    }
+
+    const apiKey = cookies.get('apiKey')
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000 // Start of today
+    const yesterday = today - 86400 // Start of yesterday
+    const startOfWeek = today - (now.getDay() * 86400) // Start of this week (Sunday)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000 // Start of this month
+
+
+    const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
+      server: {
+        apiKey: apiKey,
+        nodes: [{ host: "t1.tubie.cx", port: 443, protocol: "https" }],
+      },
+      additionalSearchParameters: {
+        query_by: "title,company,channel,description,tags",
+      },
+    })
+
+    const search = instantsearch({
+      indexName: "videos",
+      searchClient: typesenseInstantsearchAdapter.searchClient,
+      routing: false,
+      searchFunction(helper) {
+        // Only scroll to the top for new searches (not when paging)
+        if (helper.state.page === 0) { window.scrollTo({ top: 0, behavior: 'auto', }) }
+        helper.search()
+      },
+    })
+
+    search.addWidgets([
+      instantsearch.widgets.searchBox({
+        container: "#searchbox",
+        placeholder: "Search",
+        autofocus: true,
+        showReset: true,
+        showSubmit: true,
+      }),
+
+      instantsearch.widgets.refinementList({
+        container: '#channel-filter',
+        attribute: 'channel',
+        searchable: true,
+        searchablePlaceholder: 'Search companies',
+        limit: 30,
+        templates: {
+          item(data) {
+            return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`
+          }
+        }
+      }),
+
+      instantsearch.widgets.numericMenu({
+        container: '#duration-filter',
+        attribute: 'duration',
+        items: [
+          { label: 'Any' },
+          { label: 'Under 4 minutes', start: 1, end: 239 },
+          { label: '4 - 20 minutes', start: 240, end: 1199 },
+          { label: 'Over 20 minutes', start: 1200 },
+        ],
+      }),
+      instantsearch.widgets.numericMenu({
+        container: '#created-filter',
+        attribute: 'created',
+        items: [
+          { label: 'All', start: 0 }, // No filter for "All"
+          { label: 'Today', start: today }, // From the start of today
+          { label: 'Yesterday', start: yesterday, end: today }, // From the start of yesterday to the end of yesterday
+          { label: 'This Week', start: startOfWeek }, // From the start of the week
+          { label: 'This Month', start: startOfMonth }, // From the start of the month
+        ],
+      }),
+      instantsearch.widgets.currentRefinements({
+        container: '#refinements',
+        transformItems(items) {
+          // Show/hide the clear button depending on refinements
+          if (items.length > 0) {
+            $("#clear").show()
+          } else {
+            $("#clear").hide()
+          }
+          return items
+        }
+      }),
+
+
+      instantsearch.widgets.infiniteHits({
+        container: "#hits",
+        transformItems(items) {
+          return items.map((item, index) => ({
+            ...item,
+            resultPosition: index + 1,
+          }))
+        },
+        templates: {
+          item(hit) {
+            hit.position = hit.__position
+
+            const dataAttributes = Object.keys(hit).map(key => {
+              const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`
+              let value = hit[key]
+              if (Array.isArray(value)) value = value.join('; ')
+              const safeValue = encodeURIComponent(String(value ?? ''))
+              return `${safeKey}="${safeValue}"`
+            }).join(' ')
+
+            const title = decodeHTMLEntities(hit.title || "")
+            const description = decodeHTMLEntities(hit.description || "")
+
+            return `  ${hit.id}
+<div class="row border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
+  <!-- Thumbnail (col-4) -->
+  <div class="col-2 text-end">
+    <div class="edit pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
+      <div class="img-fluid border bg-dark thumbnail-background"
+           style="background-image:url('/images/${hit.id}.jpg');
+                  height:69px;  width:123px;
+                  background-repeat:no-repeat;
+                  background-size:cover;">
+      </div>
+      <div class="duration">${duration(hit.duration)}</div>
+    </div>
+  </div>
+
+  <!-- Title + Channel (col-8) -->
+  <div class="col">
+    <h6 class="edit title-clamp m-0" title="${title}">${title}</h6>
+    <div class="edit pointer text-muted small text-truncate"> 
+      ${Array.isArray(hit.channel) ? hit.channel.join("; ") : ""}
+    </div>
+  </div>
+  <div class="col-1">
+<div class="dropdown">
+  <a class="btn btn-link bg-transparent p-0 m-0" href="#" title="More" data-mdb-toggle="dropdown" aria-expanded="false">
+    <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
+  </a>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a type="button" class="dropdown-item edit">Edit</a></li>
+   <li><a type="button" class="dropdown-item analytics">Analytics</a></li>    
+    <li><a type="button" class="dropdown-item conversions">Conversions</a></li> 
+    <li><a type="button" class="dropdown-item billing">Billing</a></li> 
+    <li><a type="button" class="dropdown-item trash" >Trash</a></li>              
+ 
+  </ul>
+</div>  
+  </div>
+</div>
+
+
+        `
+          },
+        },
+      }),
+    ])
+
+    search.start()
+
+    const urlParams = new URLSearchParams(window.location.search)
+
+    if (urlParams.get('v')) {
+      const v = urlParams.get('v') // removed extra closing parenthesis
+      search.helper
+        .setQuery("")
+        .setQueryParameter("filters", `id:${v}`)
+        .search()
+
+      setTimeout(function () {
+        $("#vodModal").data("uploaded", 1)
+        $(".edit").first().trigger("click")
+      }, 1000)
+    }
+    $(document).on("click", "#reload", function (e) {
+      search.helper.setQuery("").search()
+
+    })
+
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            const btn = entry.target
+            if (!btn.disabled && btn.offsetParent !== null) {
+              btn.click()
+            }
+          }
+        })
+      },
+      { threshold: [0.5] }
+    )
+
+    const watchLoadMoreButton = () => {
+      const btn = document.querySelector(".ais-InfiniteHits-loadMore")
+      if (btn) {
+        observer.observe(btn)
+      } else {
+        setTimeout(watchLoadMoreButton, 300)
+      }
+    }
+
+    watchLoadMoreButton()
+
+    $(document).on('click', '.dropdown-item.logout', async function (e) {
+      e.preventDefault()
+
+      try {
+        await Clerk.load()
+        await Clerk.signOut()
+
+        const cookiesToRemove = ['apiKey', 'uid', 'auth_token']
+
+        for (const cookieToRemove of cookiesToRemove) {
+          window.cookieStore.delete(cookieToRemove)
+        }
+      } catch (error) {
+        console.error('Failed to sign out')
+      }
+    })
+
+    window.addEventListener('load', async () => {
+      await Clerk.load()
+
+      if (!Clerk.user) {
+        Clerk.redirectToSignIn({ redirectUrl: '/dev/auth/' })
+        return
+      }
+    })
+  </script>
 </body>
 
 </html>

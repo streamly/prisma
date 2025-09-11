@@ -107,7 +107,7 @@ export default async function handler(req, res) {
       };
 
       const cookies = [
-        serialize('apikey', scopedApiKey, cookieOptions),
+        serialize('apiKey', scopedApiKey, cookieOptions),
         serialize('uid', uidHash, cookieOptions),
         serialize('auth_token', token, httpOnlyCookieOptions)
       ];
