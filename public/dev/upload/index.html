@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Bizilla TV - Upload</title>
+  <title>SyndiNet - Upload</title>
 
   <style>
     body {
@@ -120,6 +120,63 @@
 
   <script type="module">
     import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
+
+    export default class VideoValidator extends BasePlugin {
+      constructor(uppy, opts) {
+        super(uppy, opts)
+        this.id = opts.id || 'VideoValidator'
+        this.type = 'modifier' // This modifies files before upload
+        this.minDuration = opts.minDuration || 60 // seconds
+        this.aspectRatio = opts.aspectRatio || 16 / 9
+        this.tolerance = opts.tolerance || 0.05
+      }
+
+      install() {
+        this.uppy.on('file-added', this.validateFile.bind(this))
+      }
+
+      uninstall() {
+        this.uppy.off('file-added', this.validateFile.bind(this))
+      }
+
+      async validateFile(file) {
+        if (!file.type.startsWith('video/')) return
+
+        const isValid = await new Promise((resolve) => {
+          const video = document.createElement('video')
+          video.preload = 'metadata'
+          video.src = URL.createObjectURL(file.data)
+
+          video.onloadedmetadata = () => {
+            const duration = video.duration
+            const ratio = video.videoWidth / video.videoHeight
+            URL.revokeObjectURL(video.src)
+
+            if (duration >= this.minDuration && Math.abs(ratio - this.aspectRatio) < this.tolerance) {
+              this.uppy.setFileMeta(file.id, {
+                width: video.videoWidth,
+                height: video.videoHeight,
+                duration: Math.round(duration)
+              })
+              resolve(true)
+            } else {
+              resolve(false)
+            }
+          }
+
+          video.onerror = () => {
+            URL.revokeObjectURL(video.src)
+            resolve(false)
+          }
+        })
+
+        if (!isValid) {
+          this.uppy.info(`Video must be at least ${this.minDuration}s and ${this.aspectRatio}:1 aspect ratio.`, 'error', 5000)
+
+          return false
+        }
+      }
+    }
 
     window.addEventListener('load', async () => {
       let uid = (await window.cookieStore.get('uid')).value
@@ -311,8 +368,8 @@
             completeMultipartUpload,
             abortMultipartUpload
           })
+          .use(VideoValidator)
 
-        uppy.on('upload-progress', file => showStatus(`Uploading: ${file.progress?.percentage || 0}% complete`, 'info'))
         uppy.on('complete', handleUploadComplete)
         uppy.on('error', error => showError(error.message || 'Upload failed'))
       } catch (error) {
