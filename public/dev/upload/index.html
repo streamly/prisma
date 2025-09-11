@@ -123,7 +123,7 @@
 
     export default class VideoValidator extends BasePlugin {
       constructor(uppy, opts) {
-        super(uppy, opts)
+        super(uppy, opts || {})
         this.id = opts.id || 'VideoValidator'
         this.type = 'modifier' // This modifies files before upload
         this.minDuration = opts.minDuration || 60 // seconds
