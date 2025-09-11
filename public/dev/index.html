@@ -385,7 +385,17 @@
         Clerk.redirectToSignIn({ redirectUrl: '/dev/auth/' })
         return
       }
+    })
 
+    $(document).on('click', '.dropdown-item.logout', async function (e) {
+      e.preventDefault()
+
+      await Clerk.signOut()
+    })
+  </script>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', async function () {
       // Add new company input
       $('#add-company').click(function () {
         const newInput = $('#company-wrapper .company-input:first').clone()
@@ -619,12 +629,6 @@
       }
 
       watchLoadMoreButton()
-
-      $(document).on('click', '.dropdown-item.logout', async function (e) {
-        e.preventDefault()
-
-        await Clerk.signOut()
-      })
     })
 
     // edit
