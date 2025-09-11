@@ -215,7 +215,7 @@
       }
 
       function generateVideoId() {
-        return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+        return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.mp4'
       }
 
       async function getUploadParameters(file) {
@@ -223,7 +223,7 @@
         const res = await fetch('/api/upload?type=getUploadParameters', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.name })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoId })
         })
         if (!res.ok) throw new Error('Failed to get upload parameters')
         const data = await res.json()
@@ -235,7 +235,7 @@
         const res = await fetch('/api/upload?type=createMultipartUpload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.name })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoId })
         })
         return await res.json()
       }
@@ -294,12 +294,17 @@
           const uploadedFile = result.successful[0]
           const file = uploadedFile.data
 
+          const videoId = file.meta.videoId
+
+          if (!videoId) {
+            throw new Error('Missing video metadata id')
+          }
+
           const filename = file.meta?.fileKey || file.name
           const width = file.meta?.width || 0
           const height = file.meta?.height || 0
           const duration = file.meta?.duration || 0
           const size = file.meta?.size || 0
-          const videoId = generateVideoId()
 
           const payload = { filename, width, height, size, duration, id: videoId }
 
@@ -338,7 +343,15 @@
           maxNumberOfFiles: 1,
           maxFileSize: 1771673011 // ~1.65GB
         },
-        meta: { uid }
+        meta: { uid },
+        onBeforeUpload: (files) => {
+          Object.keys(files).forEach((fileId) => {
+            const videoId = generateVideoId()
+            uppy.setFileMeta(fileId, { ...file.meta, videoId })
+          })
+
+          return true
+        }
       })
         .use(Dashboard, { inline: true, target: '#uppy-container', note: 'Your video must be MP4, 16:9, minimum 1 minute long, maximum 1.65GB big' })
         .use(AwsS3, {
