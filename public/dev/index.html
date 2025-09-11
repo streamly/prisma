@@ -380,368 +380,363 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
   <script>
-
-    // add company
-    $(document).ready(function () {
-      // Add new company input
-      $('#add-company').click(function () {
-        const newInput = $('#company-wrapper .company-input:first').clone()
-        newInput.find('input').val('') // clear value
-        $('#company-wrapper').append(newInput)
-        updateRemoveButtons()
-      })
-
-      // Remove company input
-      $('#company-wrapper').on('click', '.remove-company', function () {
-        if ($('#company-wrapper .company-input').length > 1) {
-          $(this).closest('.company-input').remove()
-        }
-        updateRemoveButtons()
-      })
-
-      // Show/hide remove buttons if only 1 input left
-      function updateRemoveButtons() {
-        if ($('#company-wrapper .company-input').length === 1) {
-          $('#company-wrapper .company-input .remove-company').hide()
-        } else {
-          $('#company-wrapper .company-input .remove-company').show()
-        }
-      }
-
-      updateRemoveButtons()
-    })
-
-
-
-
-
-
-    // edit
-    $(document).on("click", ".edit", function () {
-      const data = $(this).closest('.row').data()
-      $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
-
-
-      $.each(data, function (key, value) {
-        $("#" + key).val(decodeURIComponent(value))
-      })
-      const modal = new mdb.Modal(document.getElementById("vodModal"))
-      modal.show()
-
-    })
-
-    // performance
-    $(document).on("click", "#performance", function () {
-      $(".performance").toggle()
-
-
-    })
-
-    // update video
-    $('#vod').parsley()
-    $("#publish").on("click", async function () {
-      // Collect values
-      const payload = {
-        id: $("#id").val(),
-        title: $("#title").val(),
-        description: $("#description").val(),
-        category: $("#category").val(),
-        company: $("#company").val(),
-        tags: $("#tags").val().split(','),
-        cpv: parseFloat($("#cpv").val()),
-        budget: parseFloat($("#budget").val()),
-        active: 1
-      }
-
-      try {
-        const response = await fetch("/api/update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+    document.addEventListener('load', async () => {
+      // add company
+      $(document).ready(function () {
+        // Add new company input
+        $('#add-company').click(function () {
+          const newInput = $('#company-wrapper .company-input:first').clone()
+          newInput.find('input').val('') // clear value
+          $('#company-wrapper').append(newInput)
+          updateRemoveButtons()
         })
 
-        const result = await response.json()
-        console.log(result)
-
-        if (result.success) {
-          alert("Update successful")
-
-          $(".btn-close").trigger('click')
-
-
-
-        } else {
-          alert("Error: " + result.error)
-        }
-      } catch (err) {
-        alert("Request failed: " + err.message)
-      }
-    })
-
-    $(document).on("click", ".trash", async function (e) {
-      e.preventDefault()
-
-      const payload = {
-        id: $("#id").val(),
-      }
-
-      try {
-        const response = await fetch("/api/delete", {
-          method: "POST", // if your API expects DELETE, change this to "DELETE"
-          headers: { "Content-Type": "application/json",  },
-          body: JSON.stringify(payload),
-        })
-
-        const result = await response.json()
-        console.log(result)
-
-        if (result.success) {
-          alert("Delete successful")
-
-          // Close modal/offcanvas
-          $(".btn-close").trigger("click")
-        } else {
-          alert("Error: " + result.error)
-        }
-      } catch (err) {
-        alert("Request failed: " + err.message)
-      }
-    })
-
-    $(document).on('click', '#xxxpublish', function (e) {
-      e.preventDefault() // Prevent default form submission
-      const formData = $('#post').serializeArray()
-      if ($('#vod').parsley().isValid()) {
-        $.ajax({
-          type: "POST",
-          url: "/api/update",
-          data: formData,
-          dataType: "json",
-          success: function (response) {
-            //alert(response.status )
-
-            //console.log("Response:", response);
-            setTimeout(function () {
-              window.location = "/"
-            }, 2000)
-
-          },
-          error: function (xhr, status, error) {
-            alert(error)
-            console.error("Error:", error)
-            alert("Failed to submit post.")
+        // Remove company input
+        $('#company-wrapper').on('click', '.remove-company', function () {
+          if ($('#company-wrapper .company-input').length > 1) {
+            $(this).closest('.company-input').remove()
           }
+          updateRemoveButtons()
         })
-      } else {
-        alert("Form incomplete.")
-        console.log("Validation failed.")
-      }
-    })
 
-
-
-    // analytics
-    $(document).on("click", ".analytics", function () {
-      const data = $(this).data()
-      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-      const modal = new mdb.Modal(document.getElementById("analyticsModal"))
-      modal.show()
-
-    })
-
-    // conversions
-    $(document).on("click", ".conversions", function () {
-      const data = $(this).data()
-      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-      const modal = new mdb.Modal(document.getElementById("conversionsModal"))
-      modal.show()
-
-    })
-
-    // billing
-    $(document).on("click", ".billing", function () {
-      const data = $(this).data()
-      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-      const modal = new mdb.Modal(document.getElementById("billingModal"))
-      modal.show()
-
-    })
-
-    // help
-    $(document).on("click", ".help", function () {
-      const data = $(this).data()
-      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-      const modal = new mdb.Modal(document.getElementById("helpModal"))
-      modal.show()
-
-    })
-
-
-
-
-
-
-
-    const player = videojs('player', {
-      autoplay: true,
-      muted: false,
-      controls: true,
-
-    })
-
-    // modal close
-    $("#vodModal").on("hidden.bs.modal", function () {
-      player.pause()
-      $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
-      $(document).attr("title", "SyndiNet")
-
-      const uploaded = $(this).data('uploaded')
-      if (uploaded) {
-        $(this).removeData('uploaded')
-        location.href = location.pathname
-      }
-
-
-
-    })
-
-
-
-
-
-    function duration(seconds) {
-      if (!seconds || isNaN(seconds)) return "0:00" // guard
-
-      const hrs = Math.floor(seconds / 3600)
-      const mins = Math.floor((seconds % 3600) / 60)
-      const secs = Math.floor(seconds % 60)
-
-      const formattedMins = mins < 10 ? "0" + mins : mins
-      const formattedSecs = secs < 10 ? "0" + secs : secs
-
-      if (hrs > 0) {
-        return `${hrs}:${formattedMins}:${formattedSecs}`
-      } else {
-        return `${formattedMins}:${formattedSecs}`
-      }
-    }
-
-    function decodeHTMLEntities(text) {
-      const txt = document.createElement("textarea")
-      txt.innerHTML = text
-      return txt.value
-    }
-
-    const apiKey = await window.cookieStore.get('apiKey')
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000 // Start of today
-    const yesterday = today - 86400 // Start of yesterday
-    const startOfWeek = today - (now.getDay() * 86400) // Start of this week (Sunday)
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000 // Start of this month
-
-
-    const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
-      server: {
-        apiKey: apiKey,
-        nodes: [{ host: "t1.tubie.cx", port: 443, protocol: "https" }],
-      },
-      additionalSearchParameters: {
-        query_by: "title,company,channel,description,tags",
-      },
-    })
-
-    const search = instantsearch({
-      indexName: "videos",
-      searchClient: typesenseInstantsearchAdapter.searchClient,
-      routing: false,
-      searchFunction(helper) {
-        // Only scroll to the top for new searches (not when paging)
-        if (helper.state.page === 0) { window.scrollTo({ top: 0, behavior: 'auto', }) }
-        helper.search()
-      },
-    })
-
-    search.addWidgets([
-      instantsearch.widgets.searchBox({
-        container: "#searchbox",
-        placeholder: "Search",
-        autofocus: true,
-        showReset: true,
-        showSubmit: true,
-      }),
-
-      instantsearch.widgets.refinementList({
-        container: '#channel-filter',
-        attribute: 'channel',
-        searchable: true,
-        searchablePlaceholder: 'Search companies',
-        limit: 30,
-        templates: {
-          item(data) {
-            return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`
-          }
-        }
-      }),
-
-      instantsearch.widgets.numericMenu({
-        container: '#duration-filter',
-        attribute: 'duration',
-        items: [
-          { label: 'Any' },
-          { label: 'Under 4 minutes', start: 1, end: 239 },
-          { label: '4 - 20 minutes', start: 240, end: 1199 },
-          { label: 'Over 20 minutes', start: 1200 },
-        ],
-      }),
-      instantsearch.widgets.numericMenu({
-        container: '#created-filter',
-        attribute: 'created',
-        items: [
-          { label: 'All', start: 0 }, // No filter for "All"
-          { label: 'Today', start: today }, // From the start of today
-          { label: 'Yesterday', start: yesterday, end: today }, // From the start of yesterday to the end of yesterday
-          { label: 'This Week', start: startOfWeek }, // From the start of the week
-          { label: 'This Month', start: startOfMonth }, // From the start of the month
-        ],
-      }),
-      instantsearch.widgets.currentRefinements({
-        container: '#refinements',
-        transformItems(items) {
-          // Show/hide the clear button depending on refinements
-          if (items.length > 0) {
-            $("#clear").show()
+        // Show/hide remove buttons if only 1 input left
+        function updateRemoveButtons() {
+          if ($('#company-wrapper .company-input').length === 1) {
+            $('#company-wrapper .company-input .remove-company').hide()
           } else {
-            $("#clear").hide()
+            $('#company-wrapper .company-input .remove-company').show()
           }
-          return items
         }
-      }),
+
+        updateRemoveButtons()
+      })
+
+      // edit
+      $(document).on("click", ".edit", function () {
+        const data = $(this).closest('.row').data()
+        $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
 
 
-      instantsearch.widgets.infiniteHits({
-        container: "#hits",
-        transformItems(items) {
-          return items.map((item, index) => ({
-            ...item,
-            resultPosition: index + 1,
-          }))
+        $.each(data, function (key, value) {
+          $("#" + key).val(decodeURIComponent(value))
+        })
+        const modal = new mdb.Modal(document.getElementById("vodModal"))
+        modal.show()
+
+      })
+
+      // performance
+      $(document).on("click", "#performance", function () {
+        $(".performance").toggle()
+
+
+      })
+
+      // update video
+      $('#vod').parsley()
+      $("#publish").on("click", async function () {
+        // Collect values
+        const payload = {
+          id: $("#id").val(),
+          title: $("#title").val(),
+          description: $("#description").val(),
+          category: $("#category").val(),
+          company: $("#company").val(),
+          tags: $("#tags").val().split(','),
+          cpv: parseFloat($("#cpv").val()),
+          budget: parseFloat($("#budget").val()),
+          active: 1
+        }
+
+        try {
+          const response = await fetch("/api/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          })
+
+          const result = await response.json()
+          console.log(result)
+
+          if (result.success) {
+            alert("Update successful")
+
+            $(".btn-close").trigger('click')
+
+
+
+          } else {
+            alert("Error: " + result.error)
+          }
+        } catch (err) {
+          alert("Request failed: " + err.message)
+        }
+      })
+
+      $(document).on("click", ".trash", async function (e) {
+        e.preventDefault()
+
+        const payload = {
+          id: $("#id").val(),
+        }
+
+        try {
+          const response = await fetch("/api/delete", {
+            method: "POST", // if your API expects DELETE, change this to "DELETE"
+            headers: { "Content-Type": "application/json", },
+            body: JSON.stringify(payload),
+          })
+
+          const result = await response.json()
+          console.log(result)
+
+          if (result.success) {
+            alert("Delete successful")
+
+            // Close modal/offcanvas
+            $(".btn-close").trigger("click")
+          } else {
+            alert("Error: " + result.error)
+          }
+        } catch (err) {
+          alert("Request failed: " + err.message)
+        }
+      })
+
+      $(document).on('click', '#xxxpublish', function (e) {
+        e.preventDefault() // Prevent default form submission
+        const formData = $('#post').serializeArray()
+        if ($('#vod').parsley().isValid()) {
+          $.ajax({
+            type: "POST",
+            url: "/api/update",
+            data: formData,
+            dataType: "json",
+            success: function (response) {
+              //alert(response.status )
+
+              //console.log("Response:", response);
+              setTimeout(function () {
+                window.location = "/"
+              }, 2000)
+
+            },
+            error: function (xhr, status, error) {
+              alert(error)
+              console.error("Error:", error)
+              alert("Failed to submit post.")
+            }
+          })
+        } else {
+          alert("Form incomplete.")
+          console.log("Validation failed.")
+        }
+      })
+
+
+
+      // analytics
+      $(document).on("click", ".analytics", function () {
+        const data = $(this).data()
+        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+        const modal = new mdb.Modal(document.getElementById("analyticsModal"))
+        modal.show()
+
+      })
+
+      // conversions
+      $(document).on("click", ".conversions", function () {
+        const data = $(this).data()
+        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+        const modal = new mdb.Modal(document.getElementById("conversionsModal"))
+        modal.show()
+
+      })
+
+      // billing
+      $(document).on("click", ".billing", function () {
+        const data = $(this).data()
+        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+        const modal = new mdb.Modal(document.getElementById("billingModal"))
+        modal.show()
+
+      })
+
+      // help
+      $(document).on("click", ".help", function () {
+        const data = $(this).data()
+        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+        const modal = new mdb.Modal(document.getElementById("helpModal"))
+        modal.show()
+
+      })
+
+
+
+
+
+
+
+      const player = videojs('player', {
+        autoplay: true,
+        muted: false,
+        controls: true,
+
+      })
+
+      // modal close
+      $("#vodModal").on("hidden.bs.modal", function () {
+        player.pause()
+        $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
+        $(document).attr("title", "SyndiNet")
+
+        const uploaded = $(this).data('uploaded')
+        if (uploaded) {
+          $(this).removeData('uploaded')
+          location.href = location.pathname
+        }
+
+
+
+      })
+
+
+
+
+
+      function duration(seconds) {
+        if (!seconds || isNaN(seconds)) return "0:00" // guard
+
+        const hrs = Math.floor(seconds / 3600)
+        const mins = Math.floor((seconds % 3600) / 60)
+        const secs = Math.floor(seconds % 60)
+
+        const formattedMins = mins < 10 ? "0" + mins : mins
+        const formattedSecs = secs < 10 ? "0" + secs : secs
+
+        if (hrs > 0) {
+          return `${hrs}:${formattedMins}:${formattedSecs}`
+        } else {
+          return `${formattedMins}:${formattedSecs}`
+        }
+      }
+
+      function decodeHTMLEntities(text) {
+        const txt = document.createElement("textarea")
+        txt.innerHTML = text
+        return txt.value
+      }
+
+      const apiKey = await window.cookieStore.get('apiKey')
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000 // Start of today
+      const yesterday = today - 86400 // Start of yesterday
+      const startOfWeek = today - (now.getDay() * 86400) // Start of this week (Sunday)
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000 // Start of this month
+
+
+      const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
+        server: {
+          apiKey: apiKey,
+          nodes: [{ host: "t1.tubie.cx", port: 443, protocol: "https" }],
         },
-        templates: {
-          item(hit) {
-            hit.position = hit.__position
+        additionalSearchParameters: {
+          query_by: "title,company,channel,description,tags",
+        },
+      })
 
-            const dataAttributes = Object.keys(hit).map(key => {
-              const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`
-              let value = hit[key]
-              if (Array.isArray(value)) value = value.join('; ')
-              const safeValue = encodeURIComponent(String(value ?? ''))
-              return `${safeKey}="${safeValue}"`
-            }).join(' ')
+      const search = instantsearch({
+        indexName: "videos",
+        searchClient: typesenseInstantsearchAdapter.searchClient,
+        routing: false,
+        searchFunction(helper) {
+          // Only scroll to the top for new searches (not when paging)
+          if (helper.state.page === 0) { window.scrollTo({ top: 0, behavior: 'auto', }) }
+          helper.search()
+        },
+      })
 
-            const title = decodeHTMLEntities(hit.title || "")
-            const description = decodeHTMLEntities(hit.description || "")
+      search.addWidgets([
+        instantsearch.widgets.searchBox({
+          container: "#searchbox",
+          placeholder: "Search",
+          autofocus: true,
+          showReset: true,
+          showSubmit: true,
+        }),
 
-            return `  ${hit.id}
+        instantsearch.widgets.refinementList({
+          container: '#channel-filter',
+          attribute: 'channel',
+          searchable: true,
+          searchablePlaceholder: 'Search companies',
+          limit: 30,
+          templates: {
+            item(data) {
+              return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`
+            }
+          }
+        }),
+
+        instantsearch.widgets.numericMenu({
+          container: '#duration-filter',
+          attribute: 'duration',
+          items: [
+            { label: 'Any' },
+            { label: 'Under 4 minutes', start: 1, end: 239 },
+            { label: '4 - 20 minutes', start: 240, end: 1199 },
+            { label: 'Over 20 minutes', start: 1200 },
+          ],
+        }),
+        instantsearch.widgets.numericMenu({
+          container: '#created-filter',
+          attribute: 'created',
+          items: [
+            { label: 'All', start: 0 }, // No filter for "All"
+            { label: 'Today', start: today }, // From the start of today
+            { label: 'Yesterday', start: yesterday, end: today }, // From the start of yesterday to the end of yesterday
+            { label: 'This Week', start: startOfWeek }, // From the start of the week
+            { label: 'This Month', start: startOfMonth }, // From the start of the month
+          ],
+        }),
+        instantsearch.widgets.currentRefinements({
+          container: '#refinements',
+          transformItems(items) {
+            // Show/hide the clear button depending on refinements
+            if (items.length > 0) {
+              $("#clear").show()
+            } else {
+              $("#clear").hide()
+            }
+            return items
+          }
+        }),
+
+
+        instantsearch.widgets.infiniteHits({
+          container: "#hits",
+          transformItems(items) {
+            return items.map((item, index) => ({
+              ...item,
+              resultPosition: index + 1,
+            }))
+          },
+          templates: {
+            item(hit) {
+              hit.position = hit.__position
+
+              const dataAttributes = Object.keys(hit).map(key => {
+                const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`
+                let value = hit[key]
+                if (Array.isArray(value)) value = value.join('; ')
+                const safeValue = encodeURIComponent(String(value ?? ''))
+                return `${safeKey}="${safeValue}"`
+              }).join(' ')
+
+              const title = decodeHTMLEntities(hit.title || "")
+              const description = decodeHTMLEntities(hit.description || "")
+
+              return `  ${hit.id}
 <div class="row border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
   <!-- Thumbnail (col-4) -->
   <div class="col-2 text-end">
@@ -782,76 +777,75 @@
 
 
         `
+            },
           },
-        },
-      }),
-    ])
+        }),
+      ])
 
-    search.start()
+      search.start()
 
-    const urlParams = new URLSearchParams(window.location.search)
+      const urlParams = new URLSearchParams(window.location.search)
 
-    if (urlParams.get('v')) {
-      const v = urlParams.get('v') // removed extra closing parenthesis
-      search.helper
-        .setQuery("")
-        .setQueryParameter("filters", `id:${v}`)
-        .search()
+      if (urlParams.get('v')) {
+        const v = urlParams.get('v') // removed extra closing parenthesis
+        search.helper
+          .setQuery("")
+          .setQueryParameter("filters", `id:${v}`)
+          .search()
 
-      setTimeout(function () {
-        $("#vodModal").data("uploaded", 1)
-        $(".edit").first().trigger("click")
-      }, 1000)
-    }
-    $(document).on("click", "#reload", function (e) {
-      search.helper.setQuery("").search()
+        setTimeout(function () {
+          $("#vodModal").data("uploaded", 1)
+          $(".edit").first().trigger("click")
+        }, 1000)
+      }
+      $(document).on("click", "#reload", function (e) {
+        search.helper.setQuery("").search()
 
-    })
+      })
 
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-            const btn = entry.target
-            if (!btn.disabled && btn.offsetParent !== null) {
-              btn.click()
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+              const btn = entry.target
+              if (!btn.disabled && btn.offsetParent !== null) {
+                btn.click()
+              }
             }
-          }
-        })
-      },
-      { threshold: [0.5] }
-    )
+          })
+        },
+        { threshold: [0.5] }
+      )
 
-    const watchLoadMoreButton = () => {
-      const btn = document.querySelector(".ais-InfiniteHits-loadMore")
-      if (btn) {
-        observer.observe(btn)
-      } else {
-        setTimeout(watchLoadMoreButton, 300)
-      }
-    }
-
-    watchLoadMoreButton()
-
-    $(document).on('click', '.dropdown-item.logout', async function (e) {
-      e.preventDefault()
-
-      try {
-        await Clerk.load()
-        await Clerk.signOut()
-
-        const cookiesToRemove = ['apiKey', 'uid', 'auth_token']
-
-        for (const cookieToRemove of cookiesToRemove) {
-          window.cookieStore.delete(cookieToRemove)
+      const watchLoadMoreButton = () => {
+        const btn = document.querySelector(".ais-InfiniteHits-loadMore")
+        if (btn) {
+          observer.observe(btn)
+        } else {
+          setTimeout(watchLoadMoreButton, 300)
         }
-      } catch (error) {
-        console.error('Failed to sign out')
       }
-    })
 
-    window.addEventListener('load', async () => {
+      watchLoadMoreButton()
+
+      $(document).on('click', '.dropdown-item.logout', async function (e) {
+        e.preventDefault()
+
+        try {
+          await Clerk.load()
+          await Clerk.signOut()
+
+          const cookiesToRemove = ['apiKey', 'uid', 'auth_token']
+
+          for (const cookieToRemove of cookiesToRemove) {
+            window.cookieStore.delete(cookieToRemove)
+          }
+        } catch (error) {
+          console.error('Failed to sign out')
+        }
+      })
+
       await Clerk.load()
 
       if (!Clerk.user) {
