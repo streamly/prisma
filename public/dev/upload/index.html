@@ -122,12 +122,27 @@
     import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
 
     export default class VideoValidator extends BasePlugin {
+      constructor(uppy, opts = {}) {
+        super(uppy, opts)
+        this.id = opts.id || 'VideoValidator'
+        this.type = 'modifier' // This modifies files before upload
+        this.minDuration = opts.minDuration || 60
+        this.aspectRatio = 16 / 9
+        this.tolerance = opts.tolerance || 0.05
+      }
+
       install() {
-        this.uppy.addPreProcessor(this.validateFile.bind(this))
+        this.uppy.on('file-added', this.validateFile.bind(this))
+      }
+
+      uninstall() {
+        this.uppy.off('file-added', this.validateFile.bind(this))
       }
 
       async validateFile(file) {
-        if (!file.type.startsWith('video/')) return true
+        if (!file.type.startsWith('video/')) {
+          return false
+        }
 
         const isValid = await new Promise((resolve) => {
           const video = document.createElement('video')
@@ -146,15 +161,23 @@
                 duration: Math.round(duration)
               })
               resolve(true)
-            } else resolve(false)
+            } else {
+              resolve(false)
+            }
           }
 
-          video.onerror = () => { URL.revokeObjectURL(video.src); resolve(false) }
+          video.onerror = () => {
+            URL.revokeObjectURL(video.src)
+            resolve(false)
+          }
         })
 
-        if (!isValid) this.uppy.info(`Video must be at least ${this.minDuration}s and 16:9 aspect ratio.`, 'error', 5000)
+        if (!isValid) {
+          this.uppy.info(`Video must be at least ${this.minDuration}s and 16:9 aspect ratio.`, 'error', 5000)
+          this.uppy.remove(file.id)
 
-        return isValid
+          return false
+        }
       }
     }
 
