@@ -30,6 +30,7 @@ export default async function handler(req, res) {
     const document = {
       id,
       uid: md5(userId),
+      cid: 0,
       title: id,
       height: parseInt(height),
       width: parseInt(width),
@@ -38,6 +39,7 @@ export default async function handler(req, res) {
       created: now,
       modified: now,
       active: 0,
+      length: '',
       ranking: 0
     }
 

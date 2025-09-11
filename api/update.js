@@ -50,6 +50,7 @@ export default async function handler(req, res) {
   const updateDocument = {
     id: existingDoc.id,
     uid: existingDoc.uid,
+    cid: existingDoc.cid,
     height: updateData.height !== undefined ? parseInt(updateData.height, 10) : existingDoc.height,
     width: updateData.width !== undefined ? parseInt(updateData.width, 10) : existingDoc.width,
     size: updateData.size !== undefined ? parseInt(updateData.size, 10) : existingDoc.size,
@@ -57,6 +58,7 @@ export default async function handler(req, res) {
     created: existingDoc.created,
     modified: now,
     active: updateData.active !== undefined ? updateData.active : existingDoc.active,
+    length: existingDoc.length,
     ranking: existingDoc.ranking,
     title: updateData.title ?? existingDoc.title,
     description: updateData.description ?? existingDoc.description,

@@ -405,16 +405,13 @@
       return Clerk.session.getToken()
     }
 
-    let player
+    const player = videojs('player', {
+      autoplay: true,
+      muted: false,
+      controls: true,
+    })
 
     window.addEventListener('DOMContentLoaded', async function () {
-      player = videojs('player', {
-        autoplay: true,
-        muted: false,
-        controls: true,
-      })
-
-
       // Add new company input
       $('#add-company').click(function () {
         const newInput = $('#company-wrapper .company-input:first').clone()
@@ -677,7 +674,7 @@
 
     // update video
     $('#vod').parsley()
-    $("#publish").on("click", async function () {
+    $(document).on("click", "#publish", async function () {
       // Collect values
       const payload = {
         id: $("#id").val(),
@@ -701,6 +698,7 @@
         })
 
         const result = await response.json()
+        console.log('Update result', result)
       } catch (err) {
         alert("Request failed: " + err.message)
       }
