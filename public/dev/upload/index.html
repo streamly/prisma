@@ -119,7 +119,7 @@
   </script>
 
   <script type="module">
-    import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
+    import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
 
     window.addEventListener('load', async () => {
       let uid = (await window.cookieStore.get('uid')).value
@@ -144,37 +144,6 @@
 
       function generateVideoId() {
         return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-      }
-
-      async function validateVideoFile(file) {
-        return new Promise((resolve) => {
-          const video = document.createElement('video')
-          video.preload = 'metadata'
-          video.src = URL.createObjectURL(file.data)
-
-          video.onloadedmetadata = () => {
-            const duration = video.duration
-            const ratio = video.videoWidth / video.videoHeight
-            URL.revokeObjectURL(video.src)
-
-            if (duration >= 60 && Math.abs(ratio - 16 / 9) < 0.05) {
-              uppy.setFileMeta(file.id, {
-                width: video.videoWidth,
-                height: video.videoHeight,
-                duration: Math.round(duration),
-                uid: user.id
-              })
-              resolve(true)
-            } else {
-              resolve(false)
-            }
-          }
-
-          video.onerror = () => {
-            URL.revokeObjectURL(video.src)
-            resolve(false)
-          }
-        })
       }
 
       async function getUploadParameters(file) {
@@ -294,8 +263,40 @@
           },
           meta: { uid },
           onBeforeFileAdded: async (file) => {
-            const isValid = await validateVideoFile(file)
-            if (!isValid) alert("Video must be at least 1 minute long and 16:9 aspect ratio.")
+            const isValid = new Promise((resolve) => {
+              const video = document.createElement('video')
+              video.preload = 'metadata'
+              video.src = URL.createObjectURL(file.data)
+
+              video.onloadedmetadata = () => {
+                const duration = video.duration
+                const ratio = video.videoWidth / video.videoHeight
+                URL.revokeObjectURL(video.src)
+
+                if (duration >= 60 && Math.abs(ratio - 16 / 9) < 0.05) {
+                  uppy.setFileMeta(file.id, {
+                    width: video.videoWidth,
+                    height: video.videoHeight,
+                    duration: Math.round(duration),
+                    uid: user.id
+                  })
+                  resolve(true)
+                } else {
+                  resolve(false)
+                }
+              }
+
+              video.onerror = () => {
+                URL.revokeObjectURL(video.src)
+                resolve(false)
+              }
+            }
+            )
+
+            if (!isValid) {
+              alert("Video must be at least 1 minute long and 16:9 aspect ratio.")
+            }
+
             return isValid
           }
         })
@@ -318,6 +319,8 @@
         console.error('Error initializing upload page:', error)
         showError(`Error: ${error.message || 'Failed to initialize uploader'}`)
       }
+
+      console.log(BasePlugin)
     });
   </script>
 </body>
