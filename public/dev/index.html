@@ -709,16 +709,16 @@
 
     $(document).on("click", ".trash", async function (e) {
       e.preventDefault()
-
+      const data = $(this).closest('.row').data()
       const payload = {
-        id: $("#id").val(),
+        id: data.id,
       }
 
       const token = await Clerk.session.getToken()
 
       try {
         const response = await fetch("/api/delete", {
-          method: "POST", // if your API expects DELETE, change this to "DELETE"
+          method: "POST",
           headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(payload),
         })
