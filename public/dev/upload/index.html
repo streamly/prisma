@@ -121,7 +121,7 @@
   <script type="module">
     import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
 
-    export default class VideoValidator extends BasePlugin {
+    export default class VideoProcessor extends BasePlugin {
       constructor(uppy, opts = {}) {
         super(uppy, opts)
         this.id = opts.id || 'VideoValidator'
@@ -160,8 +160,11 @@
               URL.revokeObjectURL(video.src)
 
               if (duration >= this.minDuration && Math.abs(ratio - this.aspectRatio) < this.tolerance) {
+                const videoId = generateVideoId()
+
                 this.uppy.setFileMeta(file.id, {
                   ...file.meta,
+                  videoId,
                   width: video.videoWidth,
                   height: video.videoHeight,
                   duration: Math.round(duration),
@@ -343,15 +346,7 @@
           maxNumberOfFiles: 1,
           maxFileSize: 1771673011 // ~1.65GB
         },
-        meta: { uid },
-        onBeforeUpload: (files) => {
-          Object.keys(files).forEach((fileId) => {
-            const videoId = generateVideoId()
-            uppy.setFileMeta(fileId, { ...file.meta, videoId })
-          })
-
-          return true
-        }
+        meta: { uid }
       })
         .use(Dashboard, { inline: true, target: '#uppy-container', note: 'Your video must be MP4, 16:9, minimum 1 minute long, maximum 1.65GB big' })
         .use(AwsS3, {
@@ -364,7 +359,7 @@
           completeMultipartUpload,
           abortMultipartUpload
         })
-        .use(VideoValidator, {})
+        .use(VideoProcessor, {})
 
       uppy.on('complete', handleUploadComplete(uppy))
       uppy.on('error', error => showError(error.message || 'Upload failed'))
