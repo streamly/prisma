@@ -797,10 +797,14 @@
         $("#" + key).val(decodeURIComponent(value))
       })
 
-      // const videoId = data.id
-      // const newUrl = new URL(window.location.href)
-      // newUrl.searchParams.set('v', videoId)
-      // window.history.replaceState({}, '', newUrl)
+      try {
+        const videoId = data.id
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.set('v', videoId)
+        window.history.replaceState({}, '', newUrl)
+      } catch (err) {
+        console.error("Failed to update URL", err)
+      }
 
       player.src({
         src: `https://cdn.tubie.cx/${data.id}/playlist.m3u8`,
