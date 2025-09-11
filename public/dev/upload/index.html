@@ -1,158 +1,43 @@
-<div id="uppy-container" class="vh-100"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bizilla TV - Upload</title>
 
-<link href="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.css" rel="stylesheet">
-<script src="https://releases.transloadit.com/uppy/v2.12.1/uppy.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
-<script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
-  src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
+  <!-- Uppy CSS -->
+  <link href="https://releases.transloadit.com/uppy/v4.18.2/uppy.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/upload.css">
 
-<script>
-  window.addEventListener('load', async () => {
-    while (!window.Clerk) {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
+  <!-- Clerk JS -->
+  <script 
+    async 
+    crossorigin="anonymous" 
+    data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA" 
+    src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" 
+    type="text/javascript">
+  </script>
 
-    // Ensure Clerk is loaded and get token
-    async function ensureClerkReady() {
-      if (!window.Clerk) throw new Error('Clerk not loaded');
-      await Clerk.load();
-      if (!Clerk.session) throw new Error('No active session');
-      const token = await Clerk.session.getToken();
-      if (!token) throw new Error('Failed to get token');
-      return token;
-    }
 
-    const token = await ensureClerkReady();
-    const uid = Clerk.user.id;
+  <!-- Uppy JS -->
+  <script type="module">
+    import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs";
+    window.UppyModules = { Uppy, Dashboard, AwsS3 };
+  </script>
+  
+  <!-- Configuration -->
+  <script src="/js/config.js"></script>
+  
+  <!-- Upload module -->
+  <script src="/js/uploadManager.js"></script>
+</head>
+<body>
+  <h1>Upload a Video</h1>
+  <p>Upload your video content to Bizilla TV. Supported formats include MP4, MOV, AVI, and more.</p>
+  <div id="uppy-container"></div>
+  
+  <div id="upload-status" class="upload-status"></div>
 
-    const uppy = new Uppy.Core({
-      restrictions: {
-        maxNumberOfFiles: 1,
-        maxFileSize: 1771673011,
-        allowedFileTypes: ['video/mp4']
-      },
-      autoProceed: false
-    })
-      .use(Uppy.Dashboard, {
-        target: '#uppy-container',
-        inline: true,
-        height: '75vh',
-        proudlyDisplayPoweredByUppy: false,
-        note: 'MP4 only. 16:9, minimum 1 min, max 1.65GB.'
-      })
-      .use(Uppy.AwsS3Multipart, {
-        limit: 5,
-        prepareUploadParts(file) {
-          const chunkSize = 25 * 1024 * 1024;
-          const parts = [];
-          for (let start = 0; start < file.data.size; start += chunkSize) {
-            const end = Math.min(start + chunkSize, file.data.size);
-            parts.push({ start, end });
-          }
-          return parts;
-        },
-        async createMultipartUpload(file) {
-          const fileKey = md5(Date.now() + '_' + file.name.replace(/\s+/g, '_'));
-          uppy.setFileMeta(file.id, { fileKey });
-
-          const resp = await fetch('/api/upload?type=createMultipartUpload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ filename: fileKey, contentType: file.type })
-          });
-
-          if (!resp.ok) throw new Error('Failed to create multipart upload');
-          return resp.json(); // { uploadId, key }
-        },
-        async signPart(file, { key, uploadId, partNumber }) {
-          const resp = await fetch(`/api/upload?type=getUploadPartURL&uploadId=${uploadId}&key=${encodeURIComponent(key)}&partNumber=${partNumber}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-
-          if (!resp.ok) throw new Error('Failed to sign part');
-          const { url } = await resp.json();
-          return { url };
-        },
-        async completeMultipartUpload(file, { key, uploadId, parts }) {
-          const resp = await fetch('/api/upload?type=completeMultipartUpload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ key, uploadId, parts })
-          });
-
-          if (!resp.ok) throw new Error('Failed to complete multipart upload');
-          return resp.json();
-        }
-      });
-
-    // Validate video metadata on add
-    uppy.on('file-added', (file) => {
-      uppy.setFileMeta(file.id, { uid });
-
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.src = URL.createObjectURL(file.data);
-
-      video.onloadedmetadata = () => {
-        const aspectRatio = (video.videoWidth / video.videoHeight).toFixed(2);
-        const duration = video.duration;
-
-        if (aspectRatio !== (16 / 9).toFixed(2) || duration < 60) {
-          uppy.removeFile(file.id);
-          alert('Video must be at least 1 minute and 16:9 aspect ratio.');
-        } else {
-          uppy.setFileMeta(file.id, {
-            width: video.videoWidth,
-            height: video.videoHeight,
-            duration: Math.round(duration)
-          });
-        }
-
-        URL.revokeObjectURL(video.src);
-      };
-
-      video.onerror = () => {
-        uppy.removeFile(file.id);
-        alert('Failed to read video metadata.');
-        URL.revokeObjectURL(video.src);
-      };
-    });
-
-    // After upload, insert metadata via your API
-    uppy.on('complete', async (result) => {
-      if (!result.successful.length) return;
-
-      const file = result.successful[0];
-      const meta = file.meta;
-      const payload = {
-        filename: meta.fileKey,
-        width: meta.width,
-        height: meta.height,
-        duration: meta.duration
-      };
-
-      const resp = await fetch('/api/upload?type=insertMetadata', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (resp.ok) {
-        const json = await resp.json();
-        window.location.href = `/dev/?v=${encodeURIComponent(json.id || payload.filename.replace(/\.[^/.]+$/, ''))}`;
-      } else {
-        alert('Upload succeeded but saving metadata failed.');
-        console.error(await resp.json());
-      }
-    });
-  });
-</script>
+  <!-- Navigation link styled as a button -->
+  <a href="/dev/index.html" class="button-link">Back to Dashboard</a>
+</body>
+</html>
