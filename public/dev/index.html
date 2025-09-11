@@ -797,14 +797,10 @@
         $("#" + key).val(decodeURIComponent(value))
       })
 
-      try {
-        const videoId = data.id
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.set('v', videoId)
-        window.history.replaceState({}, '', newUrl)
-      } catch (err) {
-        console.error("Failed to update URL", err)
-      }
+      const videoId = data.id
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.set('v', videoId)
+      window.history.replaceState({}, '', newUrl)
 
       player.src({
         src: `https://cdn.tubie.cx/${data.id}/playlist.m3u8`,
@@ -937,9 +933,9 @@
       $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
       $(document).attr("title", "SyndiNet")
 
-      // const newUrl = new URL(window.location.href)
-      // newUrl.searchParams.delete('v')
-      // window.history.replaceState({}, '', newUrl)
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('v')
+      window.history.replaceState({}, '', newUrl)
 
       const uploaded = $(this).data('uploaded')
       if (uploaded) {
