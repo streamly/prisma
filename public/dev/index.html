@@ -702,6 +702,12 @@
         const result = await response.json()
         console.log('Payload', payload)
         console.log('Update result', result)
+
+        $(".btn-close").trigger("click")
+
+        if (result.success) {
+          search.helper.setQuery(search.helper.state.query).search()
+        }
       } catch (err) {
         alert("Request failed: " + err.message)
       }
@@ -731,6 +737,8 @@
 
           // Close modal/offcanvas
           $(".btn-close").trigger("click")
+
+          search.helper.setQuery(search.helper.state.query).search()
         } else {
           alert("Error: " + result.error)
         }
