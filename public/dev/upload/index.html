@@ -310,35 +310,30 @@
       }
 
       // Initialize Uppy
-      try {
-        const uppy = new Uppy({
-          autoProceed: false,
-          restrictions: {
-            allowedFileTypes: ['.mp4', '.MP4'],
-            maxNumberOfFiles: 1,
-            maxFileSize: 1771673011 // ~1.65GB
-          },
-          meta: { uid }
+      const uppy = new Uppy({
+        autoProceed: false,
+        restrictions: {
+          allowedFileTypes: ['.mp4', '.MP4'],
+          maxNumberOfFiles: 1,
+          maxFileSize: 1771673011 // ~1.65GB
+        },
+        meta: { uid }
+      })
+        .use(Dashboard, { inline: true, target: '#uppy-container', note: 'Your video must be MP4, 16:9, minimum 1 min, maximum 1.65GB. Business content only.' })
+        .use(AwsS3, {
+          shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
+          getChunkSize: (file) => 25 * 1024 * 1024,
+          getUploadParameters,
+          createMultipartUpload,
+          listParts,
+          signPart,
+          completeMultipartUpload,
+          abortMultipartUpload
         })
-          .use(Dashboard, { inline: true, target: '#uppy-container', note: 'Your video must be MP4, 16:9, minimum 1 min, maximum 1.65GB. Business content only.' })
-          .use(AwsS3, {
-            shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
-            getChunkSize: (file) => 25 * 1024 * 1024,
-            getUploadParameters,
-            createMultipartUpload,
-            listParts,
-            signPart,
-            completeMultipartUpload,
-            abortMultipartUpload
-          })
-          .use(VideoValidator)
+        .use(VideoValidator)
 
-        uppy.on('complete', handleUploadComplete)
-        uppy.on('error', error => showError(error.message || 'Upload failed'))
-      } catch (error) {
-        console.error('Error initializing upload page:', error)
-        showError(`Error: ${error.message || 'Failed to initialize uploader'}`)
-      }
+      uppy.on('complete', handleUploadComplete)
+      uppy.on('error', error => showError(error.message || 'Upload failed'))
     });
   </script>
 </body>
