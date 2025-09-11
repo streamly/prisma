@@ -378,7 +378,7 @@
   </div>
 
   <script>
-    document.addEventListener('load', async () => {
+    $(document).ready(async function () {
       await Clerk.load()
 
       if (!Clerk.user) {
@@ -386,247 +386,32 @@
         return
       }
 
-      // add company
-      $(document).ready(function () {
-        // Add new company input
-        $('#add-company').click(function () {
-          const newInput = $('#company-wrapper .company-input:first').clone()
-          newInput.find('input').val('') // clear value
-          $('#company-wrapper').append(newInput)
-          updateRemoveButtons()
-        })
-
-        // Remove company input
-        $('#company-wrapper').on('click', '.remove-company', function () {
-          if ($('#company-wrapper .company-input').length > 1) {
-            $(this).closest('.company-input').remove()
-          }
-          updateRemoveButtons()
-        })
-
-        // Show/hide remove buttons if only 1 input left
-        function updateRemoveButtons() {
-          if ($('#company-wrapper .company-input').length === 1) {
-            $('#company-wrapper .company-input .remove-company').hide()
-          } else {
-            $('#company-wrapper .company-input .remove-company').show()
-          }
-        }
-
+      // Add new company input
+      $('#add-company').click(function () {
+        const newInput = $('#company-wrapper .company-input:first').clone()
+        newInput.find('input').val('') // clear value
+        $('#company-wrapper').append(newInput)
         updateRemoveButtons()
       })
 
-      // edit
-      $(document).on("click", ".edit", function () {
-        const data = $(this).closest('.row').data()
-        $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
-
-
-        $.each(data, function (key, value) {
-          $("#" + key).val(decodeURIComponent(value))
-        })
-        const modal = new mdb.Modal(document.getElementById("vodModal"))
-        modal.show()
-
+      // Remove company input
+      $('#company-wrapper').on('click', '.remove-company', function () {
+        if ($('#company-wrapper .company-input').length > 1) {
+          $(this).closest('.company-input').remove()
+        }
+        updateRemoveButtons()
       })
 
-      // performance
-      $(document).on("click", "#performance", function () {
-        $(".performance").toggle()
-
-
-      })
-
-      // update video
-      $('#vod').parsley()
-      $("#publish").on("click", async function () {
-        // Collect values
-        const payload = {
-          id: $("#id").val(),
-          title: $("#title").val(),
-          description: $("#description").val(),
-          category: $("#category").val(),
-          company: $("#company").val(),
-          tags: $("#tags").val().split(','),
-          cpv: parseFloat($("#cpv").val()),
-          budget: parseFloat($("#budget").val()),
-          active: 1
-        }
-
-        try {
-          const response = await fetch("/api/update", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          })
-
-          const result = await response.json()
-          console.log(result)
-
-          if (result.success) {
-            alert("Update successful")
-
-            $(".btn-close").trigger('click')
-
-
-
-          } else {
-            alert("Error: " + result.error)
-          }
-        } catch (err) {
-          alert("Request failed: " + err.message)
-        }
-      })
-
-      $(document).on("click", ".trash", async function (e) {
-        e.preventDefault()
-
-        const payload = {
-          id: $("#id").val(),
-        }
-
-        try {
-          const response = await fetch("/api/delete", {
-            method: "POST", // if your API expects DELETE, change this to "DELETE"
-            headers: { "Content-Type": "application/json", },
-            body: JSON.stringify(payload),
-          })
-
-          const result = await response.json()
-          console.log(result)
-
-          if (result.success) {
-            alert("Delete successful")
-
-            // Close modal/offcanvas
-            $(".btn-close").trigger("click")
-          } else {
-            alert("Error: " + result.error)
-          }
-        } catch (err) {
-          alert("Request failed: " + err.message)
-        }
-      })
-
-      $(document).on('click', '#xxxpublish', function (e) {
-        e.preventDefault() // Prevent default form submission
-        const formData = $('#post').serializeArray()
-        if ($('#vod').parsley().isValid()) {
-          $.ajax({
-            type: "POST",
-            url: "/api/update",
-            data: formData,
-            dataType: "json",
-            success: function (response) {
-              //alert(response.status )
-
-              //console.log("Response:", response);
-              setTimeout(function () {
-                window.location = "/"
-              }, 2000)
-
-            },
-            error: function (xhr, status, error) {
-              alert(error)
-              console.error("Error:", error)
-              alert("Failed to submit post.")
-            }
-          })
+      // Show/hide remove buttons if only 1 input left
+      function updateRemoveButtons() {
+        if ($('#company-wrapper .company-input').length === 1) {
+          $('#company-wrapper .company-input .remove-company').hide()
         } else {
-          alert("Form incomplete.")
-          console.log("Validation failed.")
-        }
-      })
-
-
-
-      // analytics
-      $(document).on("click", ".analytics", function () {
-        const data = $(this).data()
-        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-        const modal = new mdb.Modal(document.getElementById("analyticsModal"))
-        modal.show()
-
-      })
-
-      // conversions
-      $(document).on("click", ".conversions", function () {
-        const data = $(this).data()
-        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-        const modal = new mdb.Modal(document.getElementById("conversionsModal"))
-        modal.show()
-
-      })
-
-      // billing
-      $(document).on("click", ".billing", function () {
-        const data = $(this).data()
-        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-        const modal = new mdb.Modal(document.getElementById("billingModal"))
-        modal.show()
-
-      })
-
-      // help
-      $(document).on("click", ".help", function () {
-        const data = $(this).data()
-        //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-        const modal = new mdb.Modal(document.getElementById("helpModal"))
-        modal.show()
-
-      })
-
-
-
-
-
-
-
-      const player = videojs('player', {
-        autoplay: true,
-        muted: false,
-        controls: true,
-
-      })
-
-      // modal close
-      $("#vodModal").on("hidden.bs.modal", function () {
-        player.pause()
-        $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
-        $(document).attr("title", "SyndiNet")
-
-        const uploaded = $(this).data('uploaded')
-        if (uploaded) {
-          $(this).removeData('uploaded')
-          location.href = location.pathname
-        }
-
-
-
-      })
-
-      function duration(seconds) {
-        if (!seconds || isNaN(seconds)) return "0:00" // guard
-
-        const hrs = Math.floor(seconds / 3600)
-        const mins = Math.floor((seconds % 3600) / 60)
-        const secs = Math.floor(seconds % 60)
-
-        const formattedMins = mins < 10 ? "0" + mins : mins
-        const formattedSecs = secs < 10 ? "0" + secs : secs
-
-        if (hrs > 0) {
-          return `${hrs}:${formattedMins}:${formattedSecs}`
-        } else {
-          return `${formattedMins}:${formattedSecs}`
+          $('#company-wrapper .company-input .remove-company').show()
         }
       }
 
-      function decodeHTMLEntities(text) {
-        const txt = document.createElement("textarea")
-        txt.innerHTML = text
-        return txt.value
-      }
+      updateRemoveButtons()
 
       const apiKey = await window.cookieStore.get('apiKey')
       const now = new Date()
@@ -804,7 +589,6 @@
 
       })
 
-
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -836,6 +620,214 @@
         await Clerk.signOut()
       })
     })
+
+    // edit
+    $(document).on("click", ".edit", function () {
+      const data = $(this).closest('.row').data()
+      $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
+
+
+      $.each(data, function (key, value) {
+        $("#" + key).val(decodeURIComponent(value))
+      })
+      const modal = new mdb.Modal(document.getElementById("vodModal"))
+      modal.show()
+
+    })
+
+    // performance
+    $(document).on("click", "#performance", function () {
+      $(".performance").toggle()
+
+
+    })
+
+    // update video
+    $('#vod').parsley()
+    $("#publish").on("click", async function () {
+      // Collect values
+      const payload = {
+        id: $("#id").val(),
+        title: $("#title").val(),
+        description: $("#description").val(),
+        category: $("#category").val(),
+        company: $("#company").val(),
+        tags: $("#tags").val().split(','),
+        cpv: parseFloat($("#cpv").val()),
+        budget: parseFloat($("#budget").val()),
+        active: 1
+      }
+
+      try {
+        const response = await fetch("/api/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+
+        const result = await response.json()
+        console.log(result)
+
+        if (result.success) {
+          alert("Update successful")
+
+          $(".btn-close").trigger('click')
+
+
+
+        } else {
+          alert("Error: " + result.error)
+        }
+      } catch (err) {
+        alert("Request failed: " + err.message)
+      }
+    })
+
+    $(document).on("click", ".trash", async function (e) {
+      e.preventDefault()
+
+      const payload = {
+        id: $("#id").val(),
+      }
+
+      const token = await Clerk.session.getToken()
+
+      try {
+        const response = await fetch("/api/delete", {
+          method: "POST", // if your API expects DELETE, change this to "DELETE"
+          headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        })
+
+        const result = await response.json()
+        console.log(result)
+
+        if (result.success) {
+          alert("Delete successful")
+
+          // Close modal/offcanvas
+          $(".btn-close").trigger("click")
+        } else {
+          alert("Error: " + result.error)
+        }
+      } catch (err) {
+        alert("Request failed: " + err.message)
+      }
+    })
+
+    $(document).on('click', '#xxxpublish', function (e) {
+      e.preventDefault() // Prevent default form submission
+      const formData = $('#post').serializeArray()
+      if ($('#vod').parsley().isValid()) {
+        $.ajax({
+          type: "POST",
+          url: "/api/update",
+          data: formData,
+          dataType: "json",
+          success: function (response) {
+            //alert(response.status )
+
+            //console.log("Response:", response);
+            setTimeout(function () {
+              window.location = "/"
+            }, 2000)
+
+          },
+          error: function (xhr, status, error) {
+            alert(error)
+            console.error("Error:", error)
+            alert("Failed to submit post.")
+          }
+        })
+      } else {
+        alert("Form incomplete.")
+        console.log("Validation failed.")
+      }
+    })
+
+
+
+    // analytics
+    $(document).on("click", ".analytics", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("analyticsModal"))
+      modal.show()
+
+    })
+
+    // conversions
+    $(document).on("click", ".conversions", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("conversionsModal"))
+      modal.show()
+
+    })
+
+    // billing
+    $(document).on("click", ".billing", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("billingModal"))
+      modal.show()
+
+    })
+
+    // help
+    $(document).on("click", ".help", function () {
+      const data = $(this).data()
+      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      const modal = new mdb.Modal(document.getElementById("helpModal"))
+      modal.show()
+
+    })
+
+    const player = videojs('player', {
+      autoplay: true,
+      muted: false,
+      controls: true,
+
+    })
+
+    // modal close
+    $("#vodModal").on("hidden.bs.modal", function () {
+      player.pause()
+      $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
+      $(document).attr("title", "SyndiNet")
+
+      const uploaded = $(this).data('uploaded')
+      if (uploaded) {
+        $(this).removeData('uploaded')
+        location.href = location.pathname
+      }
+
+
+
+    })
+
+    function duration(seconds) {
+      if (!seconds || isNaN(seconds)) return "0:00" // guard
+
+      const hrs = Math.floor(seconds / 3600)
+      const mins = Math.floor((seconds % 3600) / 60)
+      const secs = Math.floor(seconds % 60)
+
+      const formattedMins = mins < 10 ? "0" + mins : mins
+      const formattedSecs = secs < 10 ? "0" + secs : secs
+
+      if (hrs > 0) {
+        return `${hrs}:${formattedMins}:${formattedSecs}`
+      } else {
+        return `${formattedMins}:${formattedSecs}`
+      }
+    }
+
+    function decodeHTMLEntities(text) {
+      const txt = document.createElement("textarea")
+      txt.innerHTML = text
+      return txt.value
+    }
   </script>
 </body>
 
