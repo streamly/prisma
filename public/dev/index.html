@@ -390,7 +390,7 @@
     $(document).on('click', '.dropdown-item.logout', async function (e) {
       e.preventDefault()
 
-      await Clerk.signOut()
+      await Clerk.signOut({ redirectUrl: '/dev'})
     })
   </script>
 
