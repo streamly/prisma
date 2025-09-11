@@ -133,10 +133,12 @@
 
       install() {
         this.uppy.on('file-added', this.validateFile.bind(this))
+        this.uppy.on('restored', this.validateFile.bind(this))
       }
 
       uninstall() {
         this.uppy.off('file-added', this.validateFile.bind(this))
+        this.uppy.off('restored', this.validateFile.bind(this))
       }
 
       async validateFile(file) {
@@ -174,7 +176,7 @@
 
         if (!isValid) {
           this.uppy.info(`Video must be at least ${this.minDuration}s and 16:9 aspect ratio.`, 'error', 5000)
-          this.uppy.remove(file.id)
+          this.uppy.removeFile(file.id)
 
           return false
         }
@@ -322,7 +324,7 @@
         },
         meta: { uid }
       })
-        .use(Dashboard, { inline: true, target: '#uppy-container', note: 'Your video must be MP4, 16:9, minimum 1 min, maximum 1.65GB. Business content only.' })
+        .use(Dashboard, { inline: true, target: '#uppy-container', note: 'Your video must be MP4, 16:9, minimum 1 minute long, maximum 1.65GB big' })
         .use(AwsS3, {
           shouldUseMultipart: (file) => file.size > 100 * 1024 * 1024,
           getChunkSize: (file) => 25 * 1024 * 1024,
