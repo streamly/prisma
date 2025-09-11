@@ -405,8 +405,10 @@
       return Clerk.session.getToken()
     }
 
+    let player
+
     window.addEventListener('DOMContentLoaded', async function () {
-      const player = videojs('player', {
+      player = videojs('player', {
         autoplay: true,
         muted: false,
         controls: true,

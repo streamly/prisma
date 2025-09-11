@@ -27,7 +27,6 @@ export default async function handler(req, res) {
     const id = req.body.id || filename.replace(/\.[^/.]+$/, "")
     const now = Math.floor(Date.now() / 1000)
 
-    // Build document matching required schema
     const document = {
       id,
       uid: md5(userId),
