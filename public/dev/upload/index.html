@@ -122,8 +122,8 @@
     import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
 
     export default class VideoValidator extends BasePlugin {
-      constructor(uppy, opts) {
-        super(uppy, opts || {})
+      constructor(uppy, opts = {}) {
+        super(uppy, opts)
         this.id = opts.id || 'VideoValidator'
         this.type = 'modifier' // This modifies files before upload
         this.minDuration = opts.minDuration || 60 // seconds
