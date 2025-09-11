@@ -1,3 +1,4 @@
+import md5 from 'md5';
 import { 
   setCorsHeaders, 
   handleOptions, 
@@ -10,77 +11,60 @@ import { getTypesenseClient } from '../lib/typesenseClient.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(res);
-  
   if (handleOptions(req, res)) return;
-  
+
   try {
     validateMethod(req, ['POST']);
     const userId = await authenticateUser(req);
-    
-    const { filename, width, height, duration, userId: uploadUserId } = req.body;
-    
+
+    const { filename, width, height, duration, size } = req.body;
+
     // Validate required fields
-    if (!filename || !width || !height || !duration) {
-      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration');
+    if (!filename || !width || !height || !duration || !size) {
+      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size');
     }
-    
-    // Use filename as ID (without extension)
+
+    // Use filename (without extension) as ID, unless provided
     const id = req.body.id || filename.replace(/\.[^/.]+$/, "");
-    
-    // Prepare document for Typesense
+    const now = Math.floor(Date.now() / 1000);
+
+    // Build document matching required schema
     const document = {
       id,
-      uid: userId,
-      filename,
-      title: filename.replace(/\.[^/.]+$/, ""), // Remove file extension for default title
-      description: '',
-      duration: parseInt(duration),
-      width: parseInt(width),
+      uid: md5(userId),
       height: parseInt(height),
-      file_size: 0, // Will be updated later if needed
-      content_type: 'video/mp4',
-      thumbnail: '',
-      created: Math.floor(Date.now() / 1000), // Use 'created' field name for search filters
-      active: 1,
-      ranking: Math.floor(Date.now() / 1000) // Add ranking field for default sorting
+      width: parseInt(width),
+      size: parseInt(size),
+      duration: parseInt(duration),
+      created: now,
+      modified: now,
+      active: 0
     };
-    
+
     try {
       const typesenseClient = getTypesenseClient();
       const result = await typesenseClient.collections('videos').documents().create(document);
-      
+
       console.log('Video metadata inserted successfully:', result);
-      
+
       return successResponse(res, { 
         id: document.id,
         message: 'Video metadata inserted successfully' 
       });
-      
+
     } catch (typesenseError) {
       console.error('Typesense insertion failed:', typesenseError);
-      console.error('Typesense error details:', {
-        message: typesenseError.message,
-        httpStatus: typesenseError.httpStatus,
-        code: typesenseError.code,
-        stack: typesenseError.stack
-      });
-      
+
       if (typesenseError.message && typesenseError.message.includes('already exists')) {
         return errorResponse(res, 409, 'Video with this ID already exists');
       }
-      
-      return errorResponse(res, 500, `Failed to insert video metadata into search index: ${typesenseError.message}`);
+
+      return errorResponse(res, 500, `Failed to insert video metadata: ${typesenseError.message}`);
     }
-    
+
   } catch (error) {
     console.error('Insert API error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error details:', {
-      message: error.message,
-      name: error.name,
-      code: error.code
-    });
-    
+
     if (error.message === 'Method not allowed') {
       return errorResponse(res, 405, error.message);
     }

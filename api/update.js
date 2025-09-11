@@ -3,7 +3,6 @@ import {
   handleOptions, 
   authenticateUser, 
   validateMethod, 
- 
   errorResponse, 
   successResponse,
   verifyVideoOwnership
@@ -12,71 +11,70 @@ import { getTypesenseClient } from '../lib/typesenseClient.js';
 
 export default async function handler(req, res) {
   setCorsHeaders(res);
-  
   if (handleOptions(req, res)) return;
-  
+
   try {
     validateMethod(req, ['POST']);
-    const userId = await authenticateUser(req);
-    
-    const updateData = req.body;
-    
-    if (!updateData.id) {
-      return errorResponse(res, 400, 'Missing required field: id');
+  } catch {
+    return errorResponse(res, 405, 'Method not allowed');
+  }
+
+  let userId;
+  try {
+    userId = await authenticateUser(req);
+  } catch {
+    return errorResponse(res, 401, 'Authentication required');
+  }
+
+  const updateData = req.body;
+  if (!updateData.id) {
+    return errorResponse(res, 400, 'Missing required field: id');
+  }
+
+  let existingDoc;
+  try {
+    existingDoc = await verifyVideoOwnership(updateData.id, userId);
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      return errorResponse(res, 404, 'Video not found');
     }
-    
-    try {
-      const existingDoc = await verifyVideoOwnership(updateData.id, userId);
-      
-      const updateDocument = {
-        id: updateData.id,
-        uid: existingDoc.uid,
-        filename: existingDoc.filename,
-        title: updateData.title || existingDoc.title,
-        description: updateData.description !== undefined ? updateData.description : existingDoc.description,
-        duration: updateData.duration !== undefined ? parseInt(updateData.duration) : existingDoc.duration,
-        width: updateData.width !== undefined ? parseInt(updateData.width) : existingDoc.width,
-        height: updateData.height !== undefined ? parseInt(updateData.height) : existingDoc.height,
-        file_size: existingDoc.file_size,
-        content_type: existingDoc.content_type,
-        thumbnail: updateData.thumbnail !== undefined ? updateData.thumbnail : existingDoc.thumbnail,
-        created: existingDoc.created || existingDoc.created_at, // Handle both field names
-        active: updateData.active !== undefined ? updateData.active : existingDoc.active,
-        updated_at: Math.floor(Date.now() / 1000)
-      };
-      
-      const typesenseClient = getTypesenseClient();
-      const result = await typesenseClient.collections('videos').documents(updateData.id).update(updateDocument);
-      
-      console.log('Video metadata updated successfully:', result);
-      
-      return successResponse(res, { 
-        id: updateData.id,
-        message: 'Video details updated successfully' 
-      });
-      
-    } catch (typesenseError) {
-      console.error('Typesense update failed:', typesenseError);
-      
-      if (typesenseError.httpStatus === 404 || typesenseError.message === 'Video not found') {
-        return errorResponse(res, 404, 'Video not found');
-      }
-      
-      if (typesenseError.message.includes('permission')) {
-        return errorResponse(res, 403, typesenseError.message);
-      }
-      
-      return errorResponse(res, 500, 'Failed to update video metadata in search index');
+    if (err.name === 'PermissionError') {
+      return errorResponse(res, 403, 'Not allowed to update this video');
     }
-    
-  } catch (error) {
-    console.error('Update API error:', error);
-    if (error.message === 'Method not allowed') {
-      return errorResponse(res, 405, error.message);
+    return errorResponse(res, 500, 'Failed to verify video ownership');
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const updateDocument = {
+    id: updateData.id,
+    uid: existingDoc.uid,
+    height: updateData.height !== undefined ? parseInt(updateData.height, 10) : existingDoc.height,
+    width: updateData.width !== undefined ? parseInt(updateData.width, 10) : existingDoc.width,
+    size: updateData.size !== undefined ? parseInt(updateData.size, 10) : existingDoc.size,
+    duration: updateData.duration !== undefined ? parseInt(updateData.duration, 10) : existingDoc.duration,
+    created: existingDoc.created,
+    modified: now,
+    active: updateData.active !== undefined ? updateData.active : existingDoc.active
+  };
+
+  try {
+    const typesenseClient = getTypesenseClient();
+    const result = await typesenseClient
+      .collections('videos')
+      .documents(updateData.id)
+      .update(updateDocument);
+
+    return successResponse(res, { 
+      id: updateData.id,
+      message: 'Video details updated successfully' 
+    });
+  } catch (err) {
+    if (err.httpStatus === 404) {
+      return errorResponse(res, 404, 'Video not found in index');
     }
-    if (error.message.includes('Authentication')) {
-      return errorResponse(res, 401, error.message);
+    if (err.httpStatus === 400) {
+      return errorResponse(res, 400, 'Invalid video metadata');
     }
-    return errorResponse(res, 500, 'Internal server error');
+    return errorResponse(res, 500, 'Failed to update video metadata');
   }
 }
