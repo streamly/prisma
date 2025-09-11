@@ -298,13 +298,13 @@
           const uploadedFile = result.successful[0]
           const file = uploadedFile.data
 
+          console.log('File', file, file.meta, uploadedFile)
+
           const videoId = file.meta.videoId
 
           if (!videoId) {
             throw new Error('Missing video metadata id')
           }
-
-          console.log('File', file, file.meta, uploadedFile)
 
           const filename = file.meta?.fileKey || file.name
           const width = file.meta?.width || 0
