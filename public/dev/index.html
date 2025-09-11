@@ -531,7 +531,6 @@
       return Clerk.session.getToken()
     }
 
-    let hasPlayed = false
     const player = videojs('player', {
       autoplay: false,
       muted: false,
@@ -544,14 +543,7 @@
 
     player.on('play', () => {
       console.log('play')
-      hasPlayed = true
-    })
-
-    player.on('pause', () => {
-      console.log('pause')
-      if (hasPlayed) {
-        $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
-      }
+      $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
     })
 
     player.on('loadedmetadata', () => {
