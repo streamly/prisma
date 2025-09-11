@@ -420,7 +420,8 @@
               <!-- Image placeholder -->
               <div class="small pb-3">
                 <div class="image-container">
-                  <img id="thumbnail" class="img-fluid w-100 border" src="" height="169" title="Thumbnail" />
+                  <img id="thumbnail" class="img-fluid w-100 border" src="" height="169" title="Thumbnail"
+                    style="display:none" />
                   <div class="overlay">
                     <div class="icon-container">
                       <a href="javascript:void(0);" title="Refresh" class="refresh">
@@ -987,7 +988,7 @@
 
       var dataUrl = canvas.toDataURL()
 
-      $('#thumbnail').attr('src', dataUrl)
+      $('#thumbnail').attr('src', dataUrl).show()
       $('#image-' + id).css({ "background-image": `url(${dataUrl})` })
 
       //   // Convert canvas to Blob (JPEG)
