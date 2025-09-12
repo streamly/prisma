@@ -1012,7 +1012,6 @@
     $(document).on('click', '#save-thumbnail', async function () {
       if (!generatedThumbnailBlob) {
         alert('You have to generate thumbnail first')
-
         return
       }
 
@@ -1022,52 +1021,23 @@
       formData.append('id', id)
 
       try {
+        const res = await fetch('/api/capture', {
+          method: 'POST',
+          body: formData
+        })
+
         const result = await res.json()
 
         if (result.success) {
           $(".btn-close").trigger("click")
+          alert('Thumbnail saved successfully!')
         } else {
-          alert('Saving failed', result.error)
+          alert('Saving failed: ' + (result.error || 'Unknown error'))
         }
       } catch (error) {
         console.error('Error saving thumbnail', error)
-        alert('Error saving thumbnail', error)
+        alert('Error saving thumbnail: ' + error.message)
       }
-
-      // // Convert canvas to Blob (JPEG)
-      // canvas.toBlob(async function (blob) {
-      //   if (!blob) {
-      //     console.error("Failed to get canvas blob")
-      //     return
-      //   }
-
-      //   try {
-      //     // Step 1: Request presigned URL from Vercel backend
-      //     const resp = await fetch(`/api/capture?filename=${encodeURIComponent(id + ".jpg")}`)
-      //     const data = await resp.json()
-      //     const { url } = data
-
-      //     // Step 2: Upload directly to S3
-      //     const upload = await fetch(url, {
-      //       method: "PUT",
-      //       headers: { "Content-Type": "image/jpeg" },
-      //       body: blob
-      //     })
-
-      //     if (upload.ok) {
-      //       console.log("Thumbnail uploaded successfully")
-
-      //       const imgUrl = `https://f6b3.c13.e2-3.dev/videos/${id}.jpg?t=${new Date().getTime()}`
-      //       $('#thumbnail').attr('src', imgUrl)
-      //       $(`#image-${id}`).css("background-image", `url(${imgUrl})`)
-      //       $(`.play[data-id="${id}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
-      //     } else {
-      //       console.error("? Upload failed")
-      //     }
-      //   } catch (err) {
-      //     console.error("Error fetching presigned URL or uploading:", err)
-      //   }
-      // }, "image/jpeg", 0.9) // JPEG quality 0.9
     })
 
   </script>
