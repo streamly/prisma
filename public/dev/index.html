@@ -695,7 +695,7 @@
   <div class="col-2 text-end">
     <div class="edit pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
       <div class="img-fluid border bg-dark thumbnail-background"
-           style="background-image:url('/videos/${hit.id}.jpg');
+           style="background-image:url('/images/${hit.thumbnailKey}.jpg');
                   height:69px;  width:123px;
                   background-repeat:no-repeat;
                   background-size:cover;">
@@ -796,7 +796,7 @@
       window.history.replaceState({}, '', newUrl)
 
       player.src({
-        src: `https://cdn.tubie.cx/${data.id}/playlist.m3u8`,
+        src: `https://cdn.tubie.cx/${data.videoKey}/playlist.m3u8`,
         type: 'application/x-mpegURL'
       })
 

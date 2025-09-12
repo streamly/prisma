@@ -233,7 +233,7 @@
         const res = await fetch('/api/upload?type=getUploadParameters', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoId })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoKey })
         })
         if (!res.ok) throw new Error('Failed to get upload parameters')
         const data = await res.json()
@@ -245,7 +245,7 @@
         const res = await fetch('/api/upload?type=createMultipartUpload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoId })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoKey })
         })
         return await res.json()
       }
@@ -304,9 +304,10 @@
           const uploadedFile = result.successful[0]
           const meta = uploadedFile.meta
           const videoId = meta.videoId
+          const videoKey = meta.videoKey
 
-          if (!videoId) {
-            throw new Error('Missing video metadata id')
+          if (!videoId || !videoKey) {
+            throw new Error('Missing video metadata id or videoKey')
           }
 
           const filename = uploadedFile.name
@@ -315,7 +316,7 @@
           const duration = meta?.duration || 0
           const size = meta?.size || 0
 
-          const payload = { filename, width, height, size, duration, id: videoId }
+          const payload = { filename, width, height, size, duration, id: videoId, videoKey }
 
           console.log('Sended payload', payload)
           try {
