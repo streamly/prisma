@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   let totalSize = 0
   let aborted = false
 
-  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+  busboy.on('file', (fieldname, file) => {
     if (fieldname !== 'file') {
       file.resume()
       return
@@ -47,8 +47,9 @@ export default async function handler(req, res) {
 
       if (totalSize > MAX_FILE_SIZE) {
         aborted = true
-        file.unpipe()
-        file.destroy()
+
+        file.pause()
+        return
       }
 
       chunks.push(chunk)
@@ -68,48 +69,48 @@ export default async function handler(req, res) {
   })
 
   busboy.on('finish', async () => {
-    if (aborted) {
-      return res.status(400).json({ error: 'File exceeds 2 MB limit' })
-    }
-
-    if (!uploadedFile || !videoId) {
-      return res.status(400).json({ error: 'Missing file or id field' })
-    }
-
-    let document
     try {
-      document = await verifyVideoOwnership(videoId, userId)
-    } catch (error) {
-      console.error('Video ownership error:', error)
-      return res.status(400).json({ error: 'You do not have permission to access this video' })
-    }
+      if (aborted) {
+        return res.status(400).json({ error: 'File exceeds 2 MB limit' })
+      }
 
-    if (!document) {
-      return res.status(404).json({ error: 'Video not found' })
-    }
+      if (!uploadedFile || !videoId) {
+        return res.status(400).json({ error: 'Missing file or id field' })
+      }
 
-    const thumbnailKey = `${videoId}.jpg`
+      let document
+      try {
+        document = await verifyVideoOwnership(videoId, userId)
+      } catch (error) {
+        console.error('Video ownership error:', error)
+        return res.status(403).json({ error: 'You do not have permission to access this video' })
+      }
 
-    try {
-      const result = await uploadThumbnail(thumbnailKey, uploadedFile)
+      if (!document) {
+        return res.status(404).json({ error: 'Video not found' })
+      }
 
-      if (!result) {
+      const thumbnailKey = `${videoId}.jpg`
+
+      try {
+        await uploadThumbnail(thumbnailKey, uploadedFile, videoId)
+      } catch (error) {
+        console.error('S3 upload failed:', error)
         return res.status(500).json({ error: 'Failed to upload file' })
       }
-    } catch (error) {
-      console.error('S3 upload failed:', error)
-      return res.status(500).json({ error: 'Failed to upload file' })
+
+      try {
+        await updateVideoThumbnail(document.id, thumbnailKey)
+      } catch (error) {
+        console.error('Failed to set thumbnail key', error)
+        return res.status(500).json({ error: 'Failed to save thumbnail' })
+      }
+
+      return res.status(200).json({ success: true })
+    } catch (finishError) {
+      console.error('Unexpected error in Busboy finish:', finishError)
+      return res.status(500).json({ error: 'Internal server error', details: finishError.message })
     }
-
-    try {
-      await updateVideoThumbnail(document.id, thumbnailKey)
-    } catch (error) {
-      console.error('Failed to set thumbnail key', error)
-
-      return res.status(500).json({ error: 'Failed to save thumbnail' })
-    }
-
-    return res.status(200).json({ success: true })
   })
 
   req.pipe(busboy)
