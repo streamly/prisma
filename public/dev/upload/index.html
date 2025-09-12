@@ -170,7 +170,7 @@
 
               if (duration >= this.minDuration && Math.abs(ratio - this.aspectRatio) < this.tolerance) {
                 const videoId = generateVideoId()
-                const videoKey = generateVideoKey()
+                const videoKey = generateVideoKey(videoId)
 
                 this.uppy.setFileMeta(file.id, {
                   ...file.meta,
