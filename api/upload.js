@@ -1,4 +1,3 @@
-import md5 from 'md5'
 import { authenticateUser } from '../lib/apiHelpers.js'
 import {
     abortMultipartUpload,
@@ -21,10 +20,11 @@ export default async function handler(req, res) {
 
     try {
         let userId
+
         try {
-            userId = md5(await authenticateUser(req))
+            userId = await authenticateUser(req)
         } catch (error) {
-            return res.status(401).json({ error: error.message })
+            return res.status(401).json({ error: 'Authentication error', details: error.message })
         }
 
         const { type } = req.query

@@ -24,6 +24,7 @@
     "@aws-sdk/s3-request-presigner": "^3.414.0",
     "@clerk/backend": "^2.12.1",
     "@clerk/clerk-sdk-node": "^4.12.2",
+    "busboy": "^1.6.0",
     "cookie": "^0.5.0",
     "md5": "^2.3.0",
     "typesense": "^2.1.0"

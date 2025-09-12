@@ -3,8 +3,7 @@ import {
   errorResponse,
   handleOptions,
   setCorsHeaders,
-  successResponse,
-  validateMethod
+  successResponse
 } from '../lib/apiHelpers.js'
 import { getTypesenseClient, verifyVideoOwnership } from '../lib/typesenseClient.js'
 
@@ -12,17 +11,16 @@ export default async function handler(req, res) {
   setCorsHeaders(res)
   if (handleOptions(req, res)) return
 
-  try {
-    validateMethod(req, ['POST'])
-  } catch {
-    return errorResponse(res, 405, 'Method not allowed')
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   let userId
+
   try {
     userId = await authenticateUser(req)
-  } catch {
-    return errorResponse(res, 401, 'Authentication required')
+  } catch (error) {
+    return res.status(401).json({ error: 'Authentication error', details: error.message })
   }
 
   const updateData = req.body
@@ -30,44 +28,43 @@ export default async function handler(req, res) {
     return errorResponse(res, 400, 'Missing required field: id')
   }
 
-  let existingDoc
+  let document
   try {
-    existingDoc = await verifyVideoOwnership(updateData.id, userId)
-  } catch (err) {
-    if (err.name === 'NotFoundError') {
-      return errorResponse(res, 404, 'Video not found')
-    }
-    if (err.name === 'PermissionError') {
-      return errorResponse(res, 403, 'Not allowed to update this video')
-    }
-    return errorResponse(res, 500, 'Failed to verify video ownership')
+    document = await verifyVideoOwnership(updateData.id, userId)
+  } catch (error) {
+    console.error('Video ownership error:', error)
+    return res.status(400).json({ error: 'You do not have permission to access this video' })
+  }
+
+  if (!document) {
+    return res.status(404).json({ error: 'Video not found' })
   }
 
   const now = Math.floor(Date.now() / 1000)
 
   // Merge user-provided fields into the update
   const updateDocument = {
-    id: existingDoc.id,
-    uid: existingDoc.uid,
-    cid: existingDoc.cid,
-    height: updateData.height !== undefined ? parseInt(updateData.height, 10) : existingDoc.height,
-    width: updateData.width !== undefined ? parseInt(updateData.width, 10) : existingDoc.width,
-    size: updateData.size !== undefined ? parseInt(updateData.size, 10) : existingDoc.size,
-    duration: updateData.duration !== undefined ? parseInt(updateData.duration, 10) : existingDoc.duration,
-    created: existingDoc.created,
-    videoKey: existingDoc.videoKey,
-    thumbnailKey: existingDoc.thumbnailKey,
+    id: document.id,
+    uid: document.uid,
+    cid: document.cid,
+    height: updateData.height !== undefined ? parseInt(updateData.height, 10) : document.height,
+    width: updateData.width !== undefined ? parseInt(updateData.width, 10) : document.width,
+    size: updateData.size !== undefined ? parseInt(updateData.size, 10) : document.size,
+    duration: updateData.duration !== undefined ? parseInt(updateData.duration, 10) : document.duration,
+    created: document.created,
+    videoKey: document.videoKey,
+    thumbnailKey: document.thumbnailKey,
     modified: now,
-    active: updateData.active !== undefined ? updateData.active : existingDoc.active,
-    length: existingDoc.length,
-    ranking: existingDoc.ranking,
-    title: updateData.title ?? existingDoc.title,
-    description: updateData.description ?? existingDoc.description,
-    category: updateData.category ?? existingDoc.category,
-    company: updateData.company ?? existingDoc.company,
-    tags: updateData.tags ?? existingDoc.tags,
-    cpv: updateData.cpv !== undefined ? parseFloat(updateData.cpv) : existingDoc.cpv,
-    budget: updateData.budget !== undefined ? parseFloat(updateData.budget) : existingDoc.budget
+    active: updateData.active !== undefined ? updateData.active : document.active,
+    length: document.length,
+    ranking: document.ranking,
+    title: updateData.title ?? document.title,
+    description: updateData.description ?? document.description,
+    category: updateData.category ?? document.category,
+    company: updateData.company ?? document.company,
+    tags: updateData.tags ?? document.tags,
+    cpv: updateData.cpv !== undefined ? parseFloat(updateData.cpv) : document.cpv,
+    budget: updateData.budget !== undefined ? parseFloat(updateData.budget) : document.budget
   }
 
   try {
@@ -83,12 +80,6 @@ export default async function handler(req, res) {
       message: 'Video details updated successfully'
     })
   } catch (err) {
-    if (err.httpStatus === 404) {
-      return errorResponse(res, 404, 'Video not found in index')
-    }
-    if (err.httpStatus === 400) {
-      return errorResponse(res, 400, 'Invalid video metadata')
-    }
     return errorResponse(res, 500, 'Failed to update video metadata')
   }
 }

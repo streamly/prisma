@@ -1,14 +1,12 @@
-import { DeleteObjectCommand } from '@aws-sdk/client-s3'
 import {
   authenticateUser,
   errorResponse,
   handleOptions,
   setCorsHeaders,
-  successResponse,
-  validateMethod
+  successResponse
 } from '../lib/apiHelpers.js'
-import { deleteVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
 import { deleteVideo } from '../lib/s3Client.js'
+import { deleteVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -17,8 +15,17 @@ export default async function handler(req, res) {
     return
   }
 
-  validateMethod(req, ['POST'])
-  const userId = await authenticateUser(req)
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  let userId
+
+  try {
+    userId = await authenticateUser(req)
+  } catch (error) {
+    return res.status(401).json({ error: 'Authentication error', details: error.message })
+  }
 
   const { id } = req.body
 
@@ -27,7 +34,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const document = await verifyVideoOwnership(id, userId)
+    let document
+    try {
+      document = await verifyVideoOwnership(id, userId)
+    } catch (error) {
+      console.error('Video ownership error:', error)
+      return res.status(400).json({ error: 'You do not have permission to access this video' })
+    }
+
+    if (!document) {
+      return res.status(404).json({ error: 'Video not found' })
+    }
 
     try {
       await deleteVideo(document.videoKey)
@@ -50,13 +67,6 @@ export default async function handler(req, res) {
       message: 'Video deleted'
     })
   } catch (error) {
-    console.error('Delete API error:', error)
-    if (error.message === 'Method not allowed') {
-      return errorResponse(res, 405, error.message)
-    }
-    if (error.message.includes('Authentication')) {
-      return errorResponse(res, 401, error.message)
-    }
     return errorResponse(res, 500, 'Internal server error')
   }
 }

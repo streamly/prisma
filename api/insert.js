@@ -4,8 +4,7 @@ import {
   errorResponse,
   handleOptions,
   setCorsHeaders,
-  successResponse,
-  validateMethod
+  successResponse
 } from '../lib/apiHelpers.js'
 import { getTypesenseClient } from '../lib/typesenseClient.js'
 
@@ -14,8 +13,17 @@ export default async function handler(req, res) {
   if (handleOptions(req, res)) return
 
   try {
-    validateMethod(req, ['POST'])
-    const userId = await authenticateUser(req)
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' })
+    }
+    
+    let userId
+
+    try {
+      userId = await authenticateUser(req)
+    } catch (error) {
+      return res.status(401).json({ error: 'Authentication error', details: error.message })
+    }
 
     const { filename, width, height, duration, size, id, videoKey } = req.body
 
@@ -65,13 +73,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Insert API error:', error)
-
-    if (error.message === 'Method not allowed') {
-      return errorResponse(res, 405, error.message)
-    }
-    if (error.message.includes('Authentication')) {
-      return errorResponse(res, 401, error.message)
-    }
     return errorResponse(res, 500, `Internal server error: ${error.message}`)
   }
 }
