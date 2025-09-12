@@ -870,7 +870,7 @@
         id: $("#id").val(),
         title: $("#title").val(),
         description: $("#description").val(),
-        category: $("#type").val(),
+        category: [$("#type").val()],
         audience: $("#audience").val(),
         company: $("#company-wrapper input").map((i, el) => $(el).val()).get(),
         tags: $("#tags").val().split(','),
