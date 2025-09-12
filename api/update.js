@@ -61,7 +61,8 @@ export default async function handler(req, res) {
       document: result,
       message: 'Video details updated successfully'
     })
-  } catch (err) {
-    return errorResponse(res, 500, 'Failed to update video metadata')
+  } catch (error) {
+    console.error('Update route error:', error)
+    return errorResponse(res, 500, 'Failed to update video metadata', error.message)
   }
 }
