@@ -873,10 +873,7 @@
         description: $("#description").val(),
         category: $("#category").val(),
         audience: $("#audience").val(),
-        company: $("#company-wrapper input")
-          .map((i, el) => $(el).val().trim())
-          .get()
-          .filter(Boolean),
+        company: $("#company-wrapper input").first().val(),
         tags: $("#tags").val().split(','),
         cpv: parseFloat($("#cpv").val()),
         budget: parseFloat($("#budget").val()),
