@@ -623,6 +623,8 @@
         },
       })
 
+      let isVideoUpdated = false
+
       search = instantsearch({
         indexName: "videos",
         searchClient: typesenseInstantsearchAdapter.searchClient,
@@ -916,6 +918,7 @@
         $(".btn-close").trigger("click")
 
         if (result.success) {
+          isVideoUpdated = true
           search.helper.setQuery(search.helper.state.query).search()
         } else {
           console.error('Error updating', result.error, result.details)
@@ -1005,9 +1008,14 @@
 
       const uploaded = $(this).data('uploaded')
 
-      if (uploaded) {
-        $(this).removeData('uploaded')
-        location.href = location.pathname
+
+      if (videoUpdated) {
+        videoUpdated = false
+        if (search && search.refresh) {
+          search.refresh()
+        } else if (search && search.helper) {
+          search.helper.search()
+        }
       }
     })
 
