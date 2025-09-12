@@ -5,7 +5,7 @@ import {
   setCorsHeaders,
   successResponse
 } from '../lib/apiHelpers.js'
-import { deleteVideo } from '../lib/s3Client.js'
+import { deleteThumbnail, deleteVideo } from '../lib/s3Client.js'
 import { deleteVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 export default async function handler(req, res) {
@@ -47,7 +47,15 @@ export default async function handler(req, res) {
     }
 
     try {
-      await deleteVideo(document.videoKey)
+      await deleteThumbnail(document.id)
+    } catch (error) {
+      console.error(error)
+
+      return res.status(500).json({ success: false, error: 'Error deleting video file', details: error.message })
+    }
+
+    try {
+      await deleteVideo(document.id)
     } catch (error) {
       console.error(error)
 

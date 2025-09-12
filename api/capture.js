@@ -90,22 +90,13 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Video not found' })
       }
 
-      const thumbnailKey = `${videoId}.jpg`
-
       try {
-        await uploadThumbnail(thumbnailKey, uploadedFile, videoId)
+        await uploadThumbnail(document.id, uploadedFile, videoId)
       } catch (error) {
         console.error('S3 upload failed:', error)
         return res.status(500).json({ error: 'Failed to upload file' })
       }
-
-      try {
-        await updateVideoThumbnail(document.id, thumbnailKey)
-      } catch (error) {
-        console.error('Failed to set thumbnail key', error)
-        return res.status(500).json({ error: 'Failed to save thumbnail' })
-      }
-
+      
       return res.status(200).json({ success: true })
     } catch (finishError) {
       console.error('Unexpected error in Busboy finish:', finishError)

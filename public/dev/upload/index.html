@@ -126,10 +126,6 @@
       return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
     }
 
-    function generateVideoKey(videoId) {
-      return videoId + '.mp4'
-    }
-
     export default class VideoProcessor extends BasePlugin {
       constructor(uppy, opts = {}) {
         super(uppy, opts)
@@ -170,12 +166,10 @@
 
               if (duration >= this.minDuration && Math.abs(ratio - this.aspectRatio) < this.tolerance) {
                 const videoId = generateVideoId()
-                const videoKey = generateVideoKey(videoId)
 
                 this.uppy.setFileMeta(file.id, {
                   ...file.meta,
                   videoId,
-                  videoKey,
                   width: video.videoWidth,
                   height: video.videoHeight,
                   duration: Math.round(duration),
@@ -304,10 +298,9 @@
           const uploadedFile = result.successful[0]
           const meta = uploadedFile.meta
           const videoId = meta.videoId
-          const videoKey = meta.videoKey
 
-          if (!videoId || !videoKey) {
-            throw new Error('Missing video metadata id or videoKey')
+          if (!videoId) {
+            throw new Error('Missing video metadata id')
           }
 
           const filename = uploadedFile.name
@@ -316,7 +309,7 @@
           const duration = meta?.duration || 0
           const size = meta?.size || 0
 
-          const payload = { filename, width, height, size, duration, id: videoId, videoKey }
+          const payload = { filename, width, height, size, duration, id: videoId }
 
           console.log('Sended payload', payload)
           try {

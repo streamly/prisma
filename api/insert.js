@@ -6,7 +6,7 @@ import {
   setCorsHeaders,
   successResponse
 } from '../lib/apiHelpers.js'
-import { getTypesenseClient } from '../lib/typesenseClient.js'
+import { createVideoDocument } from '../lib/typesenseClient.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -25,36 +25,24 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Authentication error', details: error.message })
     }
 
-    const { filename, width, height, duration, size, id, videoKey } = req.body
+    const { filename, width, height, duration, size, id } = req.body
 
-    if (Object.values({ filename, width, height, duration, size, id, videoKey }).some(value => value === undefined || value === null)) {
-      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size, id, videoKey')
-    }
-    const now = Math.floor(Date.now() / 1000)
-
-    const document = {
-      id,
-      uid: md5(userId),
-      cid: 0,
-      title: id,
-      height: parseInt(height),
-      width: parseInt(width),
-      size: parseInt(size),
-      duration: parseInt(duration),
-      videoKey,
-      thumbnailKey: null,
-      created: now,
-      modified: now,
-      active: 0,
-      length: '',
-      ranking: 0
+    if (Object.values({ filename, width, height, duration, size, id }).some(value => value === undefined || value === null)) {
+      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size, id')
     }
 
     try {
-      const typesenseClient = getTypesenseClient()
-      const result = await typesenseClient.collections('videos').documents().create(document)
-
-      console.log('Video metadata inserted successfully:', result)
+      const document = await createVideoDocument(
+        {
+          id,
+          uid: md5(userId),
+          title: id,
+          height: parseInt(height),
+          width: parseInt(width),
+          size: parseInt(size),
+          duration: parseInt(duration),
+        }
+      )
 
       return successResponse(res, {
         document,
