@@ -596,6 +596,29 @@
         },
         additionalSearchParameters: {
           query_by: "title,company,channel,description,tags",
+          attributesToRetrieve: [
+            "id",
+            "uid",
+            "cid",
+            "height",
+            "width",
+            "size",
+            "duration",
+            "created",
+            "videoKey",
+            "thumbnailKey",
+            "modified",
+            "active",
+            "length",
+            "ranking",
+            "title",
+            "description",
+            "category",
+            "company",
+            "tags",
+            "cpv",
+            "budget"
+          ].join(",")
         },
       })
 
@@ -847,9 +870,9 @@
         id: $("#id").val(),
         title: $("#title").val(),
         description: $("#description").val(),
-        category: $("#type").val(),                  
-        audience: $("#audience").val(),             
-        company: $("#company-wrapper input").map((i, el) => $(el).val()).get(), 
+        category: $("#type").val(),
+        audience: $("#audience").val(),
+        company: $("#company-wrapper input").map((i, el) => $(el).val()).get(),
         tags: $("#tags").val().split(','),
         cpv: parseFloat($("#cpv").val()),
         budget: parseFloat($("#budget").val()),
