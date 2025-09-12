@@ -860,8 +860,8 @@
 
       $("#cpv").val(data.cpv !== undefined ? decodeURIComponent(data.cpv) : 0)
       $("#budget").val(data.budget !== undefined ? decodeURIComponent(data.budget) : 0)
-      $("#performance").prop("checked", data.performance == 1)
-      $(".performance").toggle(data.performance == 1)
+      $("#performance").prop("checked", data.cpv >= 0.05)
+      $(".performance").toggle(data.cpv >= 0.05)
 
       const videoId = data.id
 
