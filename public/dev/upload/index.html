@@ -121,7 +121,7 @@
 
   <script type="module">
     import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
-    
+
 
     export default class VideoProcessor extends BasePlugin {
       constructor(uppy, opts = {}) {
@@ -221,7 +221,7 @@
         const res = await fetch('/api/upload?type=getUploadParameters', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, id: file.meta.videoId })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, id: file.id })
         })
         if (!res.ok) throw new Error('Failed to get upload parameters')
         const data = await res.json()
@@ -233,7 +233,7 @@
         const res = await fetch('/api/upload?type=createMultipartUpload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, id: file.meta.videoId })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, id: file.id })
         })
         return await res.json()
       }
