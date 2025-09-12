@@ -939,6 +939,7 @@
       window.history.replaceState({}, '', newUrl)
 
       const uploaded = $(this).data('uploaded')
+
       if (uploaded) {
         $(this).removeData('uploaded')
         location.href = location.pathname
@@ -970,12 +971,16 @@
 
     // THUMBNAIL GENERATION
 
+    var canvas = document.getElementById("thumbnail-canvas")
     let frameReady = false
 
     player.on('loadedmetadata', () => {
       console.log('loadedmetadata - disabling thumbnail button')
       frameReady = false
-      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
+      canvas.style.display = 'none'
+      $('#thumbnail').attr('src', '').hide()
+      generateBtn.prop('disabled', true).addClass('disabled')
+      saveBtn.prop('disabled', true).addClass('disabled')
     })
 
     // Enable button once video has played a frame
@@ -996,7 +1001,6 @@
       console.log("Generate thumbnail clicked")
 
       var id = $(this).data("id")
-      var canvas = document.getElementById("thumbnail-canvas")
       var video = document.querySelectorAll("video")[0]
 
       // Set canvas size
