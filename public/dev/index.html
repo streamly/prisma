@@ -293,7 +293,7 @@
 
                 <div class="mb-3">
                   <label for="type">Category</label>
-                  <select id="category" name="category[]" multiple required
+                  <select id="category" name="category[]" required
                     class="form-control text-trim border validate">
                     <option>
                     <option value="Animation">Animation</option>
@@ -367,8 +367,8 @@
                         </span>
                       </div>
                     </div>
-                    <button type="button" id="add-company"
-                      class="btn btn-link btn-sm bg-transparent p-0 m-0 float-end">Add A Company</button>
+                    <!-- <button type="button" id="add-company"
+                      class="btn btn-link btn-sm bg-transparent p-0 m-0 float-end">Add A Company</button> -->
                   </div>
 
 
@@ -841,7 +841,7 @@
 
         if ($el.is('select[multiple]')) {
           const values = decodeURIComponent(value || '').split(';').map(v => v.trim()).filter(v => v)
-          $el.val(values) 
+          $el.val(values)
         } else {
           $el.val(decodeURIComponent(value))
         }
@@ -880,7 +880,8 @@
         description: $("#description").val(),
         category: $("#category").val(),
         audience: $("#audience").val(),
-        company: $("#company-wrapper input").first().val(),
+        // company: $("#company-wrapper input").first().val(),
+        company: $("#company").val(),
         tags: $("#tags").val().split(','),
         cpv: parseFloat($("#cpv").val()),
         budget: parseFloat($("#budget").val()),
