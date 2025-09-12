@@ -1009,8 +1009,8 @@
       const uploaded = $(this).data('uploaded')
 
 
-      if (videoUpdated) {
-        videoUpdated = false
+      if (isVideoUpdated) {
+        isVideoUpdated = false
         if (search && search.refresh) {
           search.refresh()
         } else if (search && search.helper) {
