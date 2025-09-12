@@ -5,7 +5,7 @@ import {
   setCorsHeaders,
   successResponse
 } from '../lib/apiHelpers.js'
-import { getTypesenseClient, verifyVideoOwnership } from '../lib/typesenseClient.js'
+import { updateVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -40,39 +40,21 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Video not found' })
   }
 
-  const now = Math.floor(Date.now() / 1000)
-
-  // Merge user-provided fields into the update
-  const updateDocument = {
-    id: document.id,
-    uid: document.uid,
-    cid: document.cid,
-    height: updateData.height !== undefined ? parseInt(updateData.height, 10) : document.height,
-    width: updateData.width !== undefined ? parseInt(updateData.width, 10) : document.width,
-    size: updateData.size !== undefined ? parseInt(updateData.size, 10) : document.size,
-    duration: updateData.duration !== undefined ? parseInt(updateData.duration, 10) : document.duration,
-    created: document.created,
-    videoKey: document.videoKey,
-    thumbnailKey: document.thumbnailKey,
-    modified: now,
-    active: updateData.active !== undefined ? updateData.active : document.active,
-    length: document.length,
-    ranking: document.ranking,
-    title: updateData.title ?? document.title,
-    description: updateData.description ?? document.description,
-    category: updateData.category ?? document.category,
-    company: updateData.company ?? document.company,
-    tags: updateData.tags ?? document.tags,
-    cpv: updateData.cpv !== undefined ? parseFloat(updateData.cpv) : document.cpv,
-    budget: updateData.budget !== undefined ? parseFloat(updateData.budget) : document.budget
-  }
-
   try {
-    const typesenseClient = getTypesenseClient()
-    const result = await typesenseClient
-      .collections('videos')
-      .documents(updateData.id)
-      .update(updateDocument)
+    const result = await updateVideoDocument(document, {
+      height: updateData.height !== undefined ? parseInt(updateData.height, 10) : document.height,
+      width: updateData.width !== undefined ? parseInt(updateData.width, 10) : document.width,
+      size: updateData.size !== undefined ? parseInt(updateData.size, 10) : document.size,
+      duration: updateData.duration !== undefined ? parseInt(updateData.duration, 10) : document.duration,
+      active: updateData.active !== undefined ? updateData.active : document.active,
+      title: updateData.title ?? document.title,
+      description: updateData.description ?? document.description,
+      category: updateData.category ?? document.category,
+      company: updateData.company ?? document.company,
+      tags: updateData.tags ?? document.tags,
+      cpv: updateData.cpv !== undefined ? parseFloat(updateData.cpv) : document.cpv,
+      budget: updateData.budget !== undefined ? parseFloat(updateData.budget) : document.budget
+    })
 
     return successResponse(res, {
       id: updateData.id,

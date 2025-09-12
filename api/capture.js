@@ -1,7 +1,7 @@
 import Busboy from 'busboy'
 import { authenticateUser } from '../lib/apiHelpers.js'
-import { uploadToS3 } from '../lib/s3Client.js'
-import { verifyVideoOwnership } from '../lib/typesenseClient.js'
+import { uploadThumbnail } from '../lib/s3Client.js'
+import { updateVideoThumbnail, verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2 MB
 
@@ -49,7 +49,6 @@ export default async function handler(req, res) {
         aborted = true
         file.unpipe()
         file.destroy()
-        return res.status(400).json({ error: 'File exceeds 2 MB limit' })
       }
 
       chunks.push(chunk)
@@ -69,7 +68,9 @@ export default async function handler(req, res) {
   })
 
   busboy.on('finish', async () => {
-    if (aborted) return
+    if (aborted) {
+      return res.status(400).json({ error: 'File exceeds 2 MB limit' })
+    }
 
     if (!uploadedFile || !videoId) {
       return res.status(400).json({ error: 'Missing file or id field' })
@@ -84,16 +85,31 @@ export default async function handler(req, res) {
     }
 
     if (!document) {
-      return res.status(404).json({ error: 'Video not found'})
+      return res.status(404).json({ error: 'Video not found' })
+    }
+
+    const thumbnailKey = `${videoId}.jpg`
+
+    try {
+      const result = await uploadThumbnail(thumbnailKey, uploadedFile)
+
+      if (!result) {
+        return res.status(500).json({ error: 'Failed to upload file' })
+      }
+    } catch (error) {
+      console.error('S3 upload failed:', error)
+      return res.status(500).json({ error: 'Failed to upload file' })
     }
 
     try {
-      const result = await uploadToS3(`${videoId}.jpg`, uploadedFile, 'image/jpeg')
-      res.status(200).json({ success: true, ...result })
+      await updateVideoThumbnail(document.id, thumbnailKey)
     } catch (error) {
-      console.error('S3 upload failed:', error)
-      res.status(500).json({ error: 'Failed to upload file' })
+      console.error('Failed to set thumbnail key', error)
+
+      return res.status(500).json({ error: 'Failed to save thumbnail' })
     }
+
+    return res.status(200).json({ success: true })
   })
 
   req.pipe(busboy)
