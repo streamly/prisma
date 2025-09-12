@@ -17,14 +17,11 @@ export default async function handler(req, res) {
     validateMethod(req, ['POST'])
     const userId = await authenticateUser(req)
 
-    const { filename, width, height, duration, size } = req.body
+    const { filename, width, height, duration, size, id, videoKey } = req.body
 
-    if (Object.values({ filename, width, height, duration, size }).some(value => value === undefined || value === null)) {
-      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size')
+    if (Object.values({ filename, width, height, duration, size, id, videoKey }).some(value => value === undefined || value === null)) {
+      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size, id, videoKey')
     }
-
-    // Use filename (without extension) as ID, unless provided
-    const id = req.body.id || filename.replace(/\.[^/.]+$/, "")
     const now = Math.floor(Date.now() / 1000)
 
     const document = {
@@ -36,6 +33,8 @@ export default async function handler(req, res) {
       width: parseInt(width),
       size: parseInt(size),
       duration: parseInt(duration),
+      videoKey,
+      thumbnailKey: null,
       created: now,
       modified: now,
       active: 0,

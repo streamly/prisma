@@ -293,42 +293,42 @@
 
                 <div class="mb-3">
                   <label for="type">Type</label>
-                  <select id="type" name="category[]" required class="form-control text-trim border validate" />
-                  <option>
-                  <option value="Animation">Animation</option>
-                  <option value="Annual Report">Annual Report</option>
-                  <option value="Behind-The-Scenes">Behind-The-Scenes</option>
-                  <option value="Board Meeting Highlights">Board Meeting Highlights</option>
-                  <option value="Brand">Brand</option>
-                  <option value="Case Study">Case Study</option>
-                  <option value="Client Testimonial">Client Testimonial</option>
-                  <option value="Company Culture">Company Culture</option>
-                  <option value="Company Profile">Company Profile</option>
-                  <option value="Corporate Finance">Corporate Finance</option>
-                  <option value="Corporate Social Responsibility">Corporate Social Responsibility</option>
-                  <option value="Crowdfunding / Fundraising">Crowdfunding / Fundraising</option>
-                  <option value="Event">Event</option>
-                  <option value="Explainer">Explainer</option>
-                  <option value="Financial Report">Financial Report</option>
-                  <option value="Internal Communication">Internal Communication</option>
-                  <option value="Investor Relations">Investor Relations</option>
-                  <option value="Marketing Campaign">Marketing Campaign</option>
-                  <option value="Onboarding">Onboarding</option>
-                  <option value="Product">Product</option>
-                  <option value="Product Launch">Product Launch</option>
-                  <option value="Promotional">Promotional</option>
-                  <option value="Quarterly Results">Quarterly Results</option>
-                  <option value="Recruitment / Hiring">Recruitment / Hiring</option>
-                  <option value="Sales Pitch">Sales Pitch</option>
-                  <option value="Social Media">Social Media</option>
-                  <option value="Strategy / Planning">Strategy / Planning</option>
-                  <option value="Talent Profile">Talent Profile</option>
-                  <option value="Testimonial">Testimonial</option>
-                  <option value="Training">Training</option>
-                  <option value="Tutorial">Tutorial</option>
-                  <option value="Vision & Mission">Vision & Mission</option>
-                  <option value="Webinar">Webinar</option>
-                  <option value="Workshop">Workshop</option>
+                  <select id="type" name="category[]" required class="form-control text-trim border validate">
+                    <option>
+                    <option value="Animation">Animation</option>
+                    <option value="Annual Report">Annual Report</option>
+                    <option value="Behind-The-Scenes">Behind-The-Scenes</option>
+                    <option value="Board Meeting Highlights">Board Meeting Highlights</option>
+                    <option value="Brand">Brand</option>
+                    <option value="Case Study">Case Study</option>
+                    <option value="Client Testimonial">Client Testimonial</option>
+                    <option value="Company Culture">Company Culture</option>
+                    <option value="Company Profile">Company Profile</option>
+                    <option value="Corporate Finance">Corporate Finance</option>
+                    <option value="Corporate Social Responsibility">Corporate Social Responsibility</option>
+                    <option value="Crowdfunding / Fundraising">Crowdfunding / Fundraising</option>
+                    <option value="Event">Event</option>
+                    <option value="Explainer">Explainer</option>
+                    <option value="Financial Report">Financial Report</option>
+                    <option value="Internal Communication">Internal Communication</option>
+                    <option value="Investor Relations">Investor Relations</option>
+                    <option value="Marketing Campaign">Marketing Campaign</option>
+                    <option value="Onboarding">Onboarding</option>
+                    <option value="Product">Product</option>
+                    <option value="Product Launch">Product Launch</option>
+                    <option value="Promotional">Promotional</option>
+                    <option value="Quarterly Results">Quarterly Results</option>
+                    <option value="Recruitment / Hiring">Recruitment / Hiring</option>
+                    <option value="Sales Pitch">Sales Pitch</option>
+                    <option value="Social Media">Social Media</option>
+                    <option value="Strategy / Planning">Strategy / Planning</option>
+                    <option value="Talent Profile">Talent Profile</option>
+                    <option value="Testimonial">Testimonial</option>
+                    <option value="Training">Training</option>
+                    <option value="Tutorial">Tutorial</option>
+                    <option value="Vision & Mission">Vision & Mission</option>
+                    <option value="Webinar">Webinar</option>
+                    <option value="Workshop">Workshop</option>
                   </select>
                 </div>
 
@@ -1013,7 +1013,7 @@
 
       const id = $(this).data("id")
       const formData = new FormData()
-      formData.append('thumbnail', generatedThumbnailBlob, `${id}.jpg`)
+      formData.append('thumbnail', generatedThumbnailBlob, `${id}.jpg`) // #TODO do something with file extension (not use any or add file extensions separately)
       formData.append('id', id)
 
       try {
@@ -1026,7 +1026,7 @@
         }
       } catch (error) {
         console.error('Error saving thumbnail', error)
-        alert('Saving failed', error)
+        alert('Error saving thumbnail', error)
       }
 
       // // Convert canvas to Blob (JPEG)

@@ -2,14 +2,13 @@ import { DeleteObjectCommand } from '@aws-sdk/client-s3'
 import {
   authenticateUser,
   errorResponse,
-  getS3Config,
   handleOptions,
   setCorsHeaders,
   successResponse,
-  validateMethod,
-  verifyVideoOwnership
+  validateMethod
 } from '../lib/apiHelpers.js'
-import { getTypesenseClient } from '../lib/typesenseClient.js'
+import { deleteVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
+import { deleteVideo } from '../lib/s3Client.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -28,30 +27,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    await verifyVideoOwnership(id, userId)
-    const { client: s3Client, bucketName } = getS3Config()
-    const typesenseClient = getTypesenseClient()
+    const document = await verifyVideoOwnership(id, userId)
 
-    let deletionErrors = []
-
-    // Delete from S3 storage bucket
     try {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: bucketName,
-        Key: id
-      })
-
-      await s3Client.send(deleteCommand)
+      await deleteVideo(document.videoKey)
     } catch (error) {
       console.error(error)
 
       return res.status(500).json({ success: false, error: 'Error deleting video file', details: error.message })
     }
 
-    // Delete from Typesense collection
     try {
-      await typesenseClient.collections('videos').documents(id).delete()
-      console.log(`Successfully deleted video metadata from Typesense: ${id}`)
+      await deleteVideoDocument(id)
     } catch (typesenseError) {
       console.error('Failed to delete from Typesense:', typesenseError)
 

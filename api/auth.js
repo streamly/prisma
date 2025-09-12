@@ -1,7 +1,7 @@
 import { verifyToken } from '@clerk/backend'
 import { serialize } from 'cookie'
 import md5 from 'md5'
-import { getTypesenseClient } from '../lib/typesenseClient.js'
+import { generateScopedSearchKey } from '../lib/typesenseClient.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -16,17 +16,8 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid token' })
     }
 
-    const userId = payload.sub
-    const uidHash = md5(userId)
-    const typesenseClient = getTypesenseClient()
-    const scopedApiKey = await typesenseClient.keys().generateScopedSearchKey(
-      process.env.TYPESENSE_SEARCH_KEY,
-      {
-        filter_by: `uid:${uidHash}`,
-        include_fields: "id,uid,height,width,size,duration,created,modified,active,title,description,company,channel,tags",
-        expires_at: Math.floor(Date.now() / 1000) + 604800, // 1 week
-      }
-    )
+    const userId = md5(payload.sub)
+    const scopedApiKey = generateScopedSearchKey(userId)
 
     if (!scopedApiKey) {
       return res.status(500).json({
@@ -43,7 +34,7 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Set-Cookie', [
-      serialize('uid', uidHash, cookieOptions),
+      serialize('uid', userId, cookieOptions),
       serialize('apiKey', scopedApiKey, cookieOptions)
     ])
 

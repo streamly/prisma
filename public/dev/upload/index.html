@@ -123,7 +123,11 @@
     import { Uppy, Dashboard, AwsS3, BasePlugin } from "https://releases.transloadit.com/uppy/v4.18.2/uppy.min.mjs"
 
     function generateVideoId() {
-      return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.mp4'
+      return 'vid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    }
+
+    function generateVideoKey(videoId) {
+      return videoId + '.mp4'
     }
 
     export default class VideoProcessor extends BasePlugin {
@@ -166,10 +170,12 @@
 
               if (duration >= this.minDuration && Math.abs(ratio - this.aspectRatio) < this.tolerance) {
                 const videoId = generateVideoId()
+                const videoKey = generateVIdeoKey()
 
                 this.uppy.setFileMeta(file.id, {
                   ...file.meta,
                   videoId,
+                  videoKey,
                   width: video.videoWidth,
                   height: video.videoHeight,
                   duration: Math.round(duration),

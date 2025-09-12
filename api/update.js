@@ -4,10 +4,9 @@ import {
   handleOptions,
   setCorsHeaders,
   successResponse,
-  validateMethod,
-  verifyVideoOwnership
+  validateMethod
 } from '../lib/apiHelpers.js'
-import { getTypesenseClient } from '../lib/typesenseClient.js'
+import { getTypesenseClient, verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -56,6 +55,8 @@ export default async function handler(req, res) {
     size: updateData.size !== undefined ? parseInt(updateData.size, 10) : existingDoc.size,
     duration: updateData.duration !== undefined ? parseInt(updateData.duration, 10) : existingDoc.duration,
     created: existingDoc.created,
+    videoKey: existingDoc.videoKey,
+    thumbnailKey: existingDoc.thumbnailKey,
     modified: now,
     active: updateData.active !== undefined ? updateData.active : existingDoc.active,
     length: existingDoc.length,
