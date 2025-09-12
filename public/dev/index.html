@@ -292,8 +292,8 @@
 
 
                 <div class="mb-3">
-                  <label for="type">Type</label>
-                  <select id="type" name="category[]" required class="form-control text-trim border validate">
+                  <label for="type">Category</label>
+                  <select id="type" name="category[]" multiple required class="form-control text-trim border validate">
                     <option>
                     <option value="Animation">Animation</option>
                     <option value="Annual Report">Annual Report</option>
@@ -359,7 +359,7 @@
                   <div class="">
                     <div id="company-wrapper">
                       <div class="input-group mb-2 company-input">
-                        <input id="company" type="text" name="compamy[]" required maxLength="40"
+                        <input id="company" type="text" name="company[]" required maxLength="40"
                           class="form-control text-trim border validate" />
                         <span class="input-group-text remove-company" style="cursor:pointer;">
                           <i class='bx bx-x'></i>
