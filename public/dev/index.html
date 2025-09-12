@@ -521,6 +521,9 @@
     $(document).on('click', '.dropdown-item.logout', async function (e) {
       e.preventDefault()
 
+      await cookieStore.delete('uid', { path: '/' })
+      await cookieStore.delete('apiKey', { path: '/' })
+
       await Clerk.signOut({ redirectUrl: '/dev' })
     })
   </script>

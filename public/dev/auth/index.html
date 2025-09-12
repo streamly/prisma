@@ -79,20 +79,6 @@
         console.error('Authentication error:', error)
         window.location.href = '/dev/index.html'
       }
-
-      // Optional: Sign out button listener
-      const logoutBtn = document.querySelector('.dropdown-item.logout')
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (e) => {
-          e.preventDefault()
-          try {
-            await Clerk.signOut()
-            window.location.href = '/dev/auth/' // redirect after sign out
-          } catch (err) {
-            console.error('Sign out failed:', err)
-          }
-        })
-      }
     });
   </script>
 </body>
