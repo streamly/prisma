@@ -690,10 +690,10 @@
               const description = decodeHTMLEntities(hit.description || "")
 
               return `  ${hit.id}
-<div class="row border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
+<div class="row edit border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
   <!-- Thumbnail (col-4) -->
   <div class="col-2 text-end">
-    <div class="edit pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
+    <div class="pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
       <div class="img-fluid border bg-dark thumbnail-background"
      style="
        height:69px; width:123px;
