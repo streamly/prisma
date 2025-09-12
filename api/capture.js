@@ -1,7 +1,7 @@
 import Busboy from 'busboy'
 import { authenticateUser } from '../lib/apiHelpers.js'
 import { uploadThumbnail } from '../lib/s3Client.js'
-import { updateVideoThumbnail, verifyVideoOwnership } from '../lib/typesenseClient.js'
+import { verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2 MB
 
@@ -10,6 +10,33 @@ export const config = {
     bodyParser: false, // required for Busboy
   },
 }
+
+async function validateFile(fileBuffer, mimetype) {
+  if (mimetype !== 'image/jpeg' && mimetype !== 'image/jpg') {
+    throw new Error('Only JPEG files are allowed')
+  }
+  if (!fileBuffer || fileBuffer.length > MAX_FILE_SIZE) {
+    throw new Error('File exceeds maximum allowed size of 2 MB')
+  }
+  return true
+}
+
+async function compressJPEG(fileBuffer) {
+  let quality = 80
+  let outputBuffer = await sharp(fileBuffer).jpeg({ quality }).toBuffer()
+
+  while (outputBuffer.length > MAX_OUTPUT_SIZE && quality > 10) {
+    quality -= 10
+    outputBuffer = await sharp(fileBuffer).jpeg({ quality }).toBuffer()
+  }
+
+  if (outputBuffer.length > MAX_OUTPUT_SIZE) {
+    throw new Error('Cannot compress image below 60 KB')
+  }
+
+  return outputBuffer
+}
+
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -27,6 +54,7 @@ export default async function handler(req, res) {
   const busboy = Busboy({ headers: req.headers })
   let uploadedFile = null
   let videoId = null
+  let fileMime = null
   let totalSize = 0
   let aborted = false
 
@@ -96,7 +124,7 @@ export default async function handler(req, res) {
         console.error('S3 upload failed:', error)
         return res.status(500).json({ error: 'Failed to upload file' })
       }
-      
+
       return res.status(200).json({ success: true })
     } catch (finishError) {
       console.error('Unexpected error in Busboy finish:', finishError)

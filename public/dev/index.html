@@ -545,6 +545,7 @@
       controls: true,
     })
 
+    let isVideoUpdated = false
     let search
 
     window.addEventListener('DOMContentLoaded', async function () {
@@ -622,8 +623,6 @@
           ].join(",")
         },
       })
-
-      let isVideoUpdated = false
 
       search = instantsearch({
         indexName: "videos",
