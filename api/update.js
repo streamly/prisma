@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     document = await verifyVideoOwnership(updateData.id, userId)
   } catch (error) {
     console.error('Video ownership error:', error)
-    return res.status(400).json({ error: 'You do not have permission to access this video' })
+    return res.status(400).json({ error: 'You do not have permission to access this video', details: error.message })
   }
 
   if (!document) {
