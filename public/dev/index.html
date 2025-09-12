@@ -979,8 +979,8 @@
       frameReady = false
       canvas.style.display = 'none'
       $('#thumbnail').attr('src', '').hide()
-      generateBtn.prop('disabled', true).addClass('disabled')
-      saveBtn.prop('disabled', true).addClass('disabled')
+      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
+      $('#save-thumbnail').prop('disabled', true).addClass('disabled')
     })
 
     // Enable button once video has played a frame
