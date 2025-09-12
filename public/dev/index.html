@@ -1128,7 +1128,7 @@
 
           // Trick: force updated thumbnail load by adding timestamp query
           const timestamp = new Date().getTime()
-          const imgUrl = `https://f6b3.c13.e2-3.dev/videos/${id}?t=${timestamp}`
+          const imgUrl = `https://img.syndinet.com/${id}?t=${timestamp}`
 
           $('#thumbnail').attr('src', imgUrl)
           $(`#image-${id}`).css("background-image", `url(${imgUrl})`)
