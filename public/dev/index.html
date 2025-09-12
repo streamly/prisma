@@ -689,12 +689,11 @@
               const title = decodeHTMLEntities(hit.title || "")
               const description = decodeHTMLEntities(hit.description || "")
 
-              return `
-<div class="row edit border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
+              return `  ${hit.id}
+<div class="row border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
   <!-- Thumbnail (col-4) -->
-  <div class="edit">
-      <div class="col-2 text-end">
-    <div class="pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
+  <div class="col-2 text-end">
+    <div class="edit pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
       <div class="img-fluid border bg-dark thumbnail-background"
      style="
        height:69px; width:123px;
@@ -712,12 +711,10 @@
 
   <!-- Title + Channel (col-8) -->
   <div class="col">
-    <h3 class="title-clamp m-0" title="${title}">${title}</h3>
-    <h6 class="video-id">${hit.id}</h6>
-    <div class="pointer text-muted small text-truncate"> 
+    <h6 class="edit title-clamp m-0" title="${title}">${title}</h6>
+    <div class="edit pointer text-muted small text-truncate"> 
       ${Array.isArray(hit.channel) ? hit.channel.join("; ") : ""}
     </div>
-  </div>
   </div>
   <div class="col-1">
 <div class="dropdown">
