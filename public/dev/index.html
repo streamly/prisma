@@ -974,8 +974,7 @@
     var canvas = document.getElementById("thumbnail-canvas")
     let frameReady = false
 
-    player.on('loadedmetadata', () => {
-      console.log('loadedmetadata - disabling thumbnail button')
+    $("#vodModal").on("hidden.bs.modal", function () {
       frameReady = false
       canvas.style.display = 'none'
       $('#thumbnail').attr('src', '').hide()
