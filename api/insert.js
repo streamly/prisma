@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' })
     }
-    
+
     let userId
 
     try {
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       console.log('Video metadata inserted successfully:', result)
 
       return successResponse(res, {
-        id: document.id,
+        document,
         message: 'Video metadata inserted successfully'
       })
 
