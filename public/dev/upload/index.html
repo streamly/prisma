@@ -227,7 +227,7 @@
         const res = await fetch('/api/upload?type=getUploadParameters', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoKey })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, id: file.meta.videoId })
         })
         if (!res.ok) throw new Error('Failed to get upload parameters')
         const data = await res.json()
@@ -239,7 +239,7 @@
         const res = await fetch('/api/upload?type=createMultipartUpload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, key: file.meta.videoKey })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, id: file.meta.videoId })
         })
         return await res.json()
       }
