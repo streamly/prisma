@@ -26,7 +26,6 @@ export default async function handler(req, res) {
         } catch (error) {
             return res.status(401).json({ error: 'Authentication error', details: error.message })
         }
-
         const { type } = req.query
 
         switch (type) {
@@ -53,13 +52,13 @@ export default async function handler(req, res) {
 
 async function handleGetUploadParameters(req, res, userId) {
     try {
-        const { contentType, key } = req.body
+        const { contentType, id } = req.body
 
-        if (!key || !contentType) {
-            return res.status(400).json({ error: 'Missing key or contentType' })
+        if (!id || !contentType) {
+            return res.status(400).json({ error: 'Missing id or contentType' })
         }
 
-        const signedUrl = await generateVideoUploadUrl(key, contentType, userId)
+        const signedUrl = await generateVideoUploadUrl(id, contentType, userId)
 
         console.log('Generated presigned URL for single upload')
         return res.status(200).json({ url: signedUrl })
@@ -75,13 +74,13 @@ async function handleGetUploadParameters(req, res, userId) {
 // Create a new multipart upload
 async function handleCreateMultipartUpload(req, res, userId) {
     try {
-        const { contentType, key } = req.body
+        const { contentType, id } = req.body
 
-        if (!key || !contentType) {
-            return res.status(400).json({ error: 'Missing key or contentType' })
+        if (!id || !contentType) {
+            return res.status(400).json({ error: 'Missing id or contentType' })
         }
 
-        const result = await createMultipartUpload(key, contentType, userId)
+        const result = await createMultipartUpload(id, contentType, userId)
         console.log('Multipart upload created with ID:', result.uploadId)
 
         return res.status(200).json(result)
@@ -95,17 +94,16 @@ async function handleCreateMultipartUpload(req, res, userId) {
     }
 }
 
-
 async function handleGetUploadPartURL(req, res, userId) {
     try {
-        const { uploadId, key, partNumber } = req.query
+        const { uploadId, id, partNumber } = req.query
 
-        if (!key || !partNumber) {
-            console.error('Missing required parameters:', { uploadId: !!uploadId, key: !!key, partNumber: !!partNumber })
-            return res.status(400).json({ error: 'Missing uploadId, key, or partNumber' })
+        if (!id || !partNumber) {
+            console.error('Missing required parameters:', { uploadId: !!uploadId, id: !!id, partNumber: !!partNumber })
+            return res.status(400).json({ error: 'Missing uploadId, id, or partNumber' })
         }
 
-        const signedUrl = await generatePartUploadUrl(key, uploadId, partNumber)
+        const signedUrl = await generatePartUploadUrl(id, uploadId, partNumber)
 
         return res.status(200).json({ url: signedUrl })
     } catch (error) {
@@ -120,22 +118,22 @@ async function handleGetUploadPartURL(req, res, userId) {
 // Complete the multipart upload
 async function handleCompleteMultipartUpload(req, res, userId) {
     try {
-        const { uploadId, key, parts } = req.body
+        const { uploadId, id, parts } = req.body
 
-        console.log('Completing multipart upload for:', { uploadId, key, partsCount: parts?.length, userId })
+        console.log('Completing multipart upload for:', { uploadId, id, partsCount: parts?.length, userId })
 
-        if (!uploadId || !key || !parts || !Array.isArray(parts)) {
+        if (!uploadId || !id || !parts || !Array.isArray(parts)) {
             console.error('Missing or invalid parameters:', {
                 uploadId: !!uploadId,
-                key: !!key,
+                id: !!id,
                 parts: !!parts,
                 isArray: Array.isArray(parts),
                 partsLength: parts?.length
             })
-            return res.status(400).json({ error: 'Missing uploadId, key, or parts array' })
+            return res.status(400).json({ error: 'Missing uploadId, id, or parts array' })
         }
 
-        const result = await completeMultipartUpload(key, uploadId, parts)
+        const result = await completeMultipartUpload(id, uploadId, parts)
 
         console.log('Multipart upload completed successfully:', {
             Location: result.location,
@@ -155,16 +153,16 @@ async function handleCompleteMultipartUpload(req, res, userId) {
 // List parts that have been uploaded
 async function handleListParts(req, res, userId) {
     try {
-        const { uploadId, key } = req.query
+        const { uploadId, id } = req.query
 
-        console.log('Listing parts for:', { uploadId, key, userId })
+        console.log('Listing parts for:', { uploadId, id, userId })
 
-        if (!uploadId || !key) {
-            console.error('Missing required parameters:', { uploadId: !!uploadId, key: !!key })
-            return res.status(400).json({ error: 'Missing uploadId or key' })
+        if (!uploadId || !id) {
+            console.error('Missing required parameters:', { uploadId: !!uploadId, id: !!id })
+            return res.status(400).json({ error: 'Missing uploadId or id' })
         }
 
-        const parts = await listParts(key, uploadId)
+        const parts = await listParts(id, uploadId)
 
         console.log('List parts result:', {
             partsCount: parts.length,
@@ -184,16 +182,16 @@ async function handleListParts(req, res, userId) {
 // Abort the multipart upload
 async function handleAbortMultipartUpload(req, res, userId) {
     try {
-        const { uploadId, key } = req.body
+        const { uploadId, id } = req.body
 
-        console.log('Aborting multipart upload for:', { uploadId, key, userId })
+        console.log('Aborting multipart upload for:', { uploadId, id, userId })
 
-        if (!uploadId || !key) {
-            console.error('Missing required parameters:', { uploadId: !!uploadId, key: !!key })
-            return res.status(400).json({ error: 'Missing uploadId or key' })
+        if (!uploadId || !id) {
+            console.error('Missing required parameters:', { uploadId: !!uploadId, id: !!id })
+            return res.status(400).json({ error: 'Missing uploadId or id' })
         }
 
-        await abortMultipartUpload(key, uploadId)
+        await abortMultipartUpload(id, uploadId)
 
         console.log('Multipart upload aborted successfully')
         return res.status(200).json({ success: true })
