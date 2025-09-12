@@ -1,9 +1,13 @@
 import Busboy from 'busboy'
+import sharp from 'sharp'
 import { authenticateUser } from '../lib/apiHelpers.js'
 import { uploadThumbnail } from '../lib/s3Client.js'
 import { verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2 MB
+const MIN_COMPRESS_SIZE = 6 * 1024 // 6 KB
+const TARGET_WIDTH = 300
+const TARGET_HEIGHT = 169
 
 export const config = {
   api: {
@@ -21,22 +25,27 @@ async function validateFile(fileBuffer, mimetype) {
   return true
 }
 
-async function compressJPEG(fileBuffer) {
-  let quality = 80
-  let outputBuffer = await sharp(fileBuffer).jpeg({ quality }).toBuffer()
+async function resizeAndCompress(fileBuffer) {
+  // Resize to 16:9 ratio
+  let outputBuffer = await sharp(fileBuffer)
+    .resize({ width: TARGET_WIDTH, height: TARGET_HEIGHT, fit: 'cover' })
+    .jpeg({ quality: 100 })
+    .toBuffer()
 
-  while (outputBuffer.length > MAX_OUTPUT_SIZE && quality > 10) {
-    quality -= 10
-    outputBuffer = await sharp(fileBuffer).jpeg({ quality }).toBuffer()
-  }
-
-  if (outputBuffer.length > MAX_OUTPUT_SIZE) {
-    throw new Error('Cannot compress image below 60 KB')
+  // Compress only if bigger than 6 KB
+  if (outputBuffer.length > MIN_COMPRESS_SIZE) {
+    let quality = 80
+    while (outputBuffer.length > MIN_COMPRESS_SIZE && quality > 10) {
+      outputBuffer = await sharp(fileBuffer)
+        .resize({ width: TARGET_WIDTH, height: TARGET_HEIGHT, fit: 'cover' })
+        .jpeg({ quality })
+        .toBuffer()
+      quality -= 10
+    }
   }
 
   return outputBuffer
 }
-
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -54,7 +63,6 @@ export default async function handler(req, res) {
   const busboy = Busboy({ headers: req.headers })
   let uploadedFile = null
   let videoId = null
-  let fileMime = null
   let totalSize = 0
   let aborted = false
 
@@ -67,15 +75,12 @@ export default async function handler(req, res) {
     const chunks = []
 
     file.on('data', (chunk) => {
-      if (aborted) {
-        return
-      }
+      if (aborted) return
 
       totalSize += chunk.length
 
       if (totalSize > MAX_FILE_SIZE) {
         aborted = true
-
         file.pause()
         return
       }
@@ -106,6 +111,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing file or id field' })
       }
 
+      try {
+        await validateFile(uploadedFile, 'image/jpeg')
+      } catch (error) {
+        return res.status(400).json({ error: error.message })
+      }
+
       let document
       try {
         document = await verifyVideoOwnership(videoId, userId)
@@ -119,10 +130,11 @@ export default async function handler(req, res) {
       }
 
       try {
-        await uploadThumbnail(document.id, uploadedFile, videoId)
+        const finalBuffer = await resizeAndCompress(uploadedFile)
+        await uploadThumbnail(document.id, finalBuffer, videoId)
       } catch (error) {
         console.error('S3 upload failed:', error)
-        return res.status(500).json({ error: 'Failed to upload file' })
+        return res.status(500).json({ error: 'Failed to upload file', details: error.message })
       }
 
       return res.status(200).json({ success: true })
