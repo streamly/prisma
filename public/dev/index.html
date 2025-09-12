@@ -293,7 +293,8 @@
 
                 <div class="mb-3">
                   <label for="type">Category</label>
-                  <select id="type" name="category[]" multiple required class="form-control text-trim border validate">
+                  <select id="category" name="category[]" multiple required
+                    class="form-control text-trim border validate">
                     <option>
                     <option value="Animation">Animation</option>
                     <option value="Annual Report">Annual Report</option>
@@ -870,9 +871,12 @@
         id: $("#id").val(),
         title: $("#title").val(),
         description: $("#description").val(),
-        category: [$("#type").val()],
+        category: $("#category").val(),
         audience: $("#audience").val(),
-        company: ($("#company-wrapper input").map((i, el) => $(el).val()).get()).join('; '),
+        company: $("#company-wrapper input")
+          .map((i, el) => $(el).val().trim())
+          .get()
+          .filter(Boolean),
         tags: $("#tags").val().split(','),
         cpv: parseFloat($("#cpv").val()),
         budget: parseFloat($("#budget").val()),
