@@ -847,11 +847,13 @@
         id: $("#id").val(),
         title: $("#title").val(),
         description: $("#description").val(),
-        category: $("#category").val(),
-        company: $("#company").val(),
+        category: $("#type").val(),                  
+        audience: $("#audience").val(),             
+        company: $("#company-wrapper input").map((i, el) => $(el).val()).get(), 
         tags: $("#tags").val().split(','),
         cpv: parseFloat($("#cpv").val()),
         budget: parseFloat($("#budget").val()),
+        performance: $("#performance").is(":checked") ? 1 : 0,
         active: 1
       }
 
