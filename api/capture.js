@@ -88,7 +88,6 @@ export default async function handler(req, res) {
     }
 
     try {
-
       const result = await uploadToS3(`${videoId}.jpg`, uploadedFile, 'image/jpeg')
       res.status(200).json({ success: true, ...result })
     } catch (error) {

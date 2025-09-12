@@ -796,6 +796,9 @@
       })
 
       const videoId = data.id
+
+      $('#generate-thumbnail, #save-thumbnail').data('id', videoId)
+
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.set('v', videoId)
       window.history.replaceState({}, '', newUrl)
@@ -1019,6 +1022,8 @@
       const formData = new FormData()
       formData.append('file', generatedThumbnailBlob, `${id}.jpg`)
       formData.append('id', id)
+
+      console.log(formData)
 
       const token = await getClerkToken()
 
