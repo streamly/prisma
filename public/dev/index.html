@@ -703,7 +703,7 @@
             item(hit) {
               hit.position = hit.__position
 
-              console.log('Hit data', hit)
+              console.dir(hit, { depth: null, colors: true })
 
               const dataAttributes = Object.keys(hit).map(key => {
                 const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`
