@@ -837,7 +837,14 @@
       $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
 
       $.each(data, function (key, value) {
-        $("#" + key).val(decodeURIComponent(value))
+        const $el = $("#" + key)
+
+        if ($el.is('select[multiple]')) {
+          const values = decodeURIComponent(value || '').split(';').map(v => v.trim()).filter(v => v)
+          $el.val(values) 
+        } else {
+          $el.val(decodeURIComponent(value))
+        }
       })
 
       const videoId = data.id
