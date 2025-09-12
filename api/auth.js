@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     }
 
     const userId = md5(payload.sub)
-    const scopedApiKey = generateScopedSearchKey(userId)
+    const scopedApiKey = await generateScopedSearchKey(userId)
 
     if (!scopedApiKey) {
       return res.status(500).json({
