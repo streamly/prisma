@@ -835,26 +835,25 @@
       const data = $(this).closest('.row').data()
       $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
 
-      $.each(data, function (key, value) {
-        const $el = $("#" + key)
+      // Set fields individually
+      $("#id").val(decodeURIComponent(data.id || ''))
+      $("#title").val(decodeURIComponent(data.title || ''))
+      $("#description").val(decodeURIComponent(data.description || ''))
 
-        if (!$el.length) return
+      // Single-select audience
+      let audienceVal = Array.isArray(data.audience) ? decodeURIComponent(data.audience[0]) : decodeURIComponent(data.audience || '')
+      $("#audience").val(audienceVal.trim())
 
-        // Handle multiple selects
-        if ($el.is('select[multiple]')) {
-          // Convert string like "val1;val2" or array to array of trimmed values
-          const values = Array.isArray(value)
-            ? value.map(v => decodeURIComponent(v))
-            : decodeURIComponent(value || '').split(';').map(v => v.trim()).filter(v => v)
-          $el.val(values)
-        } else if ($el.is('select')) {
-          // Single select: take the first value if it's an array
-          const val = Array.isArray(value) ? decodeURIComponent(value[0] || '') : decodeURIComponent(value || '')
-          $el.val(val)
-        } else {
-          $el.val(decodeURIComponent(value || ''))
-        }
-      })
+      // Category (multi-select)
+      let categoryVal = Array.isArray(data.category) ? data.category.map(v => decodeURIComponent(v)) : decodeURIComponent(data.category || '').split(';').map(v => v.trim()).filter(v => v)
+      $("#category").val(categoryVal)
+
+      // Company (single input)
+      $("#company").val(decodeURIComponent(data.company || ''))
+
+      // Tags
+      $("#tags").val(decodeURIComponent(data.tags || ''))
+
 
 
       const videoId = data.id
