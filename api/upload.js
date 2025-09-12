@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     try {
         let userId
         try {
-            userId = md5(authenticateUser(req))
+            userId = md5(await authenticateUser(req))
         } catch (error) {
             return res.status(401).json({ error: error.message })
         }
