@@ -293,8 +293,7 @@
 
                 <div class="mb-3">
                   <label for="type">Category</label>
-                  <select id="category" name="category[]" required
-                    class="form-control text-trim border validate">
+                  <select id="category" name="category[]" required class="form-control text-trim border validate">
                     <option>
                     <option value="Animation">Animation</option>
                     <option value="Annual Report">Annual Report</option>
@@ -839,13 +838,24 @@
       $.each(data, function (key, value) {
         const $el = $("#" + key)
 
+        if (!$el.length) return
+
+        // Handle multiple selects
         if ($el.is('select[multiple]')) {
-          const values = decodeURIComponent(value || '').split(';').map(v => v.trim()).filter(v => v)
+          // Convert string like "val1;val2" or array to array of trimmed values
+          const values = Array.isArray(value)
+            ? value.map(v => decodeURIComponent(v))
+            : decodeURIComponent(value || '').split(';').map(v => v.trim()).filter(v => v)
           $el.val(values)
+        } else if ($el.is('select')) {
+          // Single select: take the first value if it's an array
+          const val = Array.isArray(value) ? decodeURIComponent(value[0] || '') : decodeURIComponent(value || '')
+          $el.val(val)
         } else {
-          $el.val(decodeURIComponent(value))
+          $el.val(decodeURIComponent(value || ''))
         }
       })
+
 
       const videoId = data.id
 
@@ -878,8 +888,8 @@
         id: $("#id").val(),
         title: $("#title").val(),
         description: $("#description").val(),
-        category: $("#category").val(),
-        audience: $("#audience").val(),
+        category: [$("#category").val()],
+        audience: [$("#audience").val()],
         // company: $("#company-wrapper input").first().val(),
         company: $("#company").val(),
         tags: $("#tags").val().split(','),
