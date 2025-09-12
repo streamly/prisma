@@ -897,6 +897,8 @@
 
         if (result.success) {
           search.helper.setQuery(search.helper.state.query).search()
+        } else {
+          console.error('Error updating', result.error, result.details)
         }
       } catch (err) {
         alert("Request failed: " + err.message)

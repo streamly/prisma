@@ -41,20 +41,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await updateVideoDocument(document, {
-      height: updateData.height !== undefined ? parseInt(updateData.height, 10) : document.height,
-      width: updateData.width !== undefined ? parseInt(updateData.width, 10) : document.width,
-      size: updateData.size !== undefined ? parseInt(updateData.size, 10) : document.size,
-      duration: updateData.duration !== undefined ? parseInt(updateData.duration, 10) : document.duration,
-      active: updateData.active !== undefined ? updateData.active : document.active,
-      title: updateData.title ?? document.title,
-      description: updateData.description ?? document.description,
-      category: updateData.category ?? document.category,
-      company: updateData.company ?? document.company,
-      tags: updateData.tags ?? document.tags,
-      cpv: updateData.cpv !== undefined ? parseFloat(updateData.cpv) : document.cpv,
-      budget: updateData.budget !== undefined ? parseFloat(updateData.budget) : document.budget
-    })
+    const result = await updateVideoDocument(document, updateData)
 
     return successResponse(res, {
       id: updateData.id,
