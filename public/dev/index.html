@@ -970,21 +970,27 @@
 
     // THUMBNAIL GENERATION
 
+    let frameReady = false
+
+    player.on('loadedmetadata', () => {
+      console.log('loadedmetadata - disabling thumbnail button')
+      frameReady = false
+      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
+    })
+
+    // Enable button once video has played a frame
+    player.on('timeupdate', () => {
+      if (!frameReady && player.currentTime() > 0) {
+        frameReady = true
+        console.log('First frame available - enabling thumbnail button')
+        $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
+      }
+    })
+
     let generatedThumbnailUrl = null
     let generatedThumbnailBlob = null
 
     $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
-
-    player.on('play', () => {
-      console.log('play')
-      $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
-    })
-
-    player.on('loadedmetadata', () => {
-      console.log('loadedmetadata')
-      hasPlayed = false
-      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
-    })
 
     $(document).on('click', '#generate-thumbnail', async function () {
       console.log("Generate thumbnail clicked")
