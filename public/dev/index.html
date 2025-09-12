@@ -689,7 +689,7 @@
               const title = decodeHTMLEntities(hit.title || "")
               const description = decodeHTMLEntities(hit.description || "")
 
-              return html`
+              return `
 <div class="row edit border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
   <!-- Thumbnail (col-4) -->
   <div class="edit">
