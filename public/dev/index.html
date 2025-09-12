@@ -693,46 +693,64 @@
               const description = decodeHTMLEntities(hit.description || "")
 
               return `  ${hit.id}
-<div class="row border-0 bg-transparent mb-3" ${dataAttributes} type="button" id="${hit.id}">
-  <!-- Thumbnail (col-4) -->
+<div 
+  class="row border-0 bg-transparent mb-3" 
+  ${dataAttributes} 
+  type="button" 
+  id="${hit.id}"
+>
+  <!-- Thumbnail (col-2) -->
   <div class="col-2 text-end">
-    <div class="edit pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
-      <div class="img-fluid border bg-dark thumbnail-background"
-     style="
-       height:69px; width:123px;
-       background-repeat:no-repeat;
-       background-size:cover;
-       ${hit.thumbnailKey
-                  ? `background-image:url('https://f6b3.c13.e2-3.dev/images/${hit.id}');`
-                  : 'background-color:#444; display:flex; align-items:center; justify-content:center; color:#aaa; font-size:12px;'
-                }">
-  ${hit.thumbnailKey ? '' : 'No Thumbnail'}
-</div>
+    <div 
+      class="edit pointer thumbnail-container bg-dark" 
+      alt="${title}" 
+      title="${title}"
+    >
+      <div 
+        class="img-fluid border bg-dark thumbnail-background"
+        style="
+          height:69px;
+          width:123px;
+          background-repeat:no-repeat;
+          background-size:cover;
+          background-image:url('https://f6b3.c13.e2-3.dev/images/${hit.id}');
+        "
+      >
+      </div>
       <div class="duration">${duration(hit.duration)}</div>
     </div>
   </div>
 
-  <!-- Title + Channel (col-8) -->
+  <!-- Title + Channel (col) -->
   <div class="col">
-    <h6 class="edit title-clamp m-0" title="${title}">${title}</h6>
-    <div class="edit pointer text-muted small text-truncate"> 
+    <h6 class="edit title-clamp m-0" title="${title}">
+      ${title}
+    </h6>
+    <div class="edit pointer text-muted small text-truncate">
       ${Array.isArray(hit.channel) ? hit.channel.join("; ") : ""}
     </div>
   </div>
+
+  <!-- Actions (col-1) -->
   <div class="col-1">
-<div class="dropdown">
-  <a class="btn btn-link bg-transparent p-0 m-0" href="#" title="More" data-mdb-toggle="dropdown" aria-expanded="false">
-    <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
-  </a>
-  <ul class="dropdown-menu dropdown-menu-end">
-    <li><a type="button" class="dropdown-item edit">Edit</a></li>
-   <li><a type="button" class="dropdown-item analytics">Analytics</a></li>    
-    <li><a type="button" class="dropdown-item conversions">Conversions</a></li> 
-    <li><a type="button" class="dropdown-item billing">Billing</a></li> 
-    <li><a type="button" class="dropdown-item trash" >Trash</a></li>              
- 
-  </ul>
-</div>  
+    <div class="dropdown">
+      <a 
+        class="btn btn-link bg-transparent p-0 m-0" 
+        href="#" 
+        title="More" 
+        data-mdb-toggle="dropdown" 
+        aria-expanded="false"
+      >
+        <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a type="button" class="dropdown-item edit">Edit</a></li>
+        <li><a type="button" class="dropdown-item analytics">Analytics</a></li>
+        <li><a type="button" class="dropdown-item conversions">Conversions</a></li>
+        <li><a type="button" class="dropdown-item billing">Billing</a></li>
+        <li><a type="button" class="dropdown-item trash">Trash</a></li>
+      </ul>
+    </div>
   </div>
 </div>
         `
