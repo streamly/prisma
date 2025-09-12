@@ -695,11 +695,16 @@
   <div class="col-2 text-end">
     <div class="edit pointer thumbnail-container bg-dark" alt="${title}" title="${title}">
       <div class="img-fluid border bg-dark thumbnail-background"
-           style="background-image:url('/images/${hit.thumbnailKey}.jpg');
-                  height:69px;  width:123px;
-                  background-repeat:no-repeat;
-                  background-size:cover;">
-      </div>
+     style="
+       height:69px; width:123px;
+       background-repeat:no-repeat;
+       background-size:cover;
+       ${hit.thumbnailKey
+                  ? `background-image:url('/images/${hit.thumbnailKey}.jpg');`
+                  : 'background-color:#444; display:flex; align-items:center; justify-content:center; color:#aaa; font-size:12px;'
+                }">
+  ${hit.thumbnailKey ? '' : 'No Thumb'}
+</div>
       <div class="duration">${duration(hit.duration)}</div>
     </div>
   </div>
