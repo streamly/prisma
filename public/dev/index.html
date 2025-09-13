@@ -357,7 +357,7 @@
           <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          Are you sure you want to delete this video?
+          Are you sure you want to delete the video "<span id="videoTitleToDelete"></span>"?
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">Cancel</button>
@@ -626,15 +626,15 @@
     <div class="col-12 text-muted small mt-1">
       Modified: 
       ${hit.modified
-        ? new Date(hit.modified * 1000).toLocaleString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        : 'undefined'
-      }
+                  ? new Date(hit.modified * 1000).toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                  : 'undefined'
+                }
       <br>
       <span class="text-secondary small">ID: ${hit.id}</span>
     </div>
@@ -802,11 +802,15 @@
     // VIDEO DELETE
 
     let videoToDelete = null
+    let videoTitleToDelete = null
 
     $(document).on("click", ".delete", function (e) {
       e.preventDefault()
       const data = $(this).closest('.row').data()
-      videoToDelete = data.id // store for later
+      videoToDelete = data.id
+      videoTitleToDelete = decodeURIComponent(data.title || '')
+
+      $("#videoTitleToDelete").text(videoTitleToDelete)
 
       const modal = new mdb.Modal(document.getElementById("confirmDeleteModal"))
       modal.show()
@@ -829,7 +833,6 @@
 
         const result = await response.json()
         if (result.success) {
-          alert("Delete successful")
           location.reload()
         } else {
           alert("Error: " + result.error)
