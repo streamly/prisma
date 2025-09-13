@@ -368,6 +368,7 @@
   </div>
 
   <script>
+    // REDIRECT FOR UNSIGNED USERS
     window.addEventListener('DOMContentLoaded', async function () {
       await Clerk.load()
 
@@ -396,6 +397,37 @@
       }
 
       return Clerk.session.getToken()
+    }
+
+    async function apiRequest(endpoint, method = 'POST', body = null) {
+      const token = await getClerkToken()
+      const options = {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      }
+
+      if (body) {
+        if (body instanceof FormData) {
+          options.body = body
+        } else {
+          options.headers['Content-Type'] = 'application/json'
+          options.body = JSON.stringify(body)
+        }
+      }
+
+      try {
+        const response = await fetch(endpoint, options)
+        const data = await response.json()
+        if (!response.ok || data.success === false) {
+          throw new Error(data.error || 'Unknown API error')
+        }
+        return data
+      } catch (err) {
+        console.error(`API request failed: ${endpoint}`, err)
+        throw err
+      }
     }
 
     const player = videojs('player', {
@@ -579,7 +611,7 @@
         "
       >
       </div>
-      <div class="duration">${duration(hit.duration)}</div>
+      <div class="duration">${formatDuration(hit.duration)}</div>
     </div>
   </div>
 
@@ -684,7 +716,6 @@
       const data = $(this).closest('.row').data()
       $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
 
-      // Set fields individually
       $("#id").val(decodeURIComponent(data.id || ''))
       $("#title").val(decodeURIComponent(data.title || ''))
       $("#description").val(decodeURIComponent(data.description || ''))
@@ -751,26 +782,12 @@
       }
 
       try {
-        const token = await getClerkToken()
-        console.log('token', token)
-        const response = await fetch("/api/update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(payload)
-        })
+        const result = await apiRequest('/api/update', 'POST', payload)
 
-        const result = await response.json()
-        console.log('Payload', payload)
-        console.log('Update result', result)
+        isVideoUpdated = true
+        // search.helper.setQuery(search.helper.state.query).search()
 
         $(".btn-close").trigger("click")
-
-        if (result.success) {
-          isVideoUpdated = true
-          search.helper.setQuery(search.helper.state.query).search()
-        } else {
-          console.error('Error updating', result.error, result.details)
-        }
       } catch (err) {
         alert("Request failed: " + err.message)
       }
@@ -871,7 +888,7 @@
 
       if (isVideoUpdated) {
         isVideoUpdated = false
-        
+
         window.location.reload()
 
         // #TODO Doesn't work for some reason 
@@ -883,7 +900,7 @@
       }
     })
 
-    function duration(seconds) {
+    function formatDuration(seconds) {
       if (!seconds || isNaN(seconds)) return "0:00" // guard
 
       const hrs = Math.floor(seconds / 3600)
@@ -985,6 +1002,8 @@
         const result = await res.json()
 
         if (result.success) {
+          isVideoUpdated = true
+
           $(".btn-close").trigger("click")
           alert('Thumbnail saved successfully!')
 
