@@ -871,7 +871,7 @@
     $(document).on("click", ".billing", async function () {
       const data = $(this).data()
 
-      const customerId = (await window.cookieStore.get('user_cus')).value
+      const customerId = (await window.cookieStore.get('user_cus'))?.value
 
       try {
         const result = await apiRequest(customerId ? '/api/payments' : '/api/checkout')
