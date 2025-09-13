@@ -348,7 +348,7 @@
     </div>
   </div>
 
-  <!-- TRASH MODAL -->
+  <!-- VIDEO DELETE MODAL -->
   <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -633,7 +633,7 @@
         <li><a type="button" class="dropdown-item analytics">Analytics</a></li>
         <li><a type="button" class="dropdown-item conversions">Conversions</a></li>
         <li><a type="button" class="dropdown-item billing">Billing</a></li>
-        <li><a type="button" class="dropdown-item trash">Trash</a></li>
+        <li><a type="button" class="dropdown-item delete">Delete</a></li>
       </ul>
     </div>
   </div>
@@ -789,35 +789,47 @@
       }
     })
 
-    $(document).on("click", ".trash", async function (e) {
+    // VIDEO DELETE
+
+    let videoToDelete = null
+
+    $(document).on("click", ".delete", function (e) {
       e.preventDefault()
       const data = $(this).closest('.row').data()
-      const payload = {
-        id: data.id,
-      }
+      videoToDelete = data.id // store for later
+
+      const modal = new mdb.Modal(document.getElementById("confirmDeleteModal"))
+      modal.show()
+    })
+
+    $(document).on("click", "#confirmDeleteBtn", async function () {
+      if (!videoToDelete) return
 
       const token = await Clerk.session.getToken()
 
       try {
         const response = await fetch("/api/delete", {
           method: "POST",
-          headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(payload),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ id: videoToDelete }),
         })
 
         const result = await response.json()
-        console.log(result)
-
         if (result.success) {
           alert("Delete successful")
-
-          // Reload the page
           location.reload()
         } else {
           alert("Error: " + result.error)
         }
       } catch (err) {
         alert("Request failed: " + err.message)
+      } finally {
+        videoToDelete = null
+        const modal = mdb.Modal.getInstance(document.getElementById("confirmDeleteModal"))
+        modal.hide()
       }
     })
 
