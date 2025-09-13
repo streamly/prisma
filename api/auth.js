@@ -2,6 +2,7 @@ import { verifyToken } from '@clerk/backend'
 import { serialize } from 'cookie'
 import md5 from 'md5'
 import { generateScopedSearchKey } from '../lib/typesenseClient.js'
+import { getClerkUser } from '../lib/clerkClient.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -17,6 +18,8 @@ export default async function handler(req, res) {
     }
 
     const userId = md5(payload.sub)
+    const user = await getClerkUser(userId)
+    const customerId = user.privateMetadata.customerId
     const scopedApiKey = await generateScopedSearchKey(userId)
 
     if (!scopedApiKey) {
@@ -27,7 +30,7 @@ export default async function handler(req, res) {
 
     const cookieOptions = {
       httpOnly: false,       // readable by JS
-      secure: true,          // production only
+      secure: true,
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
       path: '/'
@@ -35,7 +38,8 @@ export default async function handler(req, res) {
 
     res.setHeader('Set-Cookie', [
       serialize('uid', userId, cookieOptions),
-      serialize('apiKey', scopedApiKey, cookieOptions)
+      serialize('apiKey', scopedApiKey, cookieOptions),
+      customerId ? serialize('user_cus', customerId, cookieOptions) : undefined
     ])
 
     return res.status(200).json({
