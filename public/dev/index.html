@@ -744,6 +744,9 @@
       $("#performance").prop("checked", data.cpv >= 0.05)
       $(".performance").toggle(data.cpv >= 0.05)
 
+      const timestamp = new Date().getTime()
+      $('#thumbnail').attr('src', `https://img.syndinet.com/${data.id}?t=${timestamp}`)
+
       const videoId = data.id
 
       $('#generate-thumbnail, #save-thumbnail').data('id', videoId)
