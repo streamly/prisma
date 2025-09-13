@@ -17,10 +17,11 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid token' })
     }
 
-    const userId = md5(payload.sub)
+    const userId = payload.sub
+    const userIdHash = md(userId)
     const user = await getClerkUser(userId)
     const customerId = user.privateMetadata.customerId
-    const scopedApiKey = await generateScopedSearchKey(userId)
+    const scopedApiKey = await generateScopedSearchKey(userIdHash)
 
     if (!scopedApiKey) {
       return res.status(500).json({
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
     }
 
     const cookies = [
-      serialize('uid', userId, cookieOptions),
+      serialize('uid', userIdHash, cookieOptions),
       serialize('apiKey', scopedApiKey, cookieOptions),
     ]
 
