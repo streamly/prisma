@@ -591,13 +591,6 @@
     <div class="edit pointer text-muted small text-truncate">
       ${Array.isArray(hit.channel) ? hit.channel.join("; ") : ""}
     </div>
-    <div class="text-muted small">
-      ${new Date(hit.modified * 1000).toLocaleDateString(undefined, {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-    </div>
   </div>
 
   <!-- Actions (col-1) -->
@@ -620,6 +613,16 @@
         <li><a type="button" class="dropdown-item delete">Delete</a></li>
       </ul>
     </div>
+  </div>
+
+  <!-- Modified date (full-width row bottom) -->
+  <div class="col-12 text-muted small mt-1">
+    Modified: 
+    ${new Date(hit.modified * 1000).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
   </div>
 </div>
         `
