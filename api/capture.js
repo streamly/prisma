@@ -2,7 +2,7 @@ import Busboy from 'busboy'
 import sharp from 'sharp'
 import { authenticateUser } from '../lib/apiHelpers.js'
 import { uploadThumbnail } from '../lib/s3Client.js'
-import { verifyVideoOwnership } from '../lib/typesenseClient.js'
+import { updateVideoModifiedDate, verifyVideoOwnership } from '../lib/typesenseClient.js'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2 MB
 const MIN_COMPRESS_SIZE = 6 * 1024 // 6 KB
@@ -133,6 +133,12 @@ export default async function handler(req, res) {
       } catch (error) {
         console.error('S3 upload failed:', error)
         return res.status(500).json({ error: 'Failed to upload file', details: error.message })
+      }
+
+      try {
+        await updateVideoModifiedDate(document)
+      } catch (error) {
+        console.error('Error updating video modified date', error)
       }
 
       return res.status(200).json({ success: true })
