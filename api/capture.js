@@ -1,6 +1,6 @@
 import Busboy from 'busboy'
 import sharp from 'sharp'
-import { authenticateUser } from '../lib/apiHelpers.js'
+import { authenticateUser } from '../lib/clerkClient.js'
 import { uploadThumbnail } from '../lib/s3Client.js'
 import { updateVideoModifiedDate, verifyVideoOwnership } from '../lib/typesenseClient.js'
 

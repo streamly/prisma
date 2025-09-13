@@ -1,4 +1,4 @@
-import { authenticateUser } from '../lib/apiHelpers.js'
+import { authenticateUser } from '../lib/clerkClient.js'
 import {
     abortMultipartUpload,
     completeMultipartUpload,

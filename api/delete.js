@@ -1,5 +1,4 @@
 import {
-  authenticateUser,
   errorResponse,
   handleOptions,
   setCorsHeaders,
@@ -7,6 +6,7 @@ import {
 } from '../lib/apiHelpers.js'
 import { deleteThumbnail, deleteVideo } from '../lib/s3Client.js'
 import { deleteVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
+import { authenticateUser } from '../lib/clerkClient.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)

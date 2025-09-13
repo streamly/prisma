@@ -1,12 +1,12 @@
 import md5 from 'md5'
 import {
-  authenticateUser,
   errorResponse,
   handleOptions,
   setCorsHeaders,
   successResponse
 } from '../lib/apiHelpers.js'
 import { createVideoDocument } from '../lib/typesenseClient.js'
+import { authenticateUser } from '../lib/clerkClient.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
