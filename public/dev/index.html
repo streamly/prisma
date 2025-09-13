@@ -586,7 +586,7 @@
               const title = decodeHTMLEntities(hit.title || "")
               const description = decodeHTMLEntities(hit.description || "")
 
-              return `  ${hit.id}
+              return `
 <div 
   class="row border-0 bg-transparent mb-3" 
   ${dataAttributes} 
@@ -626,15 +626,17 @@
     <div class="col-12 text-muted small mt-1">
       Modified: 
       ${hit.modified
-                  ? new Date(hit.modified * 1000).toLocaleString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })
-                  : 'undefined'
-                }
+        ? new Date(hit.modified * 1000).toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        : 'undefined'
+      }
+      <br>
+      <span class="text-secondary small">ID: ${hit.id}</span>
     </div>
   </div>
 
