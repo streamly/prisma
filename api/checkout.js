@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
     const session = await createCheckoutSession(customerId, APP_URL)
 
-    return res.json({ url: session.url })
+    return res.json({ success: true, url: session.url })
   } catch (error) {
     console.error(error)
     return res.status(500).json({ error: 'Internal server error' })
