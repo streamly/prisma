@@ -625,13 +625,16 @@
     </div>
     <div class="col-12 text-muted small mt-1">
       Modified: 
-      ${new Date(hit.modified * 1000).toLocaleString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+      ${hit.modified
+                  ? new Date(hit.modified * 1000).toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                  : 'undefined'
+                }
     </div>
   </div>
 
