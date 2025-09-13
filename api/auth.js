@@ -54,6 +54,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Auth error:', err)
-    return res.status(500).json({ error: 'Authentication failed' })
+    return res.status(500).json({ error: 'Authentication failed', details: err.message })
   }
 }
