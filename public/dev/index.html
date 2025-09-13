@@ -871,11 +871,15 @@
 
       if (isVideoUpdated) {
         isVideoUpdated = false
-        if (search && search.refresh) {
-          search.refresh()
-        } else if (search && search.helper) {
-          search.helper.search()
-        }
+        
+        window.location.reload()
+
+        // #TODO Doesn't work for some reason 
+        // if (search && search.refresh) {
+        //   search.refresh()
+        // } else if (search && search.helper) {
+        //   search.helper.search()
+        // }
       }
     })
 
