@@ -782,6 +782,7 @@
       }
 
       try {
+        console.log('Update payload', payload)
         const result = await apiRequest('/api/update', 'POST', payload)
 
         isVideoUpdated = true
