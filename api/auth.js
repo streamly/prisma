@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     }
 
     const userId = payload.sub
-    const userIdHash = md(userId)
+    const userIdHash = md5(userId)
     const user = await getClerkUser(userId)
     const customerId = user.privateMetadata.customerId
     const scopedApiKey = await generateScopedSearchKey(userIdHash)
