@@ -71,7 +71,7 @@
           console.log('Authentication successful, redirecting...')
           window.location.href = '/dev/index.html'
         } else {
-          console.error('Authentication failed:', data.error)
+          console.error('Authentication failed:', data.error, data.details)
           window.location.href = '/dev/index.html'
         }
 
