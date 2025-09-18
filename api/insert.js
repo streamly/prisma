@@ -4,7 +4,7 @@ import {
   handleOptions,
   setCorsHeaders,
   successResponse
-} from '../lib/apiHelpers.js'
+} from '../lib/responses.js'
 import { createVideoDocument } from '../lib/typesenseClient.js'
 import { authenticateUser } from '../lib/clerkClient.js'
 

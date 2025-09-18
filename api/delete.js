@@ -3,7 +3,7 @@ import {
   handleOptions,
   setCorsHeaders,
   successResponse
-} from '../lib/apiHelpers.js'
+} from '../lib/responses.js'
 import { deleteThumbnail, deleteVideo } from '../lib/s3Client.js'
 import { deleteVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
 import { authenticateUser } from '../lib/clerkClient.js'

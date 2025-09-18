@@ -12,6 +12,9 @@
     crossorigin="anonymous">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video-js.min.css" rel="stylesheet">
 
+  <link href="/styles/dev.css" rel="stylesheet">
+
+  <!-- JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.2/mdb.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -22,14 +25,22 @@
     crossorigin="anonymous"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/typesense-instantsearch-adapter@2/dist/typesense-instantsearch-adapter.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
 
   <!-- Clerk-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"
+    integrity="sha512-QgLS4OmTNBq9TujITTSh0jrZxZ55CFjs4wjK8NXsBoZb04UYl8wWQJNaS8jRiLq6/c60bEfOj3cPsxadHICNfw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
   <script defer crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuc3luZGluZXQuY29tJA"
     src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
 
-  <link href="/styles/dev.css" rel="stylesheet">
+  <!-- APP CODE -->
+  <script type="module" src="/js/mainPage.js"></script>
 </head>
 
 <body>
@@ -107,8 +118,8 @@
   </footer>
 
 
-  <!-- vodModal -->
-  <div class="modal fade" id="vodModal" tabindex="-1" aria-labelledby="vodModalLabel" aria-hidden="true"
+  <!-- videoModal -->
+  <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true"
     style="z-index:99999999 !important;">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
@@ -272,7 +283,8 @@
 
                 <canvas id="thumbnail-canvas" style="display:none;"></canvas>
                 <button type="button" id="generate-thumbnail" data-optimizer="" data-uid="" data-id=""
-                  class="btn btn-dark mb-3 shadow-none w-100 mt-3">
+                  class="btn btn-dark mb-3 shadow-none w-100 mt-3" disabled>
+                  class="btn btn-dark mb-3 shadow-none w-100 mt-3" disabled>
                   GENERATE THUMBNAIL
                 </button>
                 <button type="button" id="save-thumbnail" data-optimizer="" data-uid="" data-id=""
@@ -283,36 +295,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- analyticsModal -->
-  <div class="modal fade" id="analyticsModal" tabindex="-1" aria-labelledby="analyticsModalLabel" aria-hidden="true"
-    style="z-index:99999999 !important;">
-    <div class="modal-dialog modal-fullscreen">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Analytics</h5>
-          <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
-            aria-label="Close"></button>
-        </div>
-        <div class="modal-body">...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- conversionsModal -->
-  <div class="modal fade" id="conversionsModal" tabindex="-1" aria-labelledby="conversionsModalLabel" aria-hidden="true"
-    style="z-index:99999999 !important;">
-    <div class="modal-dialog modal-fullscreen">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Conversions</h5>
-          <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
-            aria-label="Close"></button>
-        </div>
-        <div class="modal-body">...</div>
       </div>
     </div>
   </div>
@@ -366,26 +348,66 @@
     </div>
   </div>
 
-  <script>
-    // REDIRECT FOR UNSIGNED USERS
-    window.addEventListener('DOMContentLoaded', async function () {
-      await Clerk.load()
 
-      if (!Clerk.user) {
-        Clerk.redirectToSignIn({ redirectUrl: '/dev/auth/' })
-        return
-      }
-    })
+  <!-- ANALYTICS MODAL -->
+  <div class="modal fade" id="analytics-modal" tabindex="-1" aria-labelledby="analyticsModalLabel" aria-hidden="true"
+    title="Analytics" style="z-index: 999999999999999 !important;">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
 
-    $(document).on('click', '.dropdown-item.logout', async function (e) {
-      e.preventDefault()
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center">
+            <span class="modal-analytics-title">Analytics</span>
+            <span class="modal-analytics-title">Analytics</span>
+            <span class="video-title"></span>
+          </h5>
 
-      await cookieStore.delete('uid', { path: '/' })
-      await cookieStore.delete('apiKey', { path: '/' })
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <button type="button" id="export-analytics" class="btn btn-link" title="Export as CSV">
+              Download
+            </button>
+            <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
+              aria-label="Close"></button>
+          </div>
+        </div>
 
-      await Clerk.signOut({ redirectUrl: '/dev' })
-    })
-  </script>
+        <div class="modal-body" style="background-color: #EFF3F6;">
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CONVERSIONS MODAL -->
+  <div class="modal fade" id="conversions-modal" tabindex="-1" aria-labelledby="conversionsModalLabel"
+    aria-hidden="true" title="Conversions" style="z-index: 999999999999999 !important;">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center">
+            <span class="modal-conversions-title">Conversions </span>
+            <span class="video-title"></span>
+          </h5>
+
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <button type="button" id="export-conversions" class="btn btn-link" title="Export as CSV">
+              Download
+            </button>
+            <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
+              aria-label="Close"></button>
+          </div>
+        </div>
+
+        <div class="modal-body" style="background-color: #EFF3F6;">
+
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <script>
     async function getClerkToken() {
@@ -428,12 +450,6 @@
         throw err
       }
     }
-
-    const player = videojs('player', {
-      autoplay: false,
-      muted: false,
-      controls: true,
-    })
 
     let isVideoUpdated = false
     let search
@@ -571,9 +587,6 @@
             item(hit) {
               hit.position = hit.__position
 
-              console.log('Hit', hit)
-              console.dir(hit, { depth: null, colors: true })
-
               const dataAttributes = Object.keys(hit).map(key => {
                 const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`
                 let value = hit[key]
@@ -652,11 +665,9 @@
         <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
       </a>
       <ul class="dropdown-menu dropdown-menu-end">
-        <li><a type="button" class="dropdown-item edit">Edit</a></li>
-        <li><a type="button" class="dropdown-item analytics">Analytics</a></li>
-        <li><a type="button" class="dropdown-item conversions">Conversions</a></li>
-        <li><a type="button" class="dropdown-item billing">Billing</a></li>
-        <li><a type="button" class="dropdown-item delete">Delete</a></li>
+        <li><a type="button" class="dropdown-item video-analytics">Analytics</a></li>
+        <li><a type="button" class="dropdown-item video-conversions">Conversions</a></li>
+        <li><a type="button" class="dropdown-item video-delete">Delete</a></li>
       </ul>
     </div>
   </div>
@@ -679,7 +690,8 @@
           .search()
 
         setTimeout(function () {
-          $("#vodModal").data("uploaded", 1)
+          $("#videoModal").data("uploaded", 1)
+          $("#videoModal").data("uploaded", 1)
           $(".edit").first().trigger("click")
         }, 1000)
       }
@@ -713,92 +725,6 @@
       }
 
       watchLoadMoreButton()
-    })
-
-    // edit
-    $(document).on("click", ".edit", function () {
-      const data = $(this).closest('.row').data()
-      $("#vodModal .modal-video-title").text(decodeURIComponent(data.title))
-
-      $("#id").val(decodeURIComponent(data.id || ''))
-      $("#title").val(decodeURIComponent(data.title || ''))
-      $("#description").val(decodeURIComponent(data.description || ''))
-
-      // Single-select audience
-      let audienceVal = Array.isArray(data.audience) ? decodeURIComponent(data.audience[0]) : decodeURIComponent(data.audience || '')
-      $("#audience").val(audienceVal.trim())
-
-      // Category (multi-select)
-      let categoryVal = Array.isArray(data.category) ? data.category.map(v => decodeURIComponent(v)) : decodeURIComponent(data.category || '').split(';').map(v => v.trim()).filter(v => v)
-      $("#category").val(categoryVal)
-
-      // Company (single input)
-      $("#company").val(decodeURIComponent(data.company || ''))
-
-      // Tags
-      $("#tags").val(decodeURIComponent(data.tags || ''))
-
-      $("#cpv").val(data.cpv !== undefined ? decodeURIComponent(data.cpv) : 0)
-      $("#budget").val(data.budget !== undefined ? decodeURIComponent(data.budget) : 0)
-      $("#performance").prop("checked", data.cpv >= 0.05)
-      $(".performance").toggle(data.cpv >= 0.05)
-
-      const timestamp = new Date().getTime()
-      $('#thumbnail').attr('src', `https://img.syndinet.com/${data.id}?t=${timestamp}`)
-
-      const videoId = data.id
-
-      $('#generate-thumbnail, #save-thumbnail').data('id', videoId)
-
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.set('v', videoId)
-      window.history.replaceState({}, '', newUrl)
-
-      player.src({
-        src: `https://cdn.tubie.cx/${data.id}/playlist.m3u8`,
-        type: 'application/x-mpegURL'
-      })
-
-      console.log('Opened modal for', videoId)
-      const modal = new mdb.Modal(document.getElementById("vodModal"))
-      modal.show()
-    })
-
-    // performance
-    $(document).on("click", "#performance", function () {
-      $(".performance").toggle()
-    })
-
-    // update video
-    $('#vod').parsley()
-    $(document).on("click", "#publish", async function () {
-      // Collect values
-      const payload = {
-        id: $("#id").val(),
-        title: $("#title").val(),
-        description: $("#description").val(),
-        category: [$("#category").val()],
-        audience: [$("#audience").val()],
-        // company: $("#company-wrapper input").first().val(),
-        company: $("#company").val(),
-        tags: $("#tags").val().split(','),
-        cpv: parseFloat($("#cpv").val()),
-        budget: parseFloat($("#budget").val()),
-        performance: $("#performance").is(":checked") ? 1 : 0,
-        active: 1
-      }
-
-      try {
-        console.log('Update payload', payload)
-        const result = await apiRequest('/api/update', 'POST', payload)
-
-        isVideoUpdated = true
-        // search.helper.setQuery(search.helper.state.query).search()
-
-        $(".btn-close").trigger("click")
-      } catch (err) {
-        alert("Request failed: " + err.message)
-      }
     })
 
     // VIDEO DELETE
@@ -848,24 +774,6 @@
       }
     })
 
-    // analytics
-    $(document).on("click", ".analytics", function () {
-      const data = $(this).data()
-      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-      const modal = new mdb.Modal(document.getElementById("analyticsModal"))
-      modal.show()
-
-    })
-
-    // conversions
-    $(document).on("click", ".conversions", function () {
-      const data = $(this).data()
-      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
-      const modal = new mdb.Modal(document.getElementById("conversionsModal"))
-      modal.show()
-
-    })
-
     // billing
     $(document).on("click", ".billing", async function () {
       const data = $(this).data()
@@ -889,38 +797,14 @@
     // help
     $(document).on("click", ".help", function () {
       const data = $(this).data()
-      //$("#vodModal .modal-title").text( decodeURIComponent(data.title)  );
+      //$("#videoModal .modal-title").text( decodeURIComponent(data.title)  );
+      //$("#videoModal .modal-title").text( decodeURIComponent(data.title)  );
       const modal = new mdb.Modal(document.getElementById("helpModal"))
       modal.show()
 
     })
 
     // modal close
-    $("#vodModal").on("hidden.bs.modal", function () {
-      player.pause()
-      $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
-      $(document).attr("title", "SyndiNet")
-
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.delete('v')
-      window.history.replaceState({}, '', newUrl)
-
-      const uploaded = $(this).data('uploaded')
-
-
-      if (isVideoUpdated) {
-        isVideoUpdated = false
-
-        window.location.reload()
-
-        // #TODO Doesn't work for some reason 
-        // if (search && search.refresh) {
-        //   search.refresh()
-        // } else if (search && search.helper) {
-        //   search.helper.search()
-        // }
-      }
-    })
 
     function formatDuration(seconds) {
       if (!seconds || isNaN(seconds)) return "0:00" // guard
@@ -944,106 +828,6 @@
       txt.innerHTML = text
       return txt.value
     }
-
-    // THUMBNAIL GENERATION
-
-    var canvas = document.getElementById("thumbnail-canvas")
-    let frameReady = false
-
-    $("#vodModal").on("hidden.bs.modal", function () {
-      frameReady = false
-      canvas.style.display = 'none'
-      $('#thumbnail').attr('src', '').hide()
-      $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
-      $('#save-thumbnail').prop('disabled', true).addClass('disabled')
-    })
-
-    // Enable button once video has played a frame
-    player.on('timeupdate', () => {
-      if (!frameReady && player.currentTime() > 0) {
-        frameReady = true
-        console.log('First frame available - enabling thumbnail button')
-        $('#generate-thumbnail').prop('disabled', false).removeClass('disabled')
-      }
-    })
-
-    let generatedThumbnailUrl = null
-    let generatedThumbnailBlob = null
-
-    $('#generate-thumbnail').prop('disabled', true).addClass('disabled')
-
-    $(document).on('click', '#generate-thumbnail', async function () {
-      console.log("Generate thumbnail clicked")
-
-      var id = $(this).data("id")
-      var video = document.querySelectorAll("video")[0]
-
-      // Set canvas size
-      canvas.width = 300
-      canvas.height = 169
-
-      // Draw video frame on canvas
-      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height)
-
-      generatedThumbnailUrl = canvas.toDataURL("image/jpeg", 0.9)
-
-      canvas.toBlob(blob => {
-        generatedThumbnailBlob = blob
-      })
-
-      $('#thumbnail').attr('src', generatedThumbnailUrl).show()
-      $('#image-' + id).css({ "background-image": `url(${generatedThumbnailUrl})` })
-
-      $('#save-thumbnail').prop('disabled', false).removeClass('disabled')
-    })
-
-    $('#save-thumbnail').prop('disabled', true).addClass('disabled')
-
-    $(document).on('click', '#save-thumbnail', async function () {
-      if (!generatedThumbnailBlob) {
-        alert('You have to generate thumbnail first')
-        return
-      }
-
-      const id = $(this).data("id")
-      const formData = new FormData()
-      formData.append('file', generatedThumbnailBlob, `${id}.jpg`)
-      formData.append('id', id)
-
-      console.log(formData)
-
-      const token = await getClerkToken()
-
-      try {
-        const res = await fetch('/api/capture', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData
-        })
-
-        const result = await res.json()
-
-        if (result.success) {
-          isVideoUpdated = true
-
-          $(".btn-close").trigger("click")
-          alert('Thumbnail saved successfully!')
-
-          const timestamp = new Date().getTime()
-          const imgUrl = `https://img.syndinet.com/${id}?t=${timestamp}`
-
-          $('#thumbnail').attr('src', imgUrl)
-          $(`#image-${id}`).css("background-image", `url(${imgUrl})`)
-          $(`.play[data-id="${id}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
-
-        } else {
-          alert('Saving failed: ' + (result.error || 'Unknown error'))
-        }
-      } catch (error) {
-        console.error('Error saving thumbnail', error)
-        alert('Error saving thumbnail: ' + error.message)
-      }
-    });
 
   </script>
 </body>
