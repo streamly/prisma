@@ -1,4 +1,5 @@
 import { uploadThumbnail } from '../api.js'
+import { eventHub, EVENTS } from '../eventHub.js'
 import { onFirstVideoFrame } from '../videoPlayer.js'
 
 export function initThumbnailGenerationUi() {
@@ -55,6 +56,7 @@ export function initThumbnailGenerationUi() {
         $(`#image-${videoid}`).css("background-image", `url(${imgUrl})`)
         $(`.play[data-id="${videoid}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
 
+        eventHub.emit(EVENTS.THUMBNAIL_UPLOADED)
       } else {
         alert('Saving failed: ' + (response.error || 'Unknown error'))
       }

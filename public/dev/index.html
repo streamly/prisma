@@ -262,34 +262,21 @@
 
                 <!-- SUBMIT BUTTON -->
                 <button id="publish" data-active="1" type="button"
-                  class="btn btn-dark shadow-none ms-0 me-4 px-4">Publish</button>
+                  class="btn btn-dark shadow-none ms-0 me-4 px-4">Save</button>
               </form>
             </div>
 
             <!-- THUMBNAIL -->
             <div class="col-3 pe-0">
-              <!-- Image placeholder -->
               <div class="small pb-3">
                 <div class="image-container">
                   <img id="thumbnail" class="img-fluid w-100 border" src="" height="169" title="Thumbnail" />
-                  <div class="overlay">
-                    <div class="icon-container">
-                      <a href="javascript:void(0);" title="Refresh" class="refresh">
-                        <i class="bx bx-refresh icon" style="font-size:48px !important;"></i>
-                      </a>
-                    </div>
-                  </div>
                 </div>
 
                 <canvas id="thumbnail-canvas" style="display:none;"></canvas>
                 <button type="button" id="generate-thumbnail" data-optimizer="" data-uid="" data-id=""
                   class="btn btn-dark mb-3 shadow-none w-100 mt-3" disabled>
-                  class="btn btn-dark mb-3 shadow-none w-100 mt-3" disabled>
                   GENERATE THUMBNAIL
-                </button>
-                <button type="button" id="save-thumbnail" data-optimizer="" data-uid="" data-id=""
-                  class="btn btn-dark mb-3 shadow-none w-100 mt-3">
-                  SAVE THUMBNAIL
                 </button>
               </div>
             </div>
@@ -357,7 +344,6 @@
 
         <div class="modal-header">
           <h5 class="modal-title d-flex align-items-center">
-            <span class="modal-analytics-title">Analytics</span>
             <span class="modal-analytics-title">Analytics</span>
             <span class="video-title"></span>
           </h5>
@@ -684,14 +670,19 @@
 
       if (urlParams.get('v')) {
         const v = urlParams.get('v') // removed extra closing parenthesis
+        const isNew = urlParams.get('new')
+
+        console.log(Array.from(isNew))
         search.helper
           .setQuery("")
           .setQueryParameter("filters", `id:${v}`)
           .search()
 
         setTimeout(function () {
-          $("#videoModal").data("uploaded", 1)
-          $("#videoModal").data("uploaded", 1)
+          if (isNew) {
+            $("#videoModal").data("uploaded", true)
+          }
+
           $(".edit").first().trigger("click")
         }, 1000)
       }
@@ -732,7 +723,7 @@
     let videoToDelete = null
     let videoTitleToDelete = null
 
-    $(document).on("click", ".delete", function (e) {
+    $(document).on("click", ".video-delete", function (e) {
       e.preventDefault()
       const data = $(this).closest('.row').data()
       videoToDelete = data.id
@@ -797,7 +788,7 @@
     // help
     $(document).on("click", ".help", function () {
       const data = $(this).data()
-      //$("#videoModal .modal-title").text( decodeURIComponent(data.title)  );
+
       //$("#videoModal .modal-title").text( decodeURIComponent(data.title)  );
       const modal = new mdb.Modal(document.getElementById("helpModal"))
       modal.show()

@@ -1,10 +1,35 @@
+import { eventHub, EVENTS } from '../eventHub.js'
 import { pauseVideo, playVideo } from '../videoPlayer.js'
 
 let isVideoUpdated = false
 
+const modalElement = document.getElementById('videoModal')
+const $modal = $(modalElement)
+
+function disableSaveButton() {
+  $('#publish').prop('disabled', true).addClass('disabled')
+}
+
+function enableSaveButton() {
+  $('#publish').prop('disabled', false).removeClass('disabled')
+}
+
 export function initVideoModalUi() {
   // edit
   $(document).on("click", ".edit", function () {
+    const isNewVideo = $modal.data('uploaded')
+
+    console.log('Modal', isNewVideo)
+
+    if (isNewVideo) {
+      disableSaveButton()
+      $modal.data('uploaded', false)
+    }
+
+    eventHub.on(EVENTS.THUMBNAIL_UPLOADED, function () {
+      enableSaveButton()
+    })
+
     const data = $(this).closest('.row').data()
     $("#videoModal .modal-video-title").text(decodeURIComponent(data.title))
 
@@ -97,6 +122,7 @@ export function initVideoModalUi() {
 
     const newUrl = new URL(window.location.href)
     newUrl.searchParams.delete('v')
+    newUrl.searchParams.delete('new')
     window.history.pushState({}, '', newUrl)
 
     const uploaded = $(this).data('uploaded')
