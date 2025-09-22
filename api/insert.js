@@ -6,6 +6,7 @@ import {
 } from '../lib/responses.js'
 import { createVideoDocument } from '../lib/typesenseClient.js'
 import { authenticateUser, getClerkUser } from '../lib/clerkClient.js'
+import { validateNewVideoInput } from '../lib/validation.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -24,7 +25,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Authentication error', details: error.message })
     }
 
-    const { filename, width, height, duration, size, id } = req.body
+    let data
+
+    try {
+      data = validateNewVideoInput(req.body)
+    } catch (error) {
+      console.error('Validation error', error)
+      return res.status(400).json({ error: 'Invalid data', details: error.issues || undefined })
+    }
+
+    const { filename, width, height, duration, size, id } = valida
 
     if (Object.values({ filename, width, height, duration, size, id }).some(value => value === undefined || value === null)) {
       return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size, id')

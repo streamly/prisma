@@ -7,7 +7,7 @@ import {
   successResponse
 } from '../lib/responses.js'
 import { updateVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
-import { authenticateUser } from '../lib/clerkClient.js'
+import { validateUpdateVideoInput } from '../lib/validation.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -26,6 +26,12 @@ export default async function handler(req, res) {
   }
 
   let data
+
+  try {
+    data = validateUpdateVideoInput(req.body)
+  } catch (error) {
+    console.error('Validation error', error)
+    return res.status(400).json({ error: 'Invalid data', details: error.issues || undefined })
   }
 
   let document
