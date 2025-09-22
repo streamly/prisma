@@ -1,11 +1,16 @@
+import { updateVideo } from '../api.js'
 import { eventHub, EVENTS } from '../eventHub.js'
+import { getVideo } from '../videoData.js' // ⬅️ import the central store
 import { pauseVideo, playVideo } from '../videoPlayer.js'
 
 let isVideoUpdated = false
+let videoDuration = 0
+let tagifyAudience, tagifyTags, tagifyChannel, tagifyType
 
 const modalElement = document.getElementById('videoModal')
 const $modal = $(modalElement)
 
+// ---------- Helpers ----------
 function disableSaveButton() {
   $('#publish').prop('disabled', true).addClass('disabled')
 }
@@ -14,131 +19,237 @@ function enableSaveButton() {
   $('#publish').prop('disabled', false).removeClass('disabled')
 }
 
-export function initVideoModalUi() {
-  // edit
-  $(document).on("click", ".edit", function () {
-    const isNewVideo = $modal.data('uploaded')
+function checkVideoBudget(videoDuration) {
+  const cpvValue = parseFloat($('#cpv').val()) || 0
+  const budgetInput = $('#budget')
+  let budgetValue = parseFloat(budgetInput.val().trim()) || 0
+  let parsleyMin = 0
 
-    console.log('Modal', isNewVideo)
+  if (cpvValue > 0) {
+    const rawMin = (cpvValue * videoDuration / 60) * 10
+    const minBudget = Math.max(1, Math.ceil(rawMin))
+    parsleyMin = minBudget.toFixed(2)
 
-    if (isNewVideo) {
-      disableSaveButton()
-      $modal.data('uploaded', false)
+    if (budgetValue < minBudget) {
+      budgetValue = minBudget
     }
+  } else {
+    budgetValue = 0
+  }
 
-    eventHub.on(EVENTS.THUMBNAIL_UPLOADED, function () {
-      enableSaveButton()
-    })
+  budgetInput.val(budgetValue.toFixed(2))
+  budgetInput.attr('data-parsley-min', parsleyMin)
+  budgetInput.parsley().validate()
+}
 
-    const data = $(this).closest('.row').data()
-    $("#videoModal .modal-video-title").text(decodeURIComponent(data.title))
-
-    $("#id").val(decodeURIComponent(data.id || ''))
-    $("#title").val(decodeURIComponent(data.title || ''))
-    $("#description").val(decodeURIComponent(data.description || ''))
-
-    // Single-select audience
-    let audienceVal = Array.isArray(data.audience) ? decodeURIComponent(data.audience[0]) : decodeURIComponent(data.audience || '')
-    $("#audience").val(audienceVal.trim())
-
-    // Category (multi-select)
-    let categoryVal = Array.isArray(data.category) ? data.category.map(v => decodeURIComponent(v)) : decodeURIComponent(data.category || '').split(';').map(v => v.trim()).filter(v => v)
-    $("#category").val(categoryVal)
-
-    // Company (single input)
-    $("#company").val(decodeURIComponent(data.company || ''))
-
-    // Tags
-    $("#tags").val(decodeURIComponent(data.tags || ''))
-
-    $("#cpv").val(data.cpv !== undefined ? decodeURIComponent(data.cpv) : 0)
-    $("#budget").val(data.budget !== undefined ? decodeURIComponent(data.budget) : 0)
-    $("#performance").prop("checked", data.cpv >= 0.05)
-    $(".performance").toggle(data.cpv >= 0.05)
-
-    const timestamp = new Date().getTime()
-    $('#thumbnail').attr('src', `https://img.syndinet.com/${data.id}?t=${timestamp}`)
-
-    const videoId = data.id
-
-    $('#generate-thumbnail, #save-thumbnail').data('id', videoId)
-
-    const newUrl = new URL(window.location.href)
-    newUrl.searchParams.set('v', videoId)
-    window.history.replaceState({}, '', newUrl)
-
-    playVideo(videoId)
-
-    console.log('Opened modal for', videoId)
-    const modal = new mdb.Modal(document.getElementById("videoModal"))
-    modal.show()
+// ---------- Tagify Init ----------
+function initTagify() {
+  // Audience (whitelist, single or multiple choice)
+  tagifyAudience = new Tagify(document.querySelector('#audience'), {
+    whitelist: ["Business", "Consumer", "Government", "NGO/Non-Profit"],
+    enforceWhitelist: true,
+    dropdown: {
+      maxItems: 5,
+      classname: 'tags-look',
+      enabled: 0,
+      closeOnSelect: false
+    }
   })
 
-  // performance
-  $(document).on("click", "#performance", function () {
-    $(".performance").toggle()
+  // Type (whitelist)
+  tagifyType = new Tagify(document.querySelector('#type'), {
+    whitelist: [
+      "Animation", "Annual Report", "Behind-The-Scenes", "Board Meeting Highlights", "Brand",
+      "Case Study", "Client Testimonial", "Company Culture", "Company Profile",
+      "Corporate Finance", "Corporate Social Responsibility", "Crowdfunding / Fundraising",
+      "Event", "Explainer", "Financial Report", "Internal Communication",
+      "Investor Relations", "Marketing Campaign", "Onboarding", "Product", "Product Launch",
+      "Promotional", "Quarterly Results", "Recruitment / Hiring", "Sales Pitch", "Social Media",
+      "Strategy / Planning", "Talent Profile", "Testimonial", "Training", "Tutorial",
+      "Vision & Mission", "Webinar", "Workshop"
+    ],
+    enforceWhitelist: true,
+    dropdown: {
+      maxItems: 10,
+      classname: 'tags-look',
+      enabled: 0,
+      closeOnSelect: false
+    }
   })
 
-  // update video
-  $('#vod').parsley()
-  $(document).on("click", "#publish", async function () {
-    const parseArray = (val) => {
-      if (!val) return []
-      if (Array.isArray(val)) return val.filter(Boolean)
-      return val.toString().split(',').map(v => v.trim()).filter(Boolean)
-    }
+  // Tags (free text, lowercase)
+  tagifyTags = new Tagify(document.querySelector('#tags'), {
+    transformTag: tag => tag.value = tag.value.toLowerCase().trim()
+  })
 
-    // Collect values
-    const payload = {
-      id: $("#id").val(),
-      title: $("#title").val(),
-      description: $("#description").val(),
-      category: parseArray($('#category').val()),
-      audience: parseArray($('audience').val()),
-      company: $("#company").val(),
-      tags: $("#tags").val().split(','),
-      cpv: parseFloat($("#cpv").val()),
-      budget: parseFloat($("#budget").val()),
-      performance: $("#performance").is(":checked") ? 1 : 0
-    }
+  // Channel (free text, multiple companies)
+  tagifyChannel = new Tagify(document.querySelector('#channel'), {
 
-    try {
-      console.log('Update payload', payload)
-      const result = await apiRequest('/api/update', 'POST', payload)
+  })
+}
 
+// ---------- Event Handlers ----------
+function handleEditClick() {
+  const isNewVideo = $modal.data('uploaded')
+  if (isNewVideo) {
+    disableSaveButton()
+    $modal.data('uploaded', false)
+  }
+
+  eventHub.on(EVENTS.THUMBNAIL_UPLOADED, enableSaveButton)
+
+  const videoId = $(this).closest(".video-hit").data("id")
+  const data = getVideo(videoId)
+
+  console.log('Video data', data)
+
+  if (!data) {
+    console.error("Video not found in store:", videoId)
+    return
+  }
+
+  videoDuration = data.duration
+
+  $("#videoModal .modal-video-title").text(data.title)
+  $("#id").val(data.id || '')
+  $("#title").val(data.title || '')
+  $("#description").val(data.description || '')
+
+
+  tagifyAudience.removeAllTags()
+  if (Array.isArray(data.audience)) {
+    tagifyAudience.addTags(data.audience)
+  }
+
+  tagifyTags.removeAllTags()
+  if (Array.isArray(data.tags)) {
+    tagifyTags.addTags(data.tags)
+  }
+
+  tagifyChannel.removeAllTags()
+  if (Array.isArray(data.channel)) {
+    tagifyChannel.addTags(data.channel)
+  }
+
+  tagifyType.removeAllTags()
+  if (Array.isArray(data.type)) {
+    tagifyType.addTags(data.type)
+  }
+
+  $("#cpv").val(data.cpv ?? 0)
+  $("#budget").val(data.budget ?? 0)
+  $("#performance").prop("checked", data.cpv >= 0.05)
+  $(".performance").toggle(data.cpv >= 0.05)
+
+  const timestamp = Date.now()
+  $('#thumbnail').attr('src', `https://img.syndinet.com/${data.id}?t=${timestamp}`)
+
+  $('#generate-thumbnail, #save-thumbnail').data('id', data.id)
+
+  const newUrl = new URL(window.location.href)
+  newUrl.searchParams.set('v', data.id)
+  window.history.replaceState({}, '', newUrl)
+
+  playVideo(data.id)
+  new mdb.Modal(modalElement).show()
+}
+
+function handlePublishClick() {
+  const $form = $('#vod')
+
+  if (!$form.parsley().validate()) {
+    return
+  }
+
+  const payload = {
+    id: $("#id").val(),
+    title: $("#title").val(),
+    description: $("#description").val(),
+    type: tagifyType.value.map(t => t.value),
+    audience: tagifyAudience.value.map(t => t.value),
+    channel: tagifyChannel.value.map(t => t.value),
+    tags: tagifyTags.value.map(t => t.value),
+    cpv: parseFloat($("#cpv").val()),
+    budget: parseFloat($("#budget").val()),
+    performance: $("#performance").is(":checked")
+  }
+
+  updateVideo(payload)
+    .then(() => {
       isVideoUpdated = true
-      // search.helper.setQuery(search.helper.state.query).search()
-
       $(".btn-close").trigger("click")
-    } catch (err) {
+    })
+    .catch(err => {
       alert("Request failed: " + err.message)
-    }
-  })
+    })
+}
 
-  $("#videoModal").on("hidden.bs.modal", function () {
-    pauseVideo()
-    $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
-    $(document).attr("title", "SyndiNet")
+function handleModalHidden() {
+  pauseVideo()
+  $('.modal.show .btn-close, .offcanvas.show .btn-close').trigger('click')
+  $(document).attr("title", "SyndiNet")
 
-    const newUrl = new URL(window.location.href)
-    newUrl.searchParams.delete('v')
-    newUrl.searchParams.delete('new')
-    window.history.pushState({}, '', newUrl)
+  const newUrl = new URL(window.location.href)
+  newUrl.searchParams.delete('v')
+  newUrl.searchParams.delete('new')
+  window.history.pushState({}, '', newUrl)
 
-    const uploaded = $(this).data('uploaded')
+  if (isVideoUpdated) {
+    isVideoUpdated = false
+    window.location.reload()
+  }
+}
 
+function handleCpvBlur() {
+  let cpvValue = parseFloat($('#cpv').val().trim()) || 0
+  if (cpvValue < 0.05) {
+    cpvValue = 0
+    $('#budget').val('0.00')
+  }
 
-    if (isVideoUpdated) {
-      isVideoUpdated = false
+  $('#cpv').val(cpvValue.toFixed(2))
+  $('#cpv').attr('data-parsley-min', cpvValue === 0 ? '0' : '0.05')
+  $('#cpv').parsley().validate()
 
-      window.location.reload()
+  checkVideoBudget(videoDuration)
+}
 
-      // #TODO Doesn't work for some reason 
-      // if (search && search.refresh) {
-      //   search.refresh()
-      // } else if (search && search.helper) {
-      //   search.helper.search()
-      // }
-    }
-  })
+function handleBudgetBlur() {
+  checkVideoBudget(videoDuration)
+}
+
+function handlePerformanceChange(e) {
+  if (!e.target.checked) {
+    $('#cpv').val('0.00')
+    $('#budget').val('0.00')
+    $('#cpv, #budget').parsley().validate()
+  }
+  $(".performance").toggle(e.target.checked)
+}
+
+function handleTextTrimBlur() {
+  let text = $(this).val()
+
+  if (!text) {
+    return
+  }
+
+  text = text.replace(/[\r\n]+/g, ' ')
+  text = text.replace(/\s\s+/g, ' ')
+  text = text.trim()
+  $(this).val(text)
+}
+
+// ---------- Init ----------
+export function initVideoModalUi() {
+  $(document).on("click", ".edit", handleEditClick)
+  $(document).on("click", "#publish", handlePublishClick)
+  $("#videoModal").on("hidden.bs.modal", handleModalHidden)
+
+  $('#cpv').on('blur', handleCpvBlur)
+  $('#budget').on('blur', handleBudgetBlur)
+  $(document).on("change", "#performance", handlePerformanceChange)
+  $(document).on('blur', '.text-trim', handleTextTrimBlur)
+
+  initTagify()
 }

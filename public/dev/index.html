@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8.2.1/themes/satellite-min.css"
     crossorigin="anonymous">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video-js.min.css" rel="stylesheet">
-
+  <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify@4.35.4/dist/tagify.css" rel="stylesheet">
   <link href="/styles/dev.css" rel="stylesheet">
 
   <!-- JS -->
@@ -26,8 +26,6 @@
   <script
     src="https://cdn.jsdelivr.net/npm/typesense-instantsearch-adapter@2/dist/typesense-instantsearch-adapter.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
-
-  <!-- Clerk-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"
     integrity="sha512-QgLS4OmTNBq9TujITTSh0jrZxZ55CFjs4wjK8NXsBoZb04UYl8wWQJNaS8jRiLq6/c60bEfOj3cPsxadHICNfw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -38,12 +36,51 @@
     src="https://clerk.syndinet.com/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.8/video.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify@4.35.4/dist/tagify.min.js"></script>
 
   <!-- APP CODE -->
   <script type="module" src="/js/mainPage.js"></script>
 </head>
 
 <body>
+  <!-- SEARCH HIT TEMPLATE-->
+  <template id="hit-template">
+    <div class="row border-0 bg-transparent mb-3 video-hit" data-id="">
+      <div class="col-2 text-end edit thumbnail-wrapper">
+        <div class="pointer thumbnail-container bg-dark" title="">
+          <div class="img-fluid border bg-dark thumbnail-background" style="
+    height:69px;
+    min-width:123px;
+    background-repeat:no-repeat;
+    background-size:cover;
+    background-image:url('https://img.syndinet.com/${hit.id}');
+  ">
+          </div>
+          <div class="duration"></div>
+        </div>
+      </div>
+      <div class="col edit">
+        <h6 class="title-clamp m-0"></h6>
+        <div class="pointer text-muted small text-truncate channel"></div>
+        <div class="col-12 text-muted small mt-1">
+          Modified: <span class="modified"></span><br>
+          <span class="text-secondary small id"></span>
+        </div>
+      </div>
+      <div class="col-1">
+        <div class="dropdown">
+          <a class="btn btn-link bg-transparent p-0 m-0" href="#" title="More" data-mdb-toggle="dropdown">
+            <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a type="button" class="dropdown-item video-analytics">Analytics</a></li>
+            <li><a type="button" class="dropdown-item video-conversions">Conversions</a></li>
+            <li><a type="button" class="dropdown-item video-delete">Delete</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </template>
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg nav-icons bg-white fixed-top shadow-sm">
@@ -84,9 +121,8 @@
     </div>
   </nav>
 
-
   <!-- content -->
-  <div class="container-fluid p-4 mb-5 ">
+  <div class="hits-content container-fluid p-4 mb-5 ">
     <div class="row">
       <div class="col-2">
         <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Company</h5>
@@ -120,149 +156,113 @@
 
   <!-- videoModal -->
   <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true"
-    style="z-index:99999999 !important;">
+    style="z-index:10000;">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title d-flex align-items-center"><i class="bx bx-tv lead me-2"></i><span
-              class="modal-video-title">Metadata</span></h5>
+          <h5 class="modal-title d-flex align-items-center">
+            <i class="bx bx-tv lead me-2"></i>
+            <span class="modal-video-title">Metadata</span>
+          </h5>
           <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
             aria-label="Close"></button>
         </div>
         <div class="modal-body px-5 py-4">
-
-
           <div class="row">
             <div class="col-9 small pe-2 pb-4">
-
               <div class="mb-3">
                 <video id="player" controls preload="auto" data-setup="{}"
-                  class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9 bg-dark w-100 border "></video>
+                  class="video-js vjs-default-skin vjs-big-play-centered vjs-16-9 bg-dark w-100 border"></video>
               </div>
 
               <!-- MODAL FORM -->
               <form id="vod" data-parsley-validate>
-                <input type="hidden" name="id" id="id" equired />
+                <input type="hidden" name="id" id="id" required />
 
+                <!-- FIELD - TITLE -->
                 <div class="mb-3">
-                  <label for="title">Title</label>
-                  <input id="title" type="text" name="title" required maxLength="150"
+                  <label for="title">
+                    Title
+                    <i class='bx bx-info-circle'
+                      title="Enter a title that clearly identifies the content (max 100 chars)."></i>
+                  </label>
+                  <input id="title" type="text" name="title" required maxlength="100"
                     class="form-control text-trim border validate" />
                 </div>
 
-                <!-- FIELD - CATEGORY -->
+                <!-- FIELD - TYPE -->
                 <div class="mb-3">
-                  <label for="type">Category</label>
-                  <select id="category" name="category[]" required class="form-control text-trim border validate">
-                    <option>
-                    <option value="Animation">Animation</option>
-                    <option value="Annual Report">Annual Report</option>
-                    <option value="Behind-The-Scenes">Behind-The-Scenes</option>
-                    <option value="Board Meeting Highlights">Board Meeting Highlights</option>
-                    <option value="Brand">Brand</option>
-                    <option value="Case Study">Case Study</option>
-                    <option value="Client Testimonial">Client Testimonial</option>
-                    <option value="Company Culture">Company Culture</option>
-                    <option value="Company Profile">Company Profile</option>
-                    <option value="Corporate Finance">Corporate Finance</option>
-                    <option value="Corporate Social Responsibility">Corporate Social Responsibility</option>
-                    <option value="Crowdfunding / Fundraising">Crowdfunding / Fundraising</option>
-                    <option value="Event">Event</option>
-                    <option value="Explainer">Explainer</option>
-                    <option value="Financial Report">Financial Report</option>
-                    <option value="Internal Communication">Internal Communication</option>
-                    <option value="Investor Relations">Investor Relations</option>
-                    <option value="Marketing Campaign">Marketing Campaign</option>
-                    <option value="Onboarding">Onboarding</option>
-                    <option value="Product">Product</option>
-                    <option value="Product Launch">Product Launch</option>
-                    <option value="Promotional">Promotional</option>
-                    <option value="Quarterly Results">Quarterly Results</option>
-                    <option value="Recruitment / Hiring">Recruitment / Hiring</option>
-                    <option value="Sales Pitch">Sales Pitch</option>
-                    <option value="Social Media">Social Media</option>
-                    <option value="Strategy / Planning">Strategy / Planning</option>
-                    <option value="Talent Profile">Talent Profile</option>
-                    <option value="Testimonial">Testimonial</option>
-                    <option value="Training">Training</option>
-                    <option value="Tutorial">Tutorial</option>
-                    <option value="Vision & Mission">Vision & Mission</option>
-                    <option value="Webinar">Webinar</option>
-                    <option value="Workshop">Workshop</option>
-                  </select>
+                  <label for="type">
+                    Type
+                    <i class='bx bx-info-circle' title="Choose the type of content."></i>
+                  </label>
+                  <input id="type" name="type" required class="form-control border validate" />
                 </div>
 
                 <!-- FIELD - AUDIENCE -->
                 <div class="mb-3">
-                  <label for="audience">Audience</label>
-                  <select id="audience" name="audience" required class="form-control text-trim border validate">
-                    <option value="">Select an audience</option>
-                    <option value="Business">Business</option>
-                    <option value="Consumer">Consumer</option>
-                    <option value="Government">Government</option>
-                    <option value="NGO/Non-Profit">NGO/Non-Profit</option>
-                  </select>
+                  <label for="audience">
+                    Audience
+                    <i class='bx bx-info-circle' title="Choose the key target audience(s) for the content."></i>
+                  </label>
+                  <input id="audience" name="audience" required class="form-control border validate" />
                 </div>
 
                 <!-- FIELD - DESCRIPTION -->
                 <div class="mb-3">
-                  <label for="description">Description</label>
-
-                  <textarea id="description" name="description" rows="6" required maxLength="500"
+                  <label for="description">
+                    Description
+                    <i class='bx bx-info-circle'
+                      title="Provide a concise summary that describes the content, key takeaways, and any prerequisites."></i>
+                  </label>
+                  <textarea id="description" name="description" rows="6" required maxlength="500"
                     class="form-control border text-trim validate"></textarea>
                 </div>
 
                 <!-- FIELD - COMPANY -->
                 <div class="mb-3">
-                  <label for="company">Company</label>
-
-                  <div class="">
-                    <div id="company-wrapper">
-                      <div class="input-group mb-2 company-input">
-                        <input id="company" type="text" name="company[]" required maxLength="40"
-                          class="form-control text-trim border validate" />
-                        <span class="input-group-text remove-company" style="cursor:pointer;">
-                          <i class='bx bx-x'></i>
-                        </span>
-                      </div>
-                    </div>
-                    <!-- <button type="button" id="add-company"
-                      class="btn btn-link btn-sm bg-transparent p-0 m-0 float-end">Add A Company</button> -->
-                  </div>
+                  <label for="channel">Company</label>
+                  <input id="channel" name="channel" required class="form-control border validate" />
                 </div>
 
                 <!-- FIELD - TAGS -->
                 <div class="mb-3">
-                  <label for="tags">Keywords</label>
-                  <input id="tags" type="text" name="tags" required maxLength="100"
-                    class="form-control border validate" />
+                  <label for="tags">
+                    Keywords
+                    <i class='bx bx-info-circle'
+                      title="Provide a list of important keywords and tags to help search and recommendations."></i>
+                  </label>
+                  <input id="tags" type="text" name="tags" required maxlength="100" />
                 </div>
 
                 <!-- FIELD - CPV, BUDGET -->
                 <div class="performance" style="display:none;">
                   <div class="mb-3">
-                    <label for="cpv" class="">CPV Bid (per minute) <i class='bx bx-help-circle'
-                        title="Set a cost-per-view (CPV) bid of $0.05 per minute or higher to amplify your video's reach. Higher bids elevate your content in recommendations, driving greater visibility, engagement, and conversions."></i>
+                    <label for="cpv" class="">CPV Bid (per minute)
+                      <i class='bx bx-help-circle'
+                        title="Set a cost-per-view (CPV) bid of $0.05 per minute or higher to amplify your video's reach."></i>
                     </label>
-                    <input type="text" id="cpv" name="cpv" value="0" data-parsley-min="0.05" required
+                    <input type="number" id="cpv" name="cpv" value="0" step="0.01" required
                       class="form-control bg-white border validate" />
                   </div>
                   <div class="mb-3">
-                    <label for="budget" class="">Daily Spend Limit <i class='bx bx-help-circle'
-                        title="Set your daily spending limit tp cover at least 10 full-length plays. Once it's reached, your content's distribution will pause until the next day. Slight overages may occur due to brief delays in updating search recommendations."></i>
+                    <label for="budget" class="">Daily Spend Limit
+                      <i class='bx bx-help-circle'
+                        title="Set your daily spending limit to cover at least 10 full-length plays."></i>
                     </label>
-                    <input type="text" id="budget" name="budget" value="0" data-parsley-min="1" required
+                    <input type="number" id="budget" name="budget" value="0" step="0.01" required
                       class="form-control bg-white border validate" />
                   </div>
                 </div>
+
                 <div class="form-check mb-3">
-                  <input class="form-check-input" type="checkbox" value="" id="performance" xdisabled />
+                  <input class="form-check-input" type="checkbox" value="" id="performance" />
                   <label class="form-check-label" for="performance">Ad-free performance marketing</label>
                 </div>
 
                 <!-- SUBMIT BUTTON -->
                 <button id="publish" data-active="1" type="button"
-                  class="btn btn-dark shadow-none ms-0 me-4 px-4">Save</button>
+                  class="btn btn-dark shadow-none ms-0 me-4 px-4">Publish</button>
               </form>
             </div>
 
@@ -270,7 +270,7 @@
             <div class="col-3 pe-0">
               <div class="small pb-3">
                 <div class="image-container">
-                  <img id="thumbnail" class="img-fluid w-100 border" src="" height="169" title="Thumbnail" />
+                  <img id="thumbnail" class="img-fluid w-100 border bg-dark" src="" height="169" title="Thumbnail" />
                 </div>
 
                 <canvas id="thumbnail-canvas" style="display:none;"></canvas>
@@ -288,7 +288,7 @@
 
   <!-- billingModal -->
   <div class="modal fade" id="billingModal" tabindex="-1" aria-labelledby="billingModalLabel" aria-hidden="true"
-    style="z-index:99999999 !important;">
+    style="z-index:10000;">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
@@ -303,7 +303,7 @@
 
   <!-- helpModal -->
   <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true"
-    style="z-index:99999999 !important;">
+    style="z-index:10000;">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
@@ -338,7 +338,7 @@
 
   <!-- ANALYTICS MODAL -->
   <div class="modal fade" id="analytics-modal" tabindex="-1" aria-labelledby="analyticsModalLabel" aria-hidden="true"
-    title="Analytics" style="z-index: 999999999999999 !important;">
+    title="Analytics" style="z-index: 10000;">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
 
@@ -368,7 +368,7 @@
 
   <!-- CONVERSIONS MODAL -->
   <div class="modal fade" id="conversions-modal" tabindex="-1" aria-labelledby="conversionsModalLabel"
-    aria-hidden="true" title="Conversions" style="z-index: 999999999999999 !important;">
+    aria-hidden="true" title="Conversions" style="z-index: 10000;">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
 
@@ -396,395 +396,6 @@
   </div>
 
   <script>
-    async function getClerkToken() {
-      await Clerk.load()
-
-      if (!Clerk.user) {
-        throw new Error('Missing Clerk token')
-      }
-
-      return Clerk.session.getToken()
-    }
-
-    async function apiRequest(endpoint, method = 'POST', body = null) {
-      const token = await getClerkToken()
-      const options = {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      }
-
-      if (body) {
-        if (body instanceof FormData) {
-          options.body = body
-        } else {
-          options.headers['Content-Type'] = 'application/json'
-          options.body = JSON.stringify(body)
-        }
-      }
-
-      try {
-        const response = await fetch(endpoint, options)
-        const data = await response.json()
-        if (!response.ok || data.success === false) {
-          throw new Error(data.error || 'Unknown API error')
-        }
-        return data
-      } catch (err) {
-        console.error(`API request failed: ${endpoint}`, err)
-        throw err
-      }
-    }
-
-    let isVideoUpdated = false
-    let search
-
-    window.addEventListener('DOMContentLoaded', async function () {
-      // Add new company input
-      $('#add-company').click(function () {
-        const newInput = $('#company-wrapper .company-input:first').clone()
-        newInput.find('input').val('') // clear value
-        $('#company-wrapper').append(newInput)
-        updateRemoveButtons()
-      })
-
-      // Remove company input
-      $('#company-wrapper').on('click', '.remove-company', function () {
-        if ($('#company-wrapper .company-input').length > 1) {
-          $(this).closest('.company-input').remove()
-        }
-        updateRemoveButtons()
-      })
-
-      // Show/hide remove buttons if only 1 input left
-      function updateRemoveButtons() {
-        if ($('#company-wrapper .company-input').length === 1) {
-          $('#company-wrapper .company-input .remove-company').hide()
-        } else {
-          $('#company-wrapper .company-input .remove-company').show()
-        }
-      }
-
-      updateRemoveButtons()
-
-      const apiKey = (await window.cookieStore.get('apiKey')).value
-
-      if (!apiKey) {
-        console.error('Typesense API key is missing')
-        return // don't initialize the search
-      }
-
-      const now = new Date()
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000 // Start of today
-      const yesterday = today - 86400 // Start of yesterday
-      const startOfWeek = today - (now.getDay() * 86400) // Start of this week (Sunday)
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000 // Start of this month
-
-
-      const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
-        server: {
-          apiKey: apiKey,
-          nodes: [{ host: "t1.tubie.cx", port: 443, protocol: "https" }],
-        },
-        additionalSearchParameters: {
-          query_by: "title,company,channel,description,tags",
-          sort_by: "modified:desc"
-        },
-      })
-
-      search = instantsearch({
-        indexName: "videos",
-        searchClient: typesenseInstantsearchAdapter.searchClient,
-        routing: false,
-        searchFunction(helper) {
-          // Only scroll to the top for new searches (not when paging)
-          if (helper.state.page === 0) { window.scrollTo({ top: 0, behavior: 'auto', }) }
-          helper.search()
-        },
-      })
-
-      search.addWidgets([
-        instantsearch.widgets.searchBox({
-          container: "#searchbox",
-          placeholder: "Search",
-          autofocus: true,
-          showReset: true,
-          showSubmit: true,
-        }),
-
-        instantsearch.widgets.refinementList({
-          container: '#channel-filter',
-          attribute: 'channel',
-          searchable: true,
-          searchablePlaceholder: 'Search companies',
-          limit: 30,
-          templates: {
-            item(data) {
-              return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`
-            }
-          }
-        }),
-
-        instantsearch.widgets.numericMenu({
-          container: '#duration-filter',
-          attribute: 'duration',
-          items: [
-            { label: 'Any' },
-            { label: 'Under 4 minutes', start: 1, end: 239 },
-            { label: '4 - 20 minutes', start: 240, end: 1199 },
-            { label: 'Over 20 minutes', start: 1200 },
-          ],
-        }),
-        instantsearch.widgets.numericMenu({
-          container: '#created-filter',
-          attribute: 'created',
-          items: [
-            { label: 'All', start: 0 }, // No filter for "All"
-            { label: 'Today', start: today }, // From the start of today
-            { label: 'Yesterday', start: yesterday, end: today }, // From the start of yesterday to the end of yesterday
-            { label: 'This Week', start: startOfWeek }, // From the start of the week
-            { label: 'This Month', start: startOfMonth }, // From the start of the month
-          ],
-        }),
-        instantsearch.widgets.currentRefinements({
-          container: '#refinements',
-          transformItems(items) {
-            // Show/hide the clear button depending on refinements
-            if (items.length > 0) {
-              $("#clear").show()
-            } else {
-              $("#clear").hide()
-            }
-            return items
-          }
-        }),
-
-
-        instantsearch.widgets.infiniteHits({
-          container: "#hits",
-          transformItems(items) {
-            return items.map((item, index) => ({
-              ...item,
-              resultPosition: index + 1,
-            }))
-          },
-          templates: {
-            item(hit) {
-              hit.position = hit.__position
-
-              const dataAttributes = Object.keys(hit).map(key => {
-                const safeKey = `data-${key.replace(/[^a-z0-9_-]/gi, '')}`
-                let value = hit[key]
-                if (Array.isArray(value)) value = value.join('; ')
-                const safeValue = encodeURIComponent(String(value ?? ''))
-                return `${safeKey}="${safeValue}"`
-              }).join(' ')
-
-              const title = decodeHTMLEntities(hit.title || "")
-              const description = decodeHTMLEntities(hit.description || "")
-
-              return `
-<div 
-  class="row border-0 bg-transparent mb-3" 
-  ${dataAttributes} 
-  type="button" 
-  id="${hit.id}"
->
-  <!-- Thumbnail (col-2) -->
-  <div class="col-2 text-end">
-    <div 
-      class="edit pointer thumbnail-container bg-dark" 
-      alt="${title}" 
-      title="${title}"
-    >
-      <div 
-        class="img-fluid border bg-dark thumbnail-background"
-        style="
-          height:69px;
-          width:123px;
-          background-repeat:no-repeat;
-          background-size:cover;
-          background-image:url('https://img.syndinet.com/${hit.id}');
-        "
-      >
-      </div>
-      <div class="duration">${formatDuration(hit.duration)}</div>
-    </div>
-  </div>
-
-  <!-- Title + Channel (col) -->
-  <div class="col">
-    <h6 class="edit title-clamp m-0" title="${title}">
-      ${title}
-    </h6>
-    <div class="edit pointer text-muted small text-truncate">
-      ${Array.isArray(hit.channel) ? hit.channel.join("; ") : ""}
-    </div>
-    <div class="col-12 text-muted small mt-1">
-      Modified: 
-      ${hit.modified
-                  ? new Date(hit.modified * 1000).toLocaleString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })
-                  : 'undefined'
-                }
-      <br>
-      <span class="text-secondary small">ID: ${hit.id}</span>
-    </div>
-  </div>
-
-  <!-- Actions (col-1) -->
-  <div class="col-1">
-    <div class="dropdown">
-      <a 
-        class="btn btn-link bg-transparent p-0 m-0" 
-        href="#" 
-        title="More" 
-        data-mdb-toggle="dropdown" 
-        aria-expanded="false"
-      >
-        <i class="bx bx-dots-vertical-rounded bx-sm mx-4"></i>
-      </a>
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li><a type="button" class="dropdown-item video-analytics">Analytics</a></li>
-        <li><a type="button" class="dropdown-item video-conversions">Conversions</a></li>
-        <li><a type="button" class="dropdown-item video-delete">Delete</a></li>
-      </ul>
-    </div>
-  </div>
-</div>
-        `
-            },
-          },
-        }),
-      ])
-
-      search.start()
-
-      const urlParams = new URLSearchParams(window.location.search)
-
-      if (urlParams.get('v')) {
-        const v = urlParams.get('v') // removed extra closing parenthesis
-        const isNew = urlParams.get('new')
-
-        console.log(Array.from(isNew))
-        search.helper
-          .setQuery("")
-          .setQueryParameter("filters", `id:${v}`)
-          .search()
-
-        setTimeout(function () {
-          if (isNew) {
-            $("#videoModal").data("uploaded", true)
-          }
-
-          $(".edit").first().trigger("click")
-        }, 1000)
-      }
-
-      $(document).on("click", "#reload", function (e) {
-        search.helper.setQuery("").search()
-
-      })
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-              const btn = entry.target
-              if (!btn.disabled && btn.offsetParent !== null) {
-                btn.click()
-              }
-            }
-          })
-        },
-        { threshold: [0.5] }
-      )
-
-      const watchLoadMoreButton = () => {
-        const btn = document.querySelector(".ais-InfiniteHits-loadMore")
-        if (btn) {
-          observer.observe(btn)
-        } else {
-          setTimeout(watchLoadMoreButton, 300)
-        }
-      }
-
-      watchLoadMoreButton()
-    })
-
-    // VIDEO DELETE
-
-    let videoToDelete = null
-    let videoTitleToDelete = null
-
-    $(document).on("click", ".video-delete", function (e) {
-      e.preventDefault()
-      const data = $(this).closest('.row').data()
-      videoToDelete = data.id
-      videoTitleToDelete = decodeURIComponent(data.title || '')
-
-      $("#videoTitleToDelete").text(videoTitleToDelete)
-
-      const modal = new mdb.Modal(document.getElementById("confirmDeleteModal"))
-      modal.show()
-    })
-
-    $(document).on("click", "#confirmDeleteBtn", async function () {
-      if (!videoToDelete) return
-
-      const token = await Clerk.session.getToken()
-
-      try {
-        const response = await fetch("/api/delete", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ id: videoToDelete }),
-        })
-
-        const result = await response.json()
-        if (result.success) {
-          location.reload()
-        } else {
-          alert("Error: " + result.error)
-        }
-      } catch (err) {
-        alert("Request failed: " + err.message)
-      } finally {
-        videoToDelete = null
-        const modal = mdb.Modal.getInstance(document.getElementById("confirmDeleteModal"))
-        modal.hide()
-      }
-    })
-
-    // billing
-    $(document).on("click", ".billing", async function () {
-      const data = $(this).data()
-
-      const customerId = (await window.cookieStore.get('user_cus'))?.value
-
-      try {
-        const result = await apiRequest(customerId ? '/api/payments' : '/api/checkout')
-
-        if (!result.url) {
-          throw new Error('Failed to get redirect url')
-        }
-
-        window.location.href = result.url
-      } catch (error) {
-        console.error('Error fetching billing url', error)
-        alert('Error:', error.message || 'Error fetching billing information')
-      }
-    })
-
     // help
     $(document).on("click", ".help", function () {
       const data = $(this).data()
@@ -792,34 +403,7 @@
       //$("#videoModal .modal-title").text( decodeURIComponent(data.title)  );
       const modal = new mdb.Modal(document.getElementById("helpModal"))
       modal.show()
-
     })
-
-    // modal close
-
-    function formatDuration(seconds) {
-      if (!seconds || isNaN(seconds)) return "0:00" // guard
-
-      const hrs = Math.floor(seconds / 3600)
-      const mins = Math.floor((seconds % 3600) / 60)
-      const secs = Math.floor(seconds % 60)
-
-      const formattedMins = mins < 10 ? "0" + mins : mins
-      const formattedSecs = secs < 10 ? "0" + secs : secs
-
-      if (hrs > 0) {
-        return `${hrs}:${formattedMins}:${formattedSecs}`
-      } else {
-        return `${formattedMins}:${formattedSecs}`
-      }
-    }
-
-    function decodeHTMLEntities(text) {
-      const txt = document.createElement("textarea")
-      txt.innerHTML = text
-      return txt.value
-    }
-
   </script>
 </body>
 

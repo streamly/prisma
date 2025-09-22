@@ -1,5 +1,5 @@
-import { getClerkUser, setUserPrivateMetadata } from '../lib/clerkClient.js'
-import { createCheckoutSession, createCustomer, createCustomerPortalSession } from '../lib/stripeClient.js'
+import { authenticateUser, getClerkUser, setUserPrivateMetadata } from '../lib/clerkClient.js'
+import { createCheckoutSession, createCustomer } from '../lib/stripeClient.js'
 
 
 const APP_URL = process.env.APP_URL

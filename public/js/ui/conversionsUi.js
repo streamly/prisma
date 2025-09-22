@@ -3,9 +3,6 @@ import { fetchConversions } from '../api.js'
 import { hideLoader, showLoader } from './loaderUi.js'
 
 const modalElement = document.getElementById('conversions-modal')
-if (!modalElement) {
-  console.warn('conversions-modal element not found on page')
-}
 const modal = modalElement ? new mdb.Modal(modalElement) : null
 const $modal = $(modalElement)
 

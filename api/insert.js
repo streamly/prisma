@@ -1,4 +1,3 @@
-import md5 from 'md5'
 import {
   errorResponse,
   handleOptions,
@@ -6,7 +5,7 @@ import {
   successResponse
 } from '../lib/responses.js'
 import { createVideoDocument } from '../lib/typesenseClient.js'
-import { authenticateUser } from '../lib/clerkClient.js'
+import { authenticateUser, getClerkUser } from '../lib/clerkClient.js'
 
 export default async function handler(req, res) {
   setCorsHeaders(res)
@@ -31,12 +30,15 @@ export default async function handler(req, res) {
       return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size, id')
     }
 
+    const user = await getClerkUser(userId)
+    const customerId = user.privateMetadata.customerId
+
     try {
       const document = await createVideoDocument(
         {
           id,
-          uid: md5(userId),
-          title: id,
+          customerId,
+          userId,
           height: parseInt(height),
           width: parseInt(width),
           size: parseInt(size),
@@ -45,7 +47,6 @@ export default async function handler(req, res) {
       )
 
       return successResponse(res, {
-        document,
         message: 'Video metadata inserted successfully'
       })
 

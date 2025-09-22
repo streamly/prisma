@@ -1,3 +1,5 @@
+import { authenticateUser, getClerkUser } from '../lib/clerkClient.js'
+import { getCustomerBillingStatus } from '../lib/redisClient.js'
 import {
   errorResponse,
   handleOptions,
@@ -23,14 +25,12 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Authentication error', details: error.message })
   }
 
-  const updateData = req.body
-  if (!updateData.id) {
-    return errorResponse(res, 400, 'Missing required field: id')
+  let data
   }
 
   let document
   try {
-    document = await verifyVideoOwnership(updateData.id, userId)
+    document = await verifyVideoOwnership(data.id, userId)
   } catch (error) {
     console.error('Video ownership error:', error)
     return res.status(400).json({ error: 'You do not have permission to access this video', details: error.message })
@@ -41,11 +41,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await updateVideoDocument(document, updateData)
+    const user = await getClerkUser(userId)
+    const customerId = user.privateMetadata.customerId
+    const isBillingActive = await getCustomerBillingStatus(customerId)
+    const result = await updateVideoDocument(document, data, isBillingActive)
 
     return successResponse(res, {
-      id: updateData.id,
-      document: result,
       message: 'Video details updated successfully'
     })
   } catch (error) {

@@ -1,100 +1,78 @@
 import { getClerkToken } from './auth.js'
 
+/**
+ * Generic API fetch wrapper
+ */
+async function apiFetch(path, { method = 'GET', params = {}, body } = {}) {
+  const token = await getClerkToken()
+
+  const url = new URL(path, window.location.origin)
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      url.searchParams.append(key, value)
+    }
+  })
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...(body instanceof FormData
+          ? {} // FormData sets its own headers
+          : { 'Content-Type': 'application/json' }),
+      },
+      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
+    })
+
+    const data = await res.json()
+    if (!res.ok || data.success === false) {
+      throw new Error(data.error || `Request to ${path} failed`)
+    }
+    return data.data ?? data
+  } catch (error) {
+    console.error(`Error calling ${path}:`, error)
+    throw error
+  }
+}
 
 /**
- * 
- * @param {Blob} thumbnail 
- * @param {string} videoId 
+ * Upload a video thumbnail
  */
 export async function uploadThumbnail(thumbnail, videoId) {
   const formData = new FormData()
   formData.append('file', thumbnail, `${videoId}.jpg`)
   formData.append('id', videoId)
 
-  const token = await getClerkToken()
-
-  try {
-    const res = await fetch('/api/capture', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: formData
-    })
-
-    const result = await res.json()
-
-    if (!res.ok || result.success === false) {
-      throw new Error(result.error || 'Failed to upload thumbnail')
-    }
-
-    return result
-  } catch (error) {
-    console.error('Error uploading thumbnail:', error)
-    throw error
-  }
+  return apiFetch('/api/capture', { method: 'POST', body: formData })
 }
 
-
-export async function fetchAnalytics(videoId = undefined) {
-  const token = await getClerkToken()
-
-  try {
-    const url = new URL('/api/analytics', window.location.origin)
-    if (videoId) {
-      url.searchParams.append('videoId', videoId)
-    }
-
-    console.log(url.toString())
-
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Failed to fetch analytics')
-    }
-
-    return data.data
-  } catch (error) {
-    console.error('Error fetching analytics:', error)
-    throw error
-  }
+/**
+ * Fetch analytics for one or all videos
+ */
+export function fetchAnalytics(videoId) {
+  return apiFetch('/api/analytics', { params: { videoId } })
 }
 
+/**
+ * Fetch conversions for one or all videos
+ */
+export function fetchConversions(videoId) {
+  return apiFetch('/api/conversions', { params: { videoId } })
+}
 
-export async function fetchConversions(videoId = undefined) {
-  const token = await getClerkToken()
+export function fetchCheckoutUrl() {
+  return apiFetch('/api/checkout', { method: 'POST' })
+}
 
-  try {
-    const url = new URL('/api/conversions', window.location.origin)
-    if (videoId) {
-      url.searchParams.append('videoId', videoId)
-    }
+export function fetchCustomerPortalUrl() {
+  return apiFetch('/api/payments', { method: 'POST' })
+}
 
-    console.log('Url', url.toString())
+export function updateVideo(payload) {
+  return apiFetch('/api/update', { method: 'POST', body: payload })
+}
 
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Failed to fetch analytics')
-    }
-
-    return data.data
-  } catch (error) {
-    console.error('Error fetching analytics:', error)
-    throw error
-  }
+export function deleteVideo(videoId) {
+  return apiFetch('/api/delete', { method: 'POST', body: { id: videoId }})
 }

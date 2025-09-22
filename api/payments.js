@@ -1,4 +1,4 @@
-import { getClerkUser } from '../lib/clerkClient.js'
+import { authenticateUser, getClerkUser } from '../lib/clerkClient.js'
 import { createCustomerPortalSession } from '../lib/stripeClient.js'
 
 

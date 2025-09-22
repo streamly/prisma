@@ -47,8 +47,6 @@ export function initThumbnailGenerationUi() {
       const response = await uploadThumbnail(generatedThumbnailBlob, videoid)
 
       if (response.success) {
-        isVideoUpdated = true
-
         const timestamp = new Date().getTime()
         const imgUrl = `https://img.syndinet.com/${videoid}?t=${timestamp}`
 
