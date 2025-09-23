@@ -7,6 +7,7 @@ import {
     generateVideoUploadUrl,
     listParts
 } from '../lib/s3Client.js'
+import { findInactiveVideo } from '../lib/typesenseClient.js'
 
 export default async function handler(req, res) {
     // CORS headers
@@ -52,6 +53,19 @@ export default async function handler(req, res) {
 
 async function handleGetUploadParameters(req, res, userId) {
     try {
+        const inactive = await findInactiveVideo(userId)
+        if (inactive) {
+            return res.status(409).json({
+                error: 'Unactivated video exists',
+                code: 'UNACTIVATED_VIDEO',
+                details: {
+                    videoId: inactive.id
+                }
+            })
+        }
+
+        console.log('Inactive video', inactive)
+
         const { contentType, id } = req.body
 
         if (!id || !contentType) {
@@ -73,6 +87,19 @@ async function handleGetUploadParameters(req, res, userId) {
 // Create a new multipart upload
 async function handleCreateMultipartUpload(req, res, userId) {
     try {
+        const inactive = await findInactiveVideo(userId)
+        if (inactive) {
+            return res.status(409).json({
+                error: 'Unactivated video exists',
+                code: 'UNACTIVATED_VIDEO',
+                details: {
+                    videoId: inactive.id
+                }
+            })
+        }
+
+        console.log('Inactive video', inactive)
+
         const { contentType, id } = req.body
 
         if (!id || !contentType) {
