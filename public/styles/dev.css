@@ -268,3 +268,11 @@ TEXTAREA:not(:-webkit-autofill) {
   width: fit-content;
   max-width: none;
 }
+
+
+.thumbnail-background {
+  height: 75px;
+  min-width: 132px;
+  background-repeat: no-repeat;
+  background-size: cover;
+}

@@ -48,13 +48,7 @@
     <div class="row border-0 bg-transparent mb-3 video-hit" data-id="">
       <div class="col-2 text-end edit thumbnail-wrapper">
         <div class="pointer thumbnail-container bg-dark" title="">
-          <div class="img-fluid border bg-dark thumbnail-background" style="
-    height:80px;
-    min-width:120px;
-    background-repeat:no-repeat;
-    background-size:cover;
-    background-image:url('https://img.syndinet.com/${hit.id}');
-  ">
+          <div class="img-fluid border bg-dark thumbnail-background">
           </div>
           <div class="duration"></div>
         </div>
@@ -229,9 +223,11 @@
                 <div class="mb-3">
                   <label for="tags">
                     Keywords
-                    <i class='bx bx-info-circle' title="Provide a list of important keywords and tags to help search and recommendations."></i>
+                    <i class='bx bx-info-circle'
+                      title="Provide a list of important keywords and tags to help search and recommendations."></i>
                   </label>
-                  <input id="tags" type="text" name="tags" required maxlength="100" class="form-control border validate" />
+                  <input id="tags" type="text" name="tags" required maxlength="100"
+                    class="form-control border validate" />
                 </div>
 
                 <!-- FIELD - CPV, BUDGET -->
