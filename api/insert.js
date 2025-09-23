@@ -34,27 +34,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid data', details: error.issues || undefined })
     }
 
-    const { filename, width, height, duration, size, id } = valida
+    console.log('Received data', data)
 
-    if (Object.values({ filename, width, height, duration, size, id }).some(value => value === undefined || value === null)) {
-      return errorResponse(res, 400, 'Missing required fields: filename, width, height, duration, size, id')
-    }
 
     const user = await getClerkUser(userId)
     const customerId = user.privateMetadata.customerId
 
     try {
-      const document = await createVideoDocument(
-        {
-          id,
-          customerId,
-          userId,
-          height: parseInt(height),
-          width: parseInt(width),
-          size: parseInt(size),
-          duration: parseInt(duration),
-        }
-      )
+      const document = await createVideoDocument({...data, customerId, userId})
 
       return successResponse(res, {
         message: 'Video metadata inserted successfully'
