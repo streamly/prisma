@@ -318,7 +318,7 @@
               showStatus('Upload and metadata saved! Redirecting...', 'success')
               setTimeout(() => {
                 const idToOpen = videoId
-                window.location.href = `/dev/?v=${encodeURIComponent(idToOpen)}&new=true`
+                window.location.href = `/dev/?v=${encodeURIComponent(idToOpen)}`
               }, 900)
             } else {
               showError('Metadata save failed. Check server logs.')

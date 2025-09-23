@@ -60,7 +60,6 @@ async function handleGetUploadParameters(req, res, userId) {
 
         const signedUrl = await generateVideoUploadUrl(id, contentType, userId)
 
-        console.log('Generated presigned URL for single upload')
         return res.status(200).json({ url: signedUrl })
     } catch (error) {
         console.error('Error generating upload parameters:', error)

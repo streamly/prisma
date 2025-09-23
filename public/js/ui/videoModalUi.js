@@ -90,16 +90,10 @@ function initTagify() {
 
 // ---------- Event Handlers ----------
 function handleEditClick() {
-  const isNewVideo = $modal.data('uploaded')
-  if (isNewVideo) {
-    disableSaveButton()
-    $modal.data('uploaded', false)
-  }
-
-  eventHub.on(EVENTS.THUMBNAIL_UPLOADED, enableSaveButton)
-
   const videoId = $(this).closest(".video-hit").data("id")
   const data = getVideo(videoId)
+
+
 
   console.log('Video data', data)
 
@@ -107,6 +101,15 @@ function handleEditClick() {
     console.error("Video not found in store:", videoId)
     return
   }
+
+  const isNewVideo = !Boolean(data.title)
+
+  if (isNewVideo) {
+    disableSaveButton()
+  }
+
+  eventHub.on(EVENTS.THUMBNAIL_UPLOADED, enableSaveButton)
+
 
   videoDuration = data.duration
 
@@ -191,7 +194,6 @@ function handleModalHidden() {
 
   const newUrl = new URL(window.location.href)
   newUrl.searchParams.delete('v')
-  newUrl.searchParams.delete('new')
   window.history.pushState({}, '', newUrl)
 
   if (isVideoUpdated) {
@@ -222,7 +224,7 @@ function handlePerformanceChange(e) {
   if (!e.target.checked) {
     $('#cpv').val('0.00')
     $('#budget').val('0.00')
-    $('#cpv, #budget').parsley().validate()
+    $('#cpv, #budget').validate()
   }
   $(".performance").toggle(e.target.checked)
 }

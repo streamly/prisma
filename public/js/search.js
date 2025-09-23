@@ -142,14 +142,9 @@ export async function initSearch() {
   const urlParams = new URLSearchParams(window.location.search)
   if (urlParams.get('v')) {
     const v = urlParams.get('v')
-    const isNew = urlParams.get('new')
-
     search.helper.setQuery("").setQueryParameter("filters", `id:${v}`).search()
 
     setTimeout(() => {
-      if (isNew) {
-        $("#videoModal").data("uploaded", true)
-      }
       $(".edit").first().trigger("click")
     }, 1000)
   }
