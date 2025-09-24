@@ -52,6 +52,8 @@ export default async function handler(req, res) {
     const isBillingActive = await getCustomerBillingStatus(customerId)
     const result = await updateVideoDocument(document, data, isBillingActive)
 
+    console.log('Updated video document', result)
+
     return successResponse(res, {
       message: 'Video details updated successfully'
     })

@@ -1,6 +1,14 @@
 import { uploadThumbnail } from '../api.js'
 import { eventHub, EVENTS } from '../eventHub.js'
+import { getVideoThumbnailUrl } from '../utils.js'
 import { onFirstVideoFrame } from '../videoPlayer.js'
+
+function updateVideoHitThumbnailImageUrl(videoId) {
+  const imageUrl = getVideoThumbnailUrl(videoId, true)
+
+  $(`.video-hit[data-id="${videoId}"] .thumbnail-background`)
+    .css("background-image", `url("${imageUrl}")`)
+}
 
 export function initThumbnailGenerationUi() {
   var canvas = document.getElementById("thumbnail-canvas")
@@ -17,7 +25,7 @@ export function initThumbnailGenerationUi() {
   $(document).on('click', '#generate-thumbnail', async function () {
     console.log("Generate thumbnail clicked")
 
-    const videoid = $(this).data("id")
+    const videoId = $(this).data("id")
     const video = document.querySelectorAll("video")[0]
 
     // Set canvas size
@@ -35,24 +43,22 @@ export function initThumbnailGenerationUi() {
     )
 
     // Update UI
-    $('#thumbnail').attr('src', generatedThumbnailUrl).show()
-    $('#image-' + videoid).css({ "background-image": `url(${generatedThumbnailUrl})` })
+    $('#thumbnail').css({ "background-image": `url("${generatedThumbnailUrl}")` })
 
     // Upload immediately
     const formData = new FormData()
-    formData.append('file', generatedThumbnailBlob, `${videoid}.jpg`)
-    formData.append('id', videoid)
+    formData.append('file', generatedThumbnailBlob, `${videoId}.jpg`)
+    formData.append('id', videoId)
 
     try {
-      const response = await uploadThumbnail(generatedThumbnailBlob, videoid)
+      const response = await uploadThumbnail(generatedThumbnailBlob, videoId)
 
       if (response.success) {
-        const timestamp = new Date().getTime()
-        const imgUrl = `https://img.syndinet.com/${videoid}?t=${timestamp}`
+        const imageUrl = getVideoThumbnailUrl(videoId, true)
 
-        $('#thumbnail').attr('src', imgUrl)
-        $(`#image-${videoid}`).css("background-image", `url(${imgUrl})`)
-        $(`.play[data-id="${videoid}"] .thumbnail-background`).css("background-image", `url(${imgUrl})`)
+        $('#thumbnail').css("background-image", `url("${imageUrl})"`)
+
+        updateVideoHitThumbnailImageUrl(videoId)
 
         eventHub.emit(EVENTS.THUMBNAIL_UPLOADED)
       } else {

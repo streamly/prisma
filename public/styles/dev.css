@@ -189,7 +189,7 @@ TEXTAREA:not(:-webkit-autofill) {
 
 .daterangepicker {
   background-color: #000;
-  z-index: 999999999999999 !important;
+  z-index: 200 !important;
 }
 
 .analytics-charts {
@@ -278,4 +278,16 @@ TEXTAREA:not(:-webkit-autofill) {
   min-width: 132px;
   background-repeat: no-repeat;
   background-size: cover;
+}
+
+.download-button {
+  width: fit-content;
+}
+
+.edit-modal-thumbnail {
+  width: 300px;
+  height: 169px;
+  background-color: #000;
+  background-size: cover;
+  background-position: center;
 }

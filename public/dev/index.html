@@ -149,13 +149,12 @@
 
 
   <!-- videoModal -->
-  <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true"
-    style="z-index:10000;">
+  <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title d-flex align-items-center">
-            <i class="bx bx-tv lead me-2"></i>
+            <i class="bx bx-tv bx-md lead me-2"></i>
             <span class="modal-video-title">Metadata</span>
           </h5>
           <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
@@ -170,7 +169,8 @@
               </div>
 
               <!-- MODAL FORM -->
-              <form id="vod" data-parsley-validate>
+              <form id="vod" data-parsley-validate
+                data-parsley-excluded="input[type=button], input[type=submit], input[type=reset]">
                 <input type="hidden" name="id" id="id" required />
 
                 <!-- FIELD - TITLE -->
@@ -181,7 +181,7 @@
                       title="Enter a title that clearly identifies the content (max 100 chars)."></i>
                   </label>
                   <input id="title" type="text" name="title" required maxlength="100"
-                    class="form-control text-trim border validate" />
+                    class="form-control text-trim border validate" data-parsley-required-message="Title is required." />
                 </div>
 
                 <!-- FIELD - TYPE -->
@@ -190,7 +190,8 @@
                     Type
                     <i class='bx bx-info-circle' title="Choose the type of content."></i>
                   </label>
-                  <input id="type" name="type" required class="form-control border validate" />
+                  <input id="type" name="type" required class="form-control border validate"
+                    data-parsley-required-message="Please select a content type." />
                 </div>
 
                 <!-- FIELD - AUDIENCE -->
@@ -199,7 +200,8 @@
                     Audience
                     <i class='bx bx-info-circle' title="Choose the key target audience(s) for the content."></i>
                   </label>
-                  <input id="audience" name="audience" required class="form-control border validate" />
+                  <input id="audience" name="audience" required class="form-control border validate"
+                    data-parsley-required-message="Please select at least one audience." />
                 </div>
 
                 <!-- FIELD - DESCRIPTION -->
@@ -210,16 +212,25 @@
                       title="Provide a concise summary that describes the content, key takeaways, and any prerequisites."></i>
                   </label>
                   <textarea id="description" name="description" rows="6" required maxlength="500"
-                    class="form-control border text-trim validate"></textarea>
+                    class="form-control border text-trim validate"
+                    data-parsley-required-message="Description is required.">
+                  </textarea>
                 </div>
 
                 <!-- FIELD - COMPANY -->
                 <div class="mb-3">
                   <label for="channel">Company</label>
-                  <input id="channel" name="channel" required class="form-control border validate" />
+                  <input id="channel" name="channel" required class="form-control border validate"
+                    data-parsley-required-message="Please enter at least one company." />
                 </div>
 
-                <!-- FIELD - TAGS -->
+                <!-- FIELD - PEOPLE -->
+                <div class="mb-3">
+                  <label for="people">People</label>
+                  <input id="people" name="people" class="form-control border validate" />
+                </div>
+
+                <!-- FIELD - KEYWORDS -->
                 <div class="mb-3">
                   <label for="tags">
                     Keywords
@@ -227,11 +238,21 @@
                       title="Provide a list of important keywords and tags to help search and recommendations."></i>
                   </label>
                   <input id="tags" type="text" name="tags" required maxlength="100"
+                    data-parsley-required-message="Please enter at least one keyword."
                     class="form-control border validate" />
                 </div>
 
                 <!-- FIELD - CPV, BUDGET -->
-                <div class="performance" style="display:none;">
+                <div class="performance-fields" style="display:none;">
+                  <div class="mb-3">
+                    <label for="gated" class="form-label">Gated</label>
+                    <i class='bx bx-info-circle ms-1'
+                      title="Gate content by requiring viewers to share contact information."></i>
+                    <select id="gated" name="gated" class="form-select border validate">
+                      <option value="0" selected>No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                  </div>
                   <div class="mb-3">
                     <label for="cpv" class="">CPV Bid (per minute)
                       <i class='bx bx-help-circle'
@@ -252,12 +273,19 @@
 
                 <div class="form-check mb-3">
                   <input class="form-check-input" type="checkbox" value="" id="performance" />
-                  <label class="form-check-label" for="performance">Ad-free performance marketing</label>
+                  <label class="form-check-label" for="performance">Gated content and ad-free performance
+                    marketing</label>
                 </div>
 
-                <!-- SUBMIT BUTTON -->
-                <button id="publish" data-active="1" type="button"
-                  class="btn btn-dark shadow-none ms-0 me-4 px-4">Publish</button>
+                <input type="hidden" id="thumbnail-input" name="thumbnail" required data-parsley-required="true"
+                  data-parsley-required-message="Thumbnail is required" />
+
+                <div class="d-flex align-items-center">
+                  <!-- SUBMIT BUTTON -->
+                  <button id="publish" data-active="1" type="button"
+                    class="btn btn-dark shadow-none ms-0 me-4 px-4">Publish</button>
+                  <div id="publish-errors" class="parsley-errors-list filled small text-danger ms-2"></div>
+                </div>
               </form>
             </div>
 
@@ -265,7 +293,8 @@
             <div class="col-3 pe-0">
               <div class="small pb-3">
                 <div class="image-container">
-                  <img id="thumbnail" class="img-fluid w-100 border bg-dark" src="" height="169" title="Thumbnail" />
+                  <div id="thumbnail" class="img-fluid w-100 border bg-dark edit-modal-thumbnail" title="Thumbnail">
+                  </div>
                 </div>
 
                 <canvas id="thumbnail-canvas" style="display:none;"></canvas>
@@ -282,8 +311,7 @@
   </div>
 
   <!-- billingModal -->
-  <div class="modal fade" id="billingModal" tabindex="-1" aria-labelledby="billingModalLabel" aria-hidden="true"
-    style="z-index:10000;">
+  <div class="modal fade" id="billingModal" tabindex="-1" aria-labelledby="billingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
@@ -297,8 +325,7 @@
   </div>
 
   <!-- helpModal -->
-  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true"
-    style="z-index:10000;">
+  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
@@ -333,29 +360,25 @@
 
   <!-- ANALYTICS MODAL -->
   <div class="modal fade" id="analytics-modal" tabindex="-1" aria-labelledby="analyticsModalLabel" aria-hidden="true"
-    title="Analytics" style="z-index: 10000;">
+    title="Analytics">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
-
         <div class="modal-header">
           <h5 class="modal-title d-flex align-items-center">
+            <i class="bx bx-bar-chart bx-md lead me-2"></i>
             <span class="modal-analytics-title">Analytics</span>
             <span class="video-title"></span>
           </h5>
 
           <div class="ms-auto d-flex align-items-center gap-2">
-            <button type="button" id="export-analytics" class="btn btn-link" title="Export as CSV">
-              Download
-            </button>
             <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
               aria-label="Close"></button>
           </div>
         </div>
 
-        <div class="modal-body" style="background-color: #EFF3F6;">
+        <div class="modal-body bg-white p-3">
 
         </div>
-
       </div>
     </div>
   </div>
@@ -363,12 +386,13 @@
 
   <!-- CONVERSIONS MODAL -->
   <div class="modal fade" id="conversions-modal" tabindex="-1" aria-labelledby="conversionsModalLabel"
-    aria-hidden="true" title="Conversions" style="z-index: 10000;">
+    aria-hidden="true" title="Conversions">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
 
         <div class="modal-header">
           <h5 class="modal-title d-flex align-items-center">
+            <i class="bx bx-user-voice bx-md lead me-2"></i>
             <span class="modal-conversions-title">Conversions </span>
             <span class="video-title"></span>
           </h5>

@@ -5,23 +5,24 @@ import { pauseVideo, playVideo } from '../videoPlayer.js'
 
 let isVideoUpdated = false
 let videoDuration = 0
-let tagifyAudience, tagifyTags, tagifyChannel, tagifyType
+let tagifyAudience, tagifyTags, tagifyChannel, tagifyType, tagifyPeople
 
 const modalElement = document.getElementById('videoModal')
 const $modal = $(modalElement)
 
+
+function formatCurrency(value, decimals = 2) {
+  const num = parseFloat(value)
+
+  if (isNaN(num)) return "0.00"
+
+  return num.toFixed(decimals)
+}
+
 // ---------- Helpers ----------
-function disableSaveButton() {
-  $('#publish').prop('disabled', true).addClass('disabled')
-}
-
-function enableSaveButton() {
-  $('#publish').prop('disabled', false).removeClass('disabled')
-}
-
 function checkVideoBudget(videoDuration) {
-  const cpvValue = parseFloat($('#cpv').val()) || 0
-  const budgetInput = $('#budget')
+  const cpvValue = parseFloat($("#cpv").val()) || 0
+  const budgetInput = $("#budget")
   let budgetValue = parseFloat(budgetInput.val().trim()) || 0
   let parsleyMin = 0
 
@@ -35,10 +36,11 @@ function checkVideoBudget(videoDuration) {
     }
   } else {
     budgetValue = 0
+    $("#gated").val("0")
   }
 
   budgetInput.val(budgetValue.toFixed(2))
-  budgetInput.attr('data-parsley-min', parsleyMin)
+  budgetInput.attr("data-parsley-min", parsleyMin)
   budgetInput.parsley().validate()
 }
 
@@ -83,17 +85,15 @@ function initTagify() {
   })
 
   // Channel (free text, multiple companies)
-  tagifyChannel = new Tagify(document.querySelector('#channel'), {
+  tagifyChannel = new Tagify(document.querySelector('#channel'))
 
-  })
+  tagifyPeople = new Tagify(document.querySelector('#people'))
 }
 
 // ---------- Event Handlers ----------
 function handleEditClick() {
   const videoId = $(this).closest(".video-hit").data("id")
   const data = getVideo(videoId)
-
-
 
   console.log('Video data', data)
 
@@ -104,12 +104,13 @@ function handleEditClick() {
 
   const isNewVideo = !Boolean(data.title)
 
-  if (isNewVideo) {
-    disableSaveButton()
+  if (!isNewVideo) {
+    $('#thumbnail-input').val(videoId).trigger('input').trigger('change')
   }
 
-  eventHub.on(EVENTS.THUMBNAIL_UPLOADED, enableSaveButton)
-
+  eventHub.on(EVENTS.THUMBNAIL_UPLOADED, function () {
+    $('#thumbnail-input').val(videoId).trigger('input').trigger('change')
+  })
 
   videoDuration = data.duration
 
@@ -139,13 +140,25 @@ function handleEditClick() {
     tagifyType.addTags(data.type)
   }
 
-  $("#cpv").val(data.cpv ?? 0)
-  $("#budget").val(data.budget ?? 0)
+  tagifyPeople.removeAllTags()
+  if (Array.isArray(data.people)) {
+    tagifyPeople.addTags(data.people)
+  }
+
+
+  $("#cpv").val(formatCurrency(data.cpv ?? 0))
+  $("#budget").val(formatCurrency(data.budget ?? 0))
+
   $("#performance").prop("checked", data.cpv >= 0.05)
-  $(".performance").toggle(data.cpv >= 0.05)
+  $(".performance-fields").toggle(data.cpv >= 0.05)
+
+  if (parseFloat($("#cpv").val()) === 0) {
+    $("#gated").val("0")
+  }
 
   const timestamp = Date.now()
-  $('#thumbnail').attr('src', `https://img.syndinet.com/${data.id}?t=${timestamp}`)
+  const imageUrl = `https://img.syndinet.com/${data.id}?t=${timestamp}`
+  $('#thumbnail').css("background-image", `url(${imageUrl})`)
 
   $('#generate-thumbnail, #save-thumbnail').data('id', data.id)
 
@@ -158,9 +171,17 @@ function handleEditClick() {
 }
 
 function handlePublishClick() {
-  const $form = $('#vod')
+  const $form = $("#vod").parsley({
+    errorsContainer: () => $("#publish-errors")
+  })
 
-  if (!$form.parsley().validate()) {
+  if (!$form.validate()) return
+
+  const cpvValue = parseFloat($("#cpv").val()) || 0
+  const gatedValue = $("#gated").val()
+
+  if (gatedValue === "1" && cpvValue < 0.05) {
+    alert("Gated content requires CPV ≥ 0.05")
     return
   }
 
@@ -172,8 +193,10 @@ function handlePublishClick() {
     audience: tagifyAudience.value.map(t => t.value),
     channel: tagifyChannel.value.map(t => t.value),
     tags: tagifyTags.value.map(t => t.value),
-    cpv: parseFloat($("#cpv").val()),
+    people: tagifyPeople.value.map(t => t.value),
+    cpv: cpvValue,
     budget: parseFloat($("#budget").val()),
+    gated: parseInt(gatedValue, 10),
     performance: $("#performance").is(":checked")
   }
 
@@ -182,9 +205,7 @@ function handlePublishClick() {
       isVideoUpdated = true
       $(".btn-close").trigger("click")
     })
-    .catch(err => {
-      alert("Request failed: " + err.message)
-    })
+    .catch(err => alert("Request failed: " + err.message))
 }
 
 function handleModalHidden() {
@@ -221,12 +242,27 @@ function handleBudgetBlur() {
 }
 
 function handlePerformanceChange(e) {
-  if (!e.target.checked) {
-    $('#cpv').val('0.00')
-    $('#budget').val('0.00')
-    $('#cpv, #budget').validate()
+  if (e.target.checked) {
+    $(".performance-fields").show()
+    $("#cpv").val("0.05")
+    $("#budget").val("1.00")
+    checkVideoBudget(videoDuration)
+  } else {
+    $(".performance-fields").hide()
+    $("#cpv").val("0.00")
+    $("#budget").val("0.00")
+    $("#gated").val("0").prop("disabled", true)
   }
-  $(".performance").toggle(e.target.checked)
+}
+
+function handleGatedChange() {
+  if ($(this).val() === "1") {
+    let cpvValue = parseFloat($("#cpv").val()) || 0
+    if (cpvValue < 0.05) {
+      $("#cpv").val("0.05")
+      checkVideoBudget(videoDuration)
+    }
+  }
 }
 
 function handleTextTrimBlur() {
@@ -252,6 +288,7 @@ export function initVideoModalUi() {
   $('#budget').on('blur', handleBudgetBlur)
   $(document).on("change", "#performance", handlePerformanceChange)
   $(document).on('blur', '.text-trim', handleTextTrimBlur)
+  $(document).on('change', '#gated', handleGatedChange)
 
   initTagify()
 }
