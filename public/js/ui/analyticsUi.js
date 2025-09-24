@@ -6,10 +6,8 @@ const modal = new mdb.Modal(modalElement)
 const $modal = $(modalElement)
 const modalBody = $modal.find('.modal-body')[0]
 
-
 export async function renderData(videoId = undefined) {
   showLoader(modalBody, { text: 'Loading analytics...' })
-
 
   try {
     // Fetch analytics
@@ -19,27 +17,41 @@ export async function renderData(videoId = undefined) {
 
     hideLoader(modalBody)
 
+    // Reverse datasets (date ascending)
+    const reverseData = (arr) => (arr ? [...arr].reverse().map(v => (isNaN(v) ? 0 : v)) : [])
+    chart.labels = reverseData(chart.labels)
+    chart.plays = reverseData(chart.plays)
+    chart.watchTime = reverseData(chart.watchTime)
+    chart.averageWatchTime = reverseData(chart.averageWatchTime)
+    chart.averagePercentWatched = reverseData(chart.averagePercentWatched)
+    chart.uniqueViewers = reverseData(chart.uniqueViewers)
+    chart.averagePlaysPerVideo = reverseData(chart.averagePlaysPerVideo)
+    chart.averagePlaysPerViewer = reverseData(chart.averagePlaysPerViewer)
+    chart.conversions = reverseData(chart.conversions)
+    chart.conversionRate = reverseData(chart.conversionRate)
+    chart.averageCpv = reverseData(chart.averageCpv)
+    chart.costs = reverseData(chart.costs)
+
     // ---- ApexCharts sparklines ----
     const sparkConfigs = [
       { selector: "#spark1", name: "Plays", data: chart.plays, title: chart.plays.reduce((a, b) => a + b, 0) },
       { selector: "#spark2", name: "Watch Time (minutes)", data: chart.watchTime, title: chart.watchTime.reduce((a, b) => a + b, 0).toFixed(2) },
-      { selector: "#spark3", name: "Average Watch Time", data: chart.averageWatchTime, title: (chart.averageWatchTime.reduce((a, b) => a + b, 0) / chart.averageWatchTime.length).toFixed(2) },
-      { selector: "#spark4", name: "Avg. % Watched", data: chart.averagePercentWatched, title: (chart.averagePercentWatched.reduce((a, b) => a + b, 0) / chart.averagePercentWatched.length).toFixed(2) + "%" },
+      { selector: "#spark3", name: "Average Watch Time", data: chart.averageWatchTime, title: (chart.averageWatchTime.reduce((a, b) => a + b, 0) / (chart.averageWatchTime.length || 1)).toFixed(2) },
+      { selector: "#spark4", name: "Avg. % Watched", data: chart.averagePercentWatched, title: (chart.averagePercentWatched.reduce((a, b) => a + b, 0) / (chart.averagePercentWatched.length || 1)).toFixed(2) + "%" },
       { selector: "#spark5", name: "Unique Viewers", data: chart.uniqueViewers, title: chart.uniqueViewers.reduce((a, b) => a + b, 0) },
       { selector: "#spark6", name: "Conversions", data: chart.conversions, title: chart.conversions.reduce((a, b) => a + b, 0) },
-      { selector: "#spark7", name: "Conversion Rate", data: chart.conversionRate, title: (chart.conversionRate.reduce((a, b) => a + b, 0) / chart.conversionRate.length).toFixed(2) + "%" },
-      { selector: "#spark8", name: "Markets", data: chart.cities, title: chart.cities.reduce((a, b) => a + b, 0) },
-      { selector: "#spark9", name: "Ad-Free Streaming (minutes)", data: chart.adFreeStreaming, title: chart.adFreeStreaming.reduce((a, b) => a + b, 0).toFixed(2) },
+      { selector: "#spark7", name: "Conversion Rate", data: chart.conversionRate, title: (chart.conversionRate.reduce((a, b) => a + b, 0) / (chart.conversionRate.length || 1)).toFixed(2) + "%" },
+      { selector: "#spark8", name: "Avg. CPV", data: chart.averageCpv, title: (chart.averageCpv.reduce((a, b) => a + b, 0) / (chart.averageCpv.length || 1)).toFixed(2) },
+      { selector: "#spark9", name: "Total Costs", data: chart.costs, title: chart.costs.reduce((a, b) => a + b, 0).toFixed(2) },
     ]
 
-    // Create container for charts
     const chartsContainer = document.createElement('div')
     chartsContainer.className = 'analytics-charts'
     modalBody.appendChild(chartsContainer)
 
-    sparkConfigs.forEach((conf, i) => {
+    sparkConfigs.forEach((conf) => {
       const chartDiv = document.createElement('div')
-      chartDiv.id = conf.selector.replace('#', '') // remove #
+      chartDiv.id = conf.selector.replace('#', '')
       chartDiv.style.marginBottom = '20px'
       chartsContainer.appendChild(chartDiv)
 
@@ -58,25 +70,18 @@ export async function renderData(videoId = undefined) {
         yaxis: {
           min: 0,
           max: function (max) { return max <= 1 ? 25 : max * 1.2 },
-          labels: {
-            formatter: val => val.toFixed(2)
-          }
+          labels: { formatter: val => val.toFixed(2) }
         },
-        tooltip: {
-          y: {
-            formatter: val => val.toFixed(2)
-          }
-        },
+        tooltip: { y: { formatter: val => val.toFixed(2) } },
         colors: ['#DCE6EC'],
-        title: { text: conf.title, offsetX: 30, style: { fontSize: '24px', cssClass: 'apexcharts-yaxis-title' } },
-        subtitle: { text: conf.name, offsetX: 30, style: { fontSize: '14px', cssClass: 'apexcharts-yaxis-title' } }
+        title: { text: conf.title, offsetX: 30, style: { fontSize: '24px' } },
+        subtitle: { text: conf.name, offsetX: 30, style: { fontSize: '14px' } }
       }
       new ApexCharts(chartDiv, spark).render()
     })
 
-
     // ---- analytics table ----
-    let html = '<div class="table-responsive"><table id="analytics-table" class="table table-sm table-border table-striped table-hover">'
+    let html = '<div class="table-responsive bg-white p-3"><table id="analytics-table" class="table table-sm table-border table-striped table-hover">'
     html += `<thead>
       <tr>
         <th>Date</th>
@@ -87,49 +92,50 @@ export async function renderData(videoId = undefined) {
         <th>Viewers</th>
         <th>Conversions</th>
         <th title='Conversion Rate (CR)'>C/R</th>
-        <th>Markets</th>
-        <th>Ad-Free</th>
+        <th>Avg. CPV</th>
+        <th>Costs</th>
       </tr>
     </thead><tbody>`
 
-    table.forEach(row => {
+    table.reverse().forEach(row => {
       html += `<tr>
         <td>${row.date}</td>
-        <td>${parseInt(row.plays)}</td>
-        <td>${Number(row.watchTime).toFixed(2)}</td>
-        <td>${Number(row.averageWatchTime).toFixed(2)}</td>
-        <td>${Number(row.averagePercentWatched).toFixed(2)}%</td>
-        <td>${parseInt(row.uniqueViewers)}</td>
-        <td>${parseInt(row.conversions)}</td>
-        <td>${Number(row.conversionRate).toFixed(2)}%</td>
-        <td>${Number(row.cities)}</td>
-        <td>${Number(row.adFreeStreaming).toFixed(2)}</td>
+        <td>${parseInt(row.plays) || 0}</td>
+        <td>${Number(row.watchTime || 0).toFixed(2)}</td>
+        <td>${Number(row.averageWatchTime || 0).toFixed(2)}</td>
+        <td>${Number(row.averagePercentWatched || 0).toFixed(2)}%</td>
+        <td>${parseInt(row.uniqueViewers) || 0}</td>
+        <td>${parseInt(row.conversions) || 0}</td>
+        <td>${Number(row.conversionRate || 0).toFixed(2)}%</td>
+        <td>${Number(row.averageCpv || 0).toFixed(2)}</td>
+        <td>${Number(row.costs || 0).toFixed(2)}</td>
       </tr>`
     })
     html += '</tbody></table></div>'
+
+    // add export link below table
+    html += `<div class="mt-3">
+      <button id="export-analytics" class="btn btn-sm btn-primary" style="width: fit-content;">Download CSV</button>
+    </div>`
+
     modalBody.insertAdjacentHTML('beforeend', html)
 
     $('#export-analytics').on('click', function () {
       const csv = Papa.unparse(table.map(row => ({
         date: row.date,
-        plays: row.plays,
-        watch_time_minutes: row.watchTime,
-        average_watch_time_minutes: row.averageWatchTime,
-        average_percent_watched: row.averagePercentWatched,
-        unique_viewers: row.uniqueViewers,
-        conversions: row.conversions,
-        conversion_rate: row.conversionRate,
-        average_plays_per_video: row.averagePlaysPerVideo,
-        average_plays_per_viewer: row.averagePlaysPerViewer,
-        markets: row.cities,
-        ad_free_streaming_minutes: row.adFreeStreaming
+        plays: row.plays || 0,
+        watch_time_minutes: row.watchTime || 0,
+        average_watch_time_minutes: row.averageWatchTime || 0,
+        average_percent_watched: row.averagePercentWatched || 0,
+        unique_viewers: row.uniqueViewers || 0,
+        conversions: row.conversions || 0,
+        conversion_rate: row.conversionRate || 0,
+        average_cpv: row.averageCpv || 0,
+        costs: row.costs || 0
       })))
 
       const now = new Date()
-
-      // Format: YYYY-MM-DD_HH-MM-SS
       const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0]
-
       const fileName = `analytics_${timestamp}.csv`
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -147,19 +153,16 @@ export async function renderData(videoId = undefined) {
   }
 }
 
-
 function showModal(videoId) {
   modal.show()
   renderData(videoId)
 }
-
 
 export function initAnalyticsUi() {
   $(document).on("click", ".analytics", function () {
     showModal()
   })
 
-  // Video analytics button
   $(document).on('click', '.video-analytics', function () {
     const data = $(this).closest('.row').data()
     const videoId = data.id
@@ -168,9 +171,7 @@ export function initAnalyticsUi() {
     showModal(videoId)
   })
 
-  // Clear title on modal close
   $modal.on('hidden.bs.modal', function () {
-    console.log('Modal hidden event')
     modalBody.innerHTML = ''
     $(this).find('.video-title').text('')
   })

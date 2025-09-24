@@ -18,7 +18,7 @@ footer {
 }
 
 .dropdown-menu {
-  z-index: 2000;
+  z-index: 20;
 }
 
 .image {
@@ -151,7 +151,6 @@ TEXTAREA:not(:-webkit-autofill) {
     opacity: 1 !important;
     height: auto !important;
     overflow: visible !important;
-    z-index: 9999 !important;
     background: white !important;
     /* optional for white background */
   }
@@ -223,6 +222,10 @@ TEXTAREA:not(:-webkit-autofill) {
 .modal-title {
   display: flex;
   gap: 5px;
+}
+
+.modal {
+  z-index: 10000;
 }
 
 .tags-look {
