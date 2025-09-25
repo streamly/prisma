@@ -152,8 +152,10 @@ function handleEditClick() {
   $("#performance").prop("checked", data.cpv >= 0.05)
   $(".performance-fields").toggle(data.cpv >= 0.05)
 
-  if (parseFloat($("#cpv").val()) === 0) {
+  if (parseFloat(data.cpv) === 0) {
     $("#gated").val("0")
+  } else {
+    $("#gated").val(data.gated ? "1" : "0")
   }
 
   const timestamp = Date.now()
@@ -251,7 +253,7 @@ function handlePerformanceChange(e) {
     $(".performance-fields").hide()
     $("#cpv").val("0.00")
     $("#budget").val("0.00")
-    $("#gated").val("0").prop("disabled", true)
+    $("#gated").val("0")
   }
 }
 
