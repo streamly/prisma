@@ -1,8 +1,10 @@
 import { verifyToken } from '@clerk/backend'
 import { serialize } from 'cookie'
 import md5 from 'md5'
-import { getClerkUser } from '../lib/clerkClient.js'
+import { getClerkUser, setUserPublicMetadata } from '../lib/clerkClient.js'
+import { createCustomer, updateCustomerEmail } from '../lib/stripeClient.js'
 import { generateScopedSearchKey } from '../lib/typesenseClient.js'
+import { formatCustomerId } from '../lib/utils.js'
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -22,7 +24,28 @@ export default async function handler(req, res) {
     const userId = payload.sub
     const userIdHash = md5(userId)
     const user = await getClerkUser(userId)
-    const customerId = user.privateMetadata.customerId
+    const userEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId).emailAddress
+    let userCustomerId = user.publicMetadata.stripeCustomerId
+
+    if (userCustomerId) {
+      const customer = await createCustomer(userId, userEmail)
+      userCustomerId = customer.id
+
+      await setUserPublicMetadata(userId, {
+        stripeCustomerId: userCustomerId,
+        customerEmail: userEmail,
+        cid: formatCustomerId(userCustomerId)
+      })
+    }
+
+    if (userEmail !== user.publicMetadata.customerEmail) {
+      try {
+        await updateCustomerEmail(user.publicMetadata.stripeCustomerId, userEmail)
+      } catch (error) {
+        console.error('Error updating customer email')
+      }
+    }
+
     const scopedApiKey = await generateScopedSearchKey(userIdHash)
 
     if (!scopedApiKey) {
@@ -44,8 +67,8 @@ export default async function handler(req, res) {
       serialize('apiKey', scopedApiKey, cookieOptions),
     ]
 
-    if (customerId) {
-      cookies.push(serialize('user_cus', customerId, cookieOptions))
+    if (userCustomerId) {
+      cookies.push(serialize('user_cus', formatCustomerId(userCustomerId), cookieOptions))
     }
 
     res.setHeader('Set-Cookie', cookies)
@@ -54,7 +77,6 @@ export default async function handler(req, res) {
       authenticated: true,
       message: 'Authentication successful'
     })
-
   } catch (err) {
     console.error('Auth error:', err)
     return res.status(500).json({ error: 'Authentication failed', details: err.message })

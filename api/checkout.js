@@ -1,5 +1,5 @@
-import { authenticateUser, getClerkUser, setUserPrivateMetadata } from '../lib/clerkClient.js'
-import { createCheckoutSession, createCustomer } from '../lib/stripeClient.js'
+import { authenticateUser, getClerkUser } from '../lib/clerkClient.js'
+import { createCheckoutSession } from '../lib/stripeClient.js'
 
 
 const APP_URL = process.env.APP_URL
@@ -20,14 +20,10 @@ export default async function handler(req, res) {
     }
 
     const user = await getClerkUser(userId)
-    let customerId = user.privateMetadata.customerId
+    let customerId = user.publicMetadata.stripeCustomerId
 
     if (!customerId) {
-      const customer = createCustomer(userId)
-
-      await setUserPrivateMetadata(userId, { customerId: customer.id })
-
-      customerId = customer.id
+      return res.status(400).json({ error: "No Stripe customer ID found for this user" })
     }
 
     const session = await createCheckoutSession(customerId, APP_URL)

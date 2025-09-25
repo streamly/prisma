@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     const user = await getClerkUser(userId)
-    let customerId = user.privateMetadata.customerId
+    let customerId = user.publicMetadata.stripeCustomerId
 
     if (!customerId) {
       return res.status(400).json({ error: "No Stripe customer ID found for this user" })
