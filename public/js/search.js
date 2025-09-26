@@ -82,6 +82,26 @@ export async function initSearch() {
         { label: 'This Month', start: startOfMonth },
       ],
     }),
+    instantsearch.widgets.refinementList({
+      container: '#format-filter',
+      attribute: 'format',
+      limit: 3,
+      templates: {
+        item(data) {
+          return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`
+        }
+      }
+    }),
+    instantsearch.widgets.refinementList({
+      container: '#type-filter',
+      attribute: 'type',
+      limit: 10,
+      templates: {
+        item(data) {
+          return `<label><input type="checkbox" ${data.isRefined ? 'checked' : ''} /> ${decodeHTMLEntities(data.label)} (${data.count})</label>`
+        }
+      }
+    }),
     instantsearch.widgets.currentRefinements({
       container: '#refinements',
       transformItems(items) {

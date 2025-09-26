@@ -1,4 +1,5 @@
 import { fetchAnalytics } from '../api.js'
+import { getVideo } from '../videoData.js'
 import { hideLoader, showLoader } from './loaderUi.js'
 
 const modalElement = document.getElementById('analytics-modal')
@@ -164,8 +165,9 @@ export function initAnalyticsUi() {
   })
 
   $(document).on('click', '.video-analytics', function () {
-    const data = $(this).closest('.row').data()
-    const videoId = data.id
+    const videoId = $(this).closest(".video-hit").data("id")
+    const data = getVideo(videoId)
+    
     const title = data.title
     $modal.find('.video-title').text(`| ${decodeURIComponent(title)}`)
     showModal(videoId)

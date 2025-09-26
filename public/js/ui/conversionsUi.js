@@ -1,5 +1,6 @@
 // conversionsUi.js
 import { fetchConversions } from '../api.js'
+import { getVideo } from '../videoData.js'
 import { hideLoader, showLoader } from './loaderUi.js'
 
 const modalElement = document.getElementById('conversions-modal')
@@ -71,7 +72,7 @@ export async function renderData(videoId) {
     $modal.off('input', '#message-filter').on('input', '#message-filter', function () {
       const q = $(this).val().toLowerCase()
       const filteredData = selectedUser
-        ? conversionsData.filter(d => `${(d.firstname||'').trim()} ${(d.lastname||'').trim()}` === selectedUser)
+        ? conversionsData.filter(d => `${(d.firstname || '').trim()} ${(d.lastname || '').trim()}` === selectedUser)
         : conversionsData
       renderMessages(filteredData.filter(m =>
         Object.values(m).some(v => String(v || '').toLowerCase().includes(q))
@@ -84,7 +85,7 @@ export async function renderData(videoId) {
       $(this).addClass('active')
       selectedUser = $(this).data('name')
       $modal.find('#message-filter').val('')
-      const userMessages = conversionsData.filter(d => `${(d.firstname||'').trim()} ${(d.lastname||'').trim()}` === selectedUser)
+      const userMessages = conversionsData.filter(d => `${(d.firstname || '').trim()} ${(d.lastname || '').trim()}` === selectedUser)
       renderMessages(userMessages)
     })
 
@@ -128,7 +129,7 @@ function renderContacts(filter = '') {
   const seen = new Set()
   const unique = []
   for (const u of sorted) {
-    const name = `${(u.firstname||'').trim()} ${(u.lastname||'').trim()}`.trim()
+    const name = `${(u.firstname || '').trim()} ${(u.lastname || '').trim()}`.trim()
     if (!name) continue
     if (!seen.has(name)) {
       seen.add(name)
@@ -190,8 +191,8 @@ export function initConversionsUi() {
 
   // video-level conversions buttons inside rows
   $(document).on('click', '.video-conversions', function () {
-    const data = $(this).closest('.row').data()
-    const videoId = data?.id
+    const videoId = $(this).closest(".video-hit").data("id")
+    const data = getVideo(videoId)
     const title = data?.title
     $modal.find('.video-title').text(title ? `| ${decodeURIComponent(title)}` : '')
     showModal(videoId)
