@@ -13,18 +13,18 @@ async function connectClient() {
   }
 }
 
-export async function setCustomerBillingStatus(updates) {
+export async function setCustomersBillingStatus(updates: Record<string, string>) {
   await connectClient()
 
   await redis.hSet('billing_status', updates)
 }
 
 
-export async function getCustomerBillingStatus(customerId) {
+export async function getCustomerBillingStatus(customerId: string) {
   await connectClient()
 
   const value = await redis.hGet('billing_status', customerId)
-  
+
   if (value === "1") {
     return true
   }

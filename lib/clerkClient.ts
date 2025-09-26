@@ -1,12 +1,13 @@
 import { Clerk } from '@clerk/clerk-sdk-node'
 import { verifyToken } from '@clerk/backend'
+import { VercelRequest } from '@vercel/node'
 
 const clerkClient = Clerk({
   secretKey: process.env.CLERK_API_SECRET
 })
 
 
-export async function getClerkUser(userId) {
+export async function getClerkUser(userId: string) {
   if (!userId) {
     throw new Error('Missing Clerk user id')
   }
@@ -14,9 +15,7 @@ export async function getClerkUser(userId) {
   return clerkClient.users.getUser(userId)
 }
 
-
-// Authenticate user using Clerk
-export async function authenticateUser(req) {
+export async function authenticateUser(req: VercelRequest) {
   const authHeader = req.headers.authorization
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('Authentication required')
@@ -40,10 +39,10 @@ export async function authenticateUser(req) {
 }
 
 
-export async function setUserPrivateMetadata(userId, metadata) {
+export async function setUserPrivateMetadata(userId: string, metadata: Record<string, unknown>) {
   return clerkClient.users.updateUserMetadata(userId, { privateMetadata: metadata })
 }
 
-export async function setUserPublicMetadata(userId, metadata) {
+export async function setUserPublicMetadata(userId: string, metadata: Record<string, unknown>) {
   return clerkClient.users.updateUserMetadata(userId, { publicMetadata: metadata })
 }

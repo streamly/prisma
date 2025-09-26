@@ -7,8 +7,9 @@ import {
 import { deleteThumbnail, deleteVideo } from '../lib/s3Client.js'
 import { deleteVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
 import { authenticateUser } from '../lib/clerkClient.js'
+import { VercelRequest, VercelResponse } from '@vercel/node'
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res)
 
   if (handleOptions(req, res)) {
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
 
   try {
     userId = await authenticateUser(req)
-  } catch (error) {
+  } catch (error: any) {
     return res.status(401).json({ error: 'Authentication error', details: error.message })
   }
 
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
 
     try {
       await deleteThumbnail(document.id)
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
 
       return res.status(500).json({ success: false, error: 'Error deleting video file', details: error.message })
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
 
     try {
       await deleteVideo(document.id)
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
 
       return res.status(500).json({ success: false, error: 'Error deleting video file', details: error.message })
@@ -64,10 +65,10 @@ export default async function handler(req, res) {
 
     try {
       await deleteVideoDocument(id)
-    } catch (typesenseError) {
+    } catch (typesenseError: any) {
       console.error('Failed to delete from Typesense:', typesenseError)
 
-      return res.status(500).json({ success: false, error: 'Error deleting video metadata', details: error.message })
+      return res.status(500).json({ success: false, error: 'Error deleting video metadata', details: typesenseError.message })
     }
 
     return successResponse(res, {

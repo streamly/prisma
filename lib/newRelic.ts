@@ -26,7 +26,7 @@ const queryClient = axios.create({
 })
 
 
-function sanitizeString(value) {
+function sanitizeString(value: any) {
   if (typeof value !== 'string') {
     return value
   }
@@ -35,7 +35,7 @@ function sanitizeString(value) {
 }
 
 
-export async function runNrqlQuery(nrqlQuery) {
+export async function runNrqlQuery(nrqlQuery: string) {
   try {
     const query = {
       query: `
@@ -54,7 +54,7 @@ export async function runNrqlQuery(nrqlQuery) {
     const response = await queryClient.post('', query)
 
     return response.data.data.actor.account.nrql.results
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error executing NRQL query', err?.response?.data || err)
     throw new Error('NRQL query failed')
   }
@@ -67,8 +67,8 @@ export async function runNrqlQuery(nrqlQuery) {
  * @param {string} userId 
  * @param {string} customerId 
  */
-export async function insertStripeAction(action, userId, customerId) {
-  const flattened = flatten(action)
+export async function insertStripeAction(action: object, userId: string, customerId: string) {
+  const flattened = flatten(action) as object
   const newRelicEvent = {
     ...flattened,
     uid: userId,
@@ -77,18 +77,77 @@ export async function insertStripeAction(action, userId, customerId) {
   }
 
   try {
-    const response = insertClient.post('/events', [newRelicEvent])
+    const response = await insertClient.post('/events', [newRelicEvent])
 
     console.info('New Relic event', newRelicEvent)
     console.info('New Relic insert response', response.data)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error inserting New Relic action:', error, error?.response.data)
     throw new Error('Error inserting data')
   }
 }
 
+type RawAnalyticsRow = {
+  facet: string
+  plays: number | string | null
+  watchTime: number | string | null
+  averageWatchTime: number | string | null
+  averagePercentWatched: number | string | null
+  uniqueViewers: number | string | null
+  averagePlaysPerVideo: number | string | null
+  averagePlaysPerViewer: number | string | null
+  conversions: number | string | null
+  conversionRate: number | string | null
+  countries: number | string | null
+  regions: number | string | null
+  cities: number | string | null
+  averageCpv: number | string | null
+  costs: number | string | null
+  adFreeStreaming?: number | string | null
+}
 
-export async function queryAnalytics(userId, videoId = undefined) {
+type AnalyticsChart = {
+  labels: string[]
+  plays: number[]
+  watchTime: number[]
+  averageWatchTime: number[]
+  averagePercentWatched: number[]
+  uniqueViewers: number[]
+  averagePlaysPerVideo: number[]
+  averagePlaysPerViewer: number[]
+  conversions: number[]
+  conversionRate: number[]
+  countries: number[]
+  regions: number[]
+  cities: number[]
+  averageCpv: number[]
+  costs: number[]
+  adFreeStreaming: number[]
+}
+
+type AnalyticsTableRow = {
+  date: string
+  plays: number
+  watchTime: number
+  averageWatchTime: number
+  averagePercentWatched: number
+  uniqueViewers: number
+  averagePlaysPerVideo: number
+  averagePlaysPerViewer: number
+  conversions: number
+  conversionRate: number
+  countries: number
+  regions: number
+  cities: number
+  averageCpv: number
+  costs: number
+  adFreeStreaming: number
+}
+
+export async function queryAnalytics(
+  userId: string,
+  videoId?: string
+): Promise<{ chart: AnalyticsChart; table: AnalyticsTableRow[] }> {
   let filters = `WHERE aid='${formatUserId(userId)}'`
 
   if (videoId) {
@@ -119,9 +178,9 @@ export async function queryAnalytics(userId, videoId = undefined) {
     LIMIT MAX
   `
 
-  const results = await runNrqlQuery(nrqlQuery)
+  const results: RawAnalyticsRow[] = await runNrqlQuery(nrqlQuery)
 
-  const chart = {
+  const chart: AnalyticsChart = {
     labels: [],
     plays: [],
     watchTime: [],
@@ -140,44 +199,46 @@ export async function queryAnalytics(userId, videoId = undefined) {
     adFreeStreaming: [],
   }
 
-  const table = []
+  const table: AnalyticsTableRow[] = []
 
   for (const row of results) {
     const date = row.facet
+    const num = (v: unknown) => Number(v) || 0
+
     chart.labels.push(date)
-    chart.plays.push(Number(row.plays))
-    chart.watchTime.push(Number(row.watchTime))
-    chart.averageWatchTime.push(Number(row.averageWatchTime))
-    chart.averagePercentWatched.push(Number(row.averagePercentWatched))
-    chart.uniqueViewers.push(Number(row.uniqueViewers))
-    chart.averagePlaysPerVideo.push(Number(row.averagePlaysPerVideo))
-    chart.averagePlaysPerViewer.push(Number(row.averagePlaysPerViewer))
-    chart.conversions.push(Number(row.conversions))
-    chart.conversionRate.push(Number(row.conversionRate))
-    chart.countries.push(Number(row.countries))
-    chart.regions.push(Number(row.regions))
-    chart.cities.push(Number(row.cities))
-    chart.averageCpv.push(Number(row.averageCpv))
-    chart.costs.push(Number(row.costs))
-    chart.adFreeStreaming.push(Number(row.adFreeStreaming))
+    chart.plays.push(num(row.plays))
+    chart.watchTime.push(num(row.watchTime))
+    chart.averageWatchTime.push(num(row.averageWatchTime))
+    chart.averagePercentWatched.push(num(row.averagePercentWatched))
+    chart.uniqueViewers.push(num(row.uniqueViewers))
+    chart.averagePlaysPerVideo.push(num(row.averagePlaysPerVideo))
+    chart.averagePlaysPerViewer.push(num(row.averagePlaysPerViewer))
+    chart.conversions.push(num(row.conversions))
+    chart.conversionRate.push(num(row.conversionRate))
+    chart.countries.push(num(row.countries))
+    chart.regions.push(num(row.regions))
+    chart.cities.push(num(row.cities))
+    chart.averageCpv.push(num(row.averageCpv))
+    chart.costs.push(num(row.costs))
+    chart.adFreeStreaming.push(num(row.adFreeStreaming))
 
     table.push({
       date,
-      plays: Number(row.plays),
-      watchTime: Number(row.watchTime),
-      averageWatchTime: Number(row.averageWatchTime),
-      averagePercentWatched: Number(row.averagePercentWatched),
-      uniqueViewers: Number(row.uniqueViewers),
-      averagePlaysPerVideo: Number(row.averagePlaysPerVideo),
-      averagePlaysPerViewer: Number(row.averagePlaysPerViewer),
-      conversions: Number(row.conversions),
-      conversionRate: Number(row.conversionRate),
-      countries: Number(row.countries),
-      regions: Number(row.regions),
-      cities: Number(row.cities),
-      averageCpv: Number(row.averageCpv),
-      costs: Number(row.costs),
-      adFreeStreaming: Number(row.adFreeStreaming),
+      plays: num(row.plays),
+      watchTime: num(row.watchTime),
+      averageWatchTime: num(row.averageWatchTime),
+      averagePercentWatched: num(row.averagePercentWatched),
+      uniqueViewers: num(row.uniqueViewers),
+      averagePlaysPerVideo: num(row.averagePlaysPerVideo),
+      averagePlaysPerViewer: num(row.averagePlaysPerViewer),
+      conversions: num(row.conversions),
+      conversionRate: num(row.conversionRate),
+      countries: num(row.countries),
+      regions: num(row.regions),
+      cities: num(row.cities),
+      averageCpv: num(row.averageCpv),
+      costs: num(row.costs),
+      adFreeStreaming: num(row.adFreeStreaming),
     })
   }
 
@@ -185,7 +246,7 @@ export async function queryAnalytics(userId, videoId = undefined) {
 }
 
 
-export async function queryConversions({ videoId, phone, firstname, userId }) {
+export async function queryConversions({ videoId, phone, firstname, userId }: { videoId: string, phone?: string, firstname?: string, userId: string }) {
   let filters = `WHERE actionName = 'CONTACT' AND referrerUrl LIKE '%bizilla.tv%' AND aid='${formatUserId(userId)}'`
 
   if (videoId) {

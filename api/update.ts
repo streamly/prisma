@@ -1,3 +1,4 @@
+import { VercelRequest, VercelResponse } from '@vercel/node'
 import { authenticateUser, getClerkUser } from '../lib/clerkClient.js'
 import { getCustomerBillingStatus } from '../lib/redisClient.js'
 import {
@@ -9,7 +10,7 @@ import {
 import { updateVideoDocument, verifyVideoOwnership } from '../lib/typesenseClient.js'
 import { validateUpdateVideoInput } from '../lib/validation.js'
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res)
   if (handleOptions(req, res)) return
 
@@ -21,7 +22,7 @@ export default async function handler(req, res) {
 
   try {
     userId = await authenticateUser(req)
-  } catch (error) {
+  } catch (error: any) {
     return res.status(401).json({ error: 'Authentication error', details: error.message })
   }
 
@@ -29,7 +30,7 @@ export default async function handler(req, res) {
 
   try {
     data = validateUpdateVideoInput(req.body)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Validation error', error)
     return res.status(400).json({ error: 'Invalid data', details: error.issues || undefined })
   }
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
   let document
   try {
     document = await verifyVideoOwnership(data.id, userId)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Video ownership error:', error)
     return res.status(400).json({ error: 'You do not have permission to access this video', details: error.message })
   }
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
 
   try {
     const user = await getClerkUser(userId)
-    const customerId = user.privateMetadata.customerId
+    const customerId = user.privateMetadata.customerId as string
     const isBillingActive = await getCustomerBillingStatus(customerId)
     const result = await updateVideoDocument(document, data, isBillingActive)
 
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
     return successResponse(res, {
       message: 'Video details updated successfully'
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update route error:', error)
     return errorResponse(res, 500, 'Failed to update video metadata', error.message)
   }

@@ -1,3 +1,4 @@
+import { VercelRequest, VercelResponse } from '@vercel/node'
 import { authenticateUser } from '../lib/clerkClient.js'
 import {
     abortMultipartUpload,
@@ -5,11 +6,38 @@ import {
     createMultipartUpload,
     generatePartUploadUrl,
     generateVideoUploadUrl,
-    listParts
+    listParts,
 } from '../lib/s3Client.js'
 import { findInactiveVideo } from '../lib/typesenseClient.js'
 
-export default async function handler(req, res) {
+// ----- Types -----
+interface MultipartPart {
+    ETag: string
+    PartNumber: number
+    Size?: number
+}
+
+interface MultipartResult {
+    location: string
+    key: string
+}
+
+interface UploadRequestBody {
+    id?: string
+    contentType?: string
+    uploadId?: string
+    parts?: MultipartPart[]
+}
+
+interface UploadRequestQuery {
+    type?: string
+    id?: string
+    partNumber?: string
+    uploadId?: string
+}
+
+// ----- Main Handler -----
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
@@ -20,14 +48,14 @@ export default async function handler(req, res) {
     }
 
     try {
-        let userId
-
+        let userId: string
         try {
             userId = await authenticateUser(req)
-        } catch (error) {
+        } catch (error: any) {
             return res.status(401).json({ error: 'Authentication error', details: error.message })
         }
-        const { type } = req.query
+
+        const { type } = req.query as UploadRequestQuery
 
         switch (type) {
             case 'getUploadParameters':
@@ -45,187 +73,119 @@ export default async function handler(req, res) {
             default:
                 return res.status(400).json({ error: 'Invalid request type' })
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Upload API error:', error)
         return res.status(500).json({ error: 'Server error processing upload request' })
     }
 }
 
-async function handleGetUploadParameters(req, res, userId) {
+// ----- Handlers -----
+async function handleGetUploadParameters(req: VercelRequest, res: VercelResponse, userId: string) {
     try {
         const inactive = await findInactiveVideo(userId)
         if (inactive) {
             return res.status(409).json({
                 error: 'Unactivated video exists',
                 code: 'UNACTIVATED_VIDEO',
-                details: {
-                    videoId: inactive.id
-                }
+                details: { videoId: inactive.id },
             })
         }
 
-        console.log('Inactive video', inactive)
-
-        const { contentType, id } = req.body
-
+        const { contentType, id } = req.body as UploadRequestBody
         if (!id || !contentType) {
             return res.status(400).json({ error: 'Missing id or contentType' })
         }
 
         const signedUrl = await generateVideoUploadUrl(id, contentType, userId)
-
         return res.status(200).json({ url: signedUrl })
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error generating upload parameters:', error)
-        return res.status(500).json({
-            error: 'Failed to generate upload parameters',
-            details: error.message
-        })
+        return res.status(500).json({ error: 'Failed to generate upload parameters', details: error.message })
     }
 }
 
-// Create a new multipart upload
-async function handleCreateMultipartUpload(req, res, userId) {
+async function handleCreateMultipartUpload(req: VercelRequest, res: VercelResponse, userId: string) {
     try {
         const inactive = await findInactiveVideo(userId)
         if (inactive) {
             return res.status(409).json({
                 error: 'Unactivated video exists',
                 code: 'UNACTIVATED_VIDEO',
-                details: {
-                    videoId: inactive.id
-                }
+                details: { videoId: inactive.id },
             })
         }
 
-        console.log('Inactive video', inactive)
-
-        const { contentType, id } = req.body
-
+        const { contentType, id } = req.body as UploadRequestBody
         if (!id || !contentType) {
             return res.status(400).json({ error: 'Missing id or contentType' })
         }
 
         const result = await createMultipartUpload(id, contentType, userId)
-        console.log('Multipart upload created with ID:', result.uploadId)
-
         return res.status(200).json(result)
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating multipart upload:', error)
-        console.error('Error details:', error.message, error.code)
-        return res.status(500).json({
-            error: 'Failed to create multipart upload',
-            details: error.message
-        })
+        return res.status(500).json({ error: 'Failed to create multipart upload', details: error.message })
     }
 }
 
-async function handleGetUploadPartURL(req, res, userId) {
+async function handleGetUploadPartURL(req: VercelRequest, res: VercelResponse, userId: string) {
     try {
-        const { uploadId, id, partNumber } = req.query
-
-        if (!id || !partNumber) {
-            console.error('Missing required parameters:', { uploadId: !!uploadId, id: !!id, partNumber: !!partNumber })
+        const { uploadId, id, partNumber } = req.query as UploadRequestQuery
+        if (!id || !uploadId || !partNumber) {
             return res.status(400).json({ error: 'Missing uploadId, id, or partNumber' })
         }
 
+        // @ts-expect-error
         const signedUrl = await generatePartUploadUrl(id, uploadId, partNumber)
-
         return res.status(200).json({ url: signedUrl })
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error generating upload part URL:', error)
-        return res.status(500).json({
-            error: 'Failed to generate upload URL',
-            details: error.message
-        })
+        return res.status(500).json({ error: 'Failed to generate upload URL', details: error.message })
     }
 }
 
-// Complete the multipart upload
-async function handleCompleteMultipartUpload(req, res, userId) {
+async function handleCompleteMultipartUpload(req: VercelRequest, res: VercelResponse, userId: string) {
     try {
-        const { uploadId, id, parts } = req.body
-
-        console.log('Completing multipart upload for:', { uploadId, id, partsCount: parts?.length, userId })
-
+        const { uploadId, id, parts } = req.body as UploadRequestBody
         if (!uploadId || !id || !parts || !Array.isArray(parts)) {
-            console.error('Missing or invalid parameters:', {
-                uploadId: !!uploadId,
-                id: !!id,
-                parts: !!parts,
-                isArray: Array.isArray(parts),
-                partsLength: parts?.length
-            })
             return res.status(400).json({ error: 'Missing uploadId, id, or parts array' })
         }
 
-        const result = await completeMultipartUpload(id, uploadId, parts)
-
-        console.log('Multipart upload completed successfully:', {
-            Location: result.location,
-            Key: result.key
-        })
-
+        // @ts-expect-error
+        const result: MultipartResult = await completeMultipartUpload(id, uploadId, parts)
         return res.status(200).json(result)
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error completing multipart upload:', error)
-        return res.status(500).json({
-            error: 'Failed to complete upload',
-            details: error.message
-        })
+        return res.status(500).json({ error: 'Failed to complete upload', details: error.message })
     }
 }
 
-// List parts that have been uploaded
-async function handleListParts(req, res, userId) {
+async function handleListParts(req: VercelRequest, res: VercelResponse, userId: string) {
     try {
-        const { uploadId, id } = req.query
-
-        console.log('Listing parts for:', { uploadId, id, userId })
-
+        const { uploadId, id } = req.query as UploadRequestQuery
         if (!uploadId || !id) {
-            console.error('Missing required parameters:', { uploadId: !!uploadId, id: !!id })
             return res.status(400).json({ error: 'Missing uploadId or id' })
         }
 
         const parts = await listParts(id, uploadId)
-
-        console.log('List parts result:', {
-            partsCount: parts.length,
-            parts: parts.map(p => ({ PartNumber: p.PartNumber, ETag: p.ETag, Size: p.Size }))
-        })
-
         return res.status(200).json({ parts })
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error listing parts:', error)
-        return res.status(500).json({
-            error: 'Failed to list parts',
-            details: error.message
-        })
+        return res.status(500).json({ error: 'Failed to list parts', details: error.message })
     }
 }
 
-// Abort the multipart upload
-async function handleAbortMultipartUpload(req, res, userId) {
+async function handleAbortMultipartUpload(req: VercelRequest, res: VercelResponse, userId: string) {
     try {
-        const { uploadId, id } = req.body
-
-        console.log('Aborting multipart upload for:', { uploadId, id, userId })
-
+        const { uploadId, id } = req.body as UploadRequestBody
         if (!uploadId || !id) {
-            console.error('Missing required parameters:', { uploadId: !!uploadId, id: !!id })
             return res.status(400).json({ error: 'Missing uploadId or id' })
         }
 
         await abortMultipartUpload(id, uploadId)
-
-        console.log('Multipart upload aborted successfully')
         return res.status(200).json({ success: true })
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error aborting multipart upload:', error)
-        return res.status(500).json({
-            error: 'Failed to abort upload',
-            details: error.message
-        })
+        return res.status(500).json({ error: 'Failed to abort upload', details: error.message })
     }
 }

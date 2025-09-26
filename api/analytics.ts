@@ -1,8 +1,9 @@
 import { authenticateUser } from '../lib/clerkClient.js'
-import { queryConversions } from '../lib/newRelic.js'
+import { queryAnalytics } from '../lib/newRelic.js'
 import { successResponse } from '../lib/responses.js'
+import type { VercelRequest, VercelResponse} from '@vercel/node'
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" })
   }
@@ -17,16 +18,14 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Authentication error' })
   }
 
-  const { videoId, phone, firstname } = req.query
-
-  console.log('query', req.query)
-
+  const videoId = req.query.videoId
   try {
-    const data = await queryConversions({ videoId, userId, phone, firstname })
+    // @ts-ignore
+    const data = await queryAnalytics(userId, videoId)
 
     return successResponse(res, { data })
   } catch (error) {
-    console.error('Error quering video conversions', error)
-    return res.status(500).json({ error: 'Error quering video conversions' })
+    console.error('Error quering video analytics', error)
+    return res.status(500).json({ error: 'Error quering video analytics' })
   }
 }

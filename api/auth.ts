@@ -1,12 +1,12 @@
 import { verifyToken } from '@clerk/backend'
+import { VercelRequest, VercelResponse } from '@vercel/node'
 import { serialize } from 'cookie'
-import md5 from 'md5'
 import { getClerkUser, setUserPublicMetadata } from '../lib/clerkClient.js'
 import { createCustomer, updateCustomerEmail } from '../lib/stripeClient.js'
 import { generateScopedSearchKey } from '../lib/typesenseClient.js'
-import { formatCustomerId } from '../lib/utils.js'
+import { formatCustomerId, formatUserId } from '../lib/utils.js'
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" })
   }
@@ -22,10 +22,10 @@ export default async function handler(req, res) {
     }
 
     const userId = payload.sub
-    const userIdHash = md5(userId)
+    const formatedUserId = formatUserId(userId)
     const user = await getClerkUser(userId)
-    const userEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId).emailAddress
-    let userCustomerId = user.publicMetadata.stripeCustomerId
+    const userEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId)?.emailAddress
+    let userCustomerId = user.publicMetadata.stripeCustomerId as string
 
     if (userCustomerId) {
       const customer = await createCustomer(userId, userEmail)
@@ -38,15 +38,15 @@ export default async function handler(req, res) {
       })
     }
 
-    if (userEmail !== user.publicMetadata.customerEmail) {
+    if (userEmail && userEmail !== user.publicMetadata.customerEmail) {
       try {
-        await updateCustomerEmail(user.publicMetadata.stripeCustomerId, userEmail)
+        await updateCustomerEmail(user.publicMetadata.stripeCustomerId as string, userEmail)
       } catch (error) {
         console.error('Error updating customer email')
       }
     }
 
-    const scopedApiKey = await generateScopedSearchKey(userIdHash)
+    const scopedApiKey = await generateScopedSearchKey(formatedUserId)
 
     if (!scopedApiKey) {
       return res.status(500).json({
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     }
 
     const cookies = [
-      serialize('uid', userIdHash, cookieOptions),
+      serialize('uid', formatedUserId, cookieOptions),
       serialize('apiKey', scopedApiKey, cookieOptions),
     ]
 
@@ -79,6 +79,6 @@ export default async function handler(req, res) {
     })
   } catch (err) {
     console.error('Auth error:', err)
-    return res.status(500).json({ error: 'Authentication failed', details: err.message })
+    return res.status(500).json({ error: 'Authentication failed', details: (err as Error).message })
   }
 }

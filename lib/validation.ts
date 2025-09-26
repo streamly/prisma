@@ -14,7 +14,7 @@ const newVideoInputSchema = z.object({
 })
 
 
-export const updateVideoInputSchema = z.object({
+const updateVideoInputSchema = z.object({
   id: defaultString,
   title: defaultString,
   description: z.string().trim().min(1).max(1000),
@@ -31,39 +31,54 @@ export const updateVideoInputSchema = z.object({
   .superRefine((data, ctx) => {
     if (data.gated === 1 && data.cpv < MIN_CPV) {
       ctx.addIssue({
+        code: "custom",
         path: ["cpv"],
-        message: `CPV must be at least ${MIN_CPV} if Gated is enabled`
+        message: `CPV must be at least ${MIN_CPV} if Gated is enabled`,
       })
     }
 
     if (!data.performance) {
       if (data.cpv !== 0) {
         ctx.addIssue({
+          code: "custom",
           path: ["cpv"],
-          message: "CPV must be 0 if performance marketing is disabled"
+          message: "CPV must be 0 if performance marketing is disabled",
         })
       }
       if (data.budget !== 0) {
         ctx.addIssue({
+          code: "custom",
           path: ["budget"],
-          message: "Budget must be 0 if performance marketing is disabled"
+          message: "Budget must be 0 if performance marketing is disabled",
         })
       }
       if (data.gated !== 0) {
         ctx.addIssue({
+          code: "custom",
           path: ["gated"],
-          message: "Gated must be 0 if performance marketing is disabled"
+          message: "Gated must be 0 if performance marketing is disabled",
         })
       }
     }
   })
 
 
-export function validateNewVideoInput(data) {
+const conversionsQuerySchema = z.object({
+  videoId: defaultString,
+  phone: defaultString.optional(),
+  firstname: defaultString.optional()
+})
+
+export function validateNewVideoInput(data: object) {
   return newVideoInputSchema.parse(data)
 }
 
 
-export function validateUpdateVideoInput(data) {
+export function validateUpdateVideoInput(data: object) {
   return updateVideoInputSchema.parse(data)
+}
+
+
+export function validateConversionsQuery(data: object) {
+  return conversionsQuerySchema.parse(data)
 }
