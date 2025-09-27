@@ -10,7 +10,7 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" })
 
 export async function createCustomer(userId: string, email?: string) {
   // @ts-expect-error
-  return stripe.customers.create({ email, metadata: { userId: formatUserId(userId), email } })
+  return stripe.customers.create({ email, metadata: { userId, email } })
 }
 
 export async function createCustomerPortalSession(customer: string, returnUrl: string) {
