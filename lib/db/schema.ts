@@ -25,16 +25,18 @@ export const userLedger = pgTable(
 
 
 
-export const cost = pgTable("costs", {
-    id: uuid().defaultRandom().primaryKey(),
-    uid: text("uid").notNull(),
-    cid: text("cid").notNull(),
-    yymmdd: varchar("yymmdd", { length: 6 }).notNull(),
-    minutes: bigint("minutes", { mode: "number" }).notNull().default(0),
-    cpv: doublePrecision("cpv").notNull().default(0),
-    budget: doublePrecision("budget").notNull().default(0),
-    amount: doublePrecision("amount").notNull().default(0)
-},
+export const cost = pgTable(
+    "costs",
+    {
+        id: uuid().defaultRandom().primaryKey(),
+        uid: text("uid").notNull(),
+        cid: text("cid").notNull(),
+        yymmdd: varchar("yymmdd", { length: 6 }).notNull(),
+        minutes: bigint("minutes", { mode: "number" }).notNull().default(0),
+        cpv: doublePrecision("cpv").notNull().default(0),
+        budget: doublePrecision("budget").notNull().default(0),
+        amount: doublePrecision("amount").notNull().default(0)
+    },
     (table) => [
         unique().on(
             table.uid,

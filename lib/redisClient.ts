@@ -1,8 +1,6 @@
-import { createClient } from 'redis'
+import { createClient } from "redis"
 
-
-const REDIS_URL = process.env.REDIS_URL
-
+const REDIS_URL = process.env.REDIS_URL!
 const redis = createClient({ url: REDIS_URL })
 let isConnected = false
 
@@ -16,18 +14,19 @@ async function connectClient() {
 export async function setCustomersBillingStatus(updates: Record<string, string>) {
   await connectClient()
 
-  await redis.hSet('billing_status', updates)
+  await redis.hSet("billing_status", updates)
 }
-
 
 export async function getCustomerBillingStatus(customerId: string) {
   await connectClient()
 
-  const value = await redis.hGet('billing_status', customerId)
+  const value = await redis.hGet("billing_status", customerId)
 
-  if (value === "1") {
-    return true
-  }
+  return value === "1"
+}
 
-  return false
+export async function getAllBillingStatuses() {
+  await connectClient()
+  
+  return redis.hGetAll("billing_status")
 }

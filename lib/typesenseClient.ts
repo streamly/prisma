@@ -1,4 +1,3 @@
-import md5 from "md5"
 import Typesense from "typesense"
 import { SearchResponse } from 'typesense/lib/Typesense/Documents.js'
 import { MIN_CPV } from "./consts.js"
@@ -105,10 +104,6 @@ const typesenseClient = new Typesense.Client({
   connectionTimeoutSeconds: 2,
 })
 
-export function getTypesenseClient() {
-  return typesenseClient
-}
-
 // ----------------------
 // Keys
 // ----------------------
@@ -138,7 +133,7 @@ export async function verifyVideoOwnership(
       .documents(videoId)
       .retrieve()) as VideoDocument
 
-    if (document.uid !== md5(userId)) {
+    if (document.uid !== formatUserId(userId)) {
       throw new Error("You do not have permission to access this video")
     }
 
@@ -179,6 +174,40 @@ function computeMinBudget(cpv: number, durationSec: number): number {
   return Math.max(1, Math.ceil(cpv * minutes * plays))
 }
 
+export function computeScoreAndRanking(
+  cpv: number,
+  budget: number,
+  durationSec: number,
+  isUserBillingActive: boolean,
+  gated: number
+): { cpv: number; budget: number; score: number; ranking: number; gated: number } {
+  if (!cpv || cpv <= 0) {
+    return { cpv: 0, budget: 0, score: 0, ranking: 0, gated: 0 }
+  }
+
+  if (cpv < MIN_CPV) {
+    if (gated === 1) {
+      cpv = MIN_CPV
+      const minBudget = computeMinBudget(cpv, durationSec)
+      if (budget < minBudget) budget = minBudget
+    } else {
+      return { cpv: 0, budget: 0, score: 0, ranking: 0, gated: 0 }
+    }
+  } else {
+    const minBudget = computeMinBudget(cpv, durationSec)
+    if (budget < minBudget) budget = minBudget
+  }
+
+  const score =
+    123456 +
+    Math.round(cpv * 46976) * 8152256 +
+    Math.round(budget * 10) * 1391
+
+  const ranking = isUserBillingActive ? score : 0
+
+  return { cpv, budget, score, ranking, gated }
+}
+
 // ----------------------
 // Update video doc
 // ----------------------
@@ -203,45 +232,13 @@ export async function updateVideoDocument(
 ): Promise<VideoDocument> {
   const now = getNow()
 
-  let cpv = Number.isFinite(updateData.cpv)
-    ? Math.max(0, Number(updateData.cpv))
-    : 0
-  let budget = Number.isFinite(updateData.budget)
-    ? Math.max(0, Number(updateData.budget))
-    : 0
+  let cpv = Number.isFinite(updateData.cpv) ? Math.max(0, Number(updateData.cpv)) : 0
+  let budget = Number.isFinite(updateData.budget) ? Math.max(0, Number(updateData.budget)) : 0
   let gated = Number(updateData.gated) === 1 ? 1 : 0
-
   const durationSec = Number(document.duration) || 0
-  let minBudget = computeMinBudget(cpv, durationSec)
 
-  if (cpv <= 0) {
-    cpv = 0
-    budget = 0
-    gated = 0
-  } else if (cpv < MIN_CPV) {
-    if (gated === 1) {
-      cpv = MIN_CPV
-      minBudget = computeMinBudget(cpv, durationSec)
-      if (budget < minBudget) budget = minBudget
-    } else {
-      cpv = 0
-      budget = 0
-      gated = 0
-    }
-  } else {
-    if (budget < minBudget) {
-      budget = minBudget
-    }
-  }
-
-  let score = 0
-  if (cpv >= MIN_CPV) {
-    score =
-      123456 +
-      Math.round(cpv * 46976) * 8152256 +
-      Math.round(budget * 10) * 1391
-  }
-  const ranking = isUserBillingActive ? score : 0
+  const { cpv: newCpv, budget: newBudget, score, ranking } =
+    computeScoreAndRanking(cpv, budget, durationSec, isUserBillingActive, gated)
 
   const result = (await typesenseClient
     .collections<VideoDocument>("videos")
@@ -249,24 +246,16 @@ export async function updateVideoDocument(
     .update({
       title: updateData.title ?? document.title,
       description: updateData.description ?? document.description,
-      type: Array.isArray(updateData.type) ? updateData.type : document.type,
-      tags: Array.isArray(updateData.tags) ? updateData.tags : document.tags,
-      creator: Array.isArray(updateData.creator)
-        ? updateData.creator
-        : document.creator,
-      channel: Array.isArray(updateData.channel)
-        ? updateData.channel
-        : document.channel,
-      audience: Array.isArray(updateData.audience)
-        ? updateData.audience
-        : document.audience,
-      people: Array.isArray(updateData.people)
-        ? updateData.people
-        : document.people,
+      type: updateData.type ?? document.type,
+      tags: updateData.tags ?? document.tags,
+      creator: updateData.creator ?? document.creator,
+      channel: updateData.channel ?? document.channel,
+      audience: updateData.audience ?? document.audience,
+      people: updateData.people ?? document.people,
       ranking,
       score,
-      cpv,
-      budget,
+      cpv: newCpv,
+      budget: newBudget,
       gated,
       modified: now,
       active: 1,
@@ -363,4 +352,80 @@ export async function findInactiveVideo(
     console.error("Error finding inactive videos:", error)
     throw error
   }
+}
+
+
+/**
+ * Apply business rules and batch update videos in Typesense
+ */
+export async function applyVideoUpdateRules(
+  results: any[],
+  billingStatus: Record<string, string>
+): Promise<number> {
+  const nowTs = Math.floor(Date.now() / 1000)
+  const todayYMD = new Date().toISOString().slice(0, 10)
+
+  const updates: { id: string;[k: string]: any }[] = []
+
+  for (const r of results) {
+    const vid = r.vid
+    const ranking = parseInt(r.ranking ?? 0, 10)
+    const score = parseInt(r.score ?? 0, 10)
+    const visibility = parseInt(r.visibility ?? 0, 10)
+    const costs = parseFloat(r.costs ?? 0)
+    const cpv = parseFloat(r.cpv ?? 0)
+    const budget = parseFloat(r.budget ?? 0)
+    const billing = parseInt(billingStatus[vid] ?? 0, 10)
+
+    const visDateYMD = visibility
+      ? new Date(visibility * 1000).toISOString().slice(0, 10)
+      : null
+
+    if (ranking > 0 && billing === 0) {
+      updates.push({ id: vid, ranking: 0, visibility: nowTs })
+    } else if (ranking === 0 && billing === 1) {
+      updates.push({ id: vid, ranking: score, visibility: nowTs })
+    } else if (ranking > 0 && costs >= budget) {
+      updates.push({ id: vid, ranking: 0, visibility: nowTs })
+    } else if (
+      billing === 1 &&
+      ranking === 0 &&
+      cpv > 0 &&
+      budget > 0 &&
+      visDateYMD !== todayYMD
+    ) {
+      updates.push({ id: vid, ranking: score, visibility: nowTs })
+    }
+  }
+
+  if (updates.length > 0) {
+    await typesenseClient
+      .collections("videos")
+      .documents()
+      .import(updates, { action: "update" })
+  }
+
+  return updates.length
+}
+
+
+export async function findVideosNeedingRanking(todayYYMMDD: string) {
+  const searchResults = await typesenseClient
+    .collections<VideoDocument>("videos")
+    .documents()
+    .search({
+      q: "*",
+      query_by: "title",
+      filter_by: `score:>0 && ranking:=0 && visibility:!=${todayYYMMDD}`,
+      per_page: 100,
+      include_fields: "id,score"
+    })
+
+  return searchResults.hits?.map((hit: any) => hit.document) || []
+}
+
+export async function updateVideoRanking(id: string, score: number) {
+  return typesenseClient.collections("videos").documents(id).update({
+    ranking: score
+  })
 }

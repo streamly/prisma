@@ -324,6 +324,29 @@ export async function fetchYesterdayCosts() {
     SINCE 1 day ago UNTIL today
     LIMIT MAX
   `
-  
+
+  return runNrqlQuery(nrql)
+}
+
+
+export async function fetchVideoStats() {
+  const nrql = `
+FROM PageAction  
+SELECT 
+  latest(billing) AS billing,
+  latest(visibility) AS visibility,
+  latest(score) AS score, 
+  latest(ranking) AS ranking,
+  filter(
+    sum((playtimeSinceLastEvent/60000) * ((score - 123456) / 8152256) / 46976),
+    WHERE ranking > 0
+  ) AS costs,   
+  (( latest(score) - 123456) / 8152256) / 46976 AS cpv,    
+  (mod(latest(score) - 123456, 8152256) / 1391) / 10 AS budget
+FACET vid 
+SINCE today   
+WHERE score > 0 
+LIMIT MAX
+  `
   return runNrqlQuery(nrql)
 }

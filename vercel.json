@@ -13,6 +13,14 @@
         {
             "path": "/api/cron/costs?interval=yesterday",
             "schedule": "10 0 * * *"
+        },
+        {
+            "path": "/api/cron/ranking",
+            "schedule": "* * * * *"
+        },
+        {
+            "path": "/api/cron/reset",
+            "schedule": "0 0 * * *"
         }
     ]
 }
