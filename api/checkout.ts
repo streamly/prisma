@@ -20,7 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const user = await getClerkUser(userId)
-    let customerId = user.publicMetadata.stripeCustomerId as string
+    console.log('User metadata', user.publicMetadata)
+    let customerId = user.publicMetadata.stripe_customer_id as string
 
     if (!customerId) {
       return res.status(400).json({ error: "No Stripe customer ID found for this user" })

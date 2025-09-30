@@ -25,22 +25,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const formatedUserId = formatUserId(userId)
     const user = await getClerkUser(userId)
     const userEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId)?.emailAddress
-    let userCustomerId = user.publicMetadata.stripeCustomerId as string
+    let userCustomerId = user.publicMetadata.stripe_customer_id as string
 
-    if (userCustomerId) {
+    if (!userCustomerId) {
       const customer = await createCustomer(userId, userEmail)
       userCustomerId = customer.id
 
       await setUserPublicMetadata(userId, {
-        stripeCustomerId: userCustomerId,
-        customerEmail: userEmail,
+        stripe_customer_id: userCustomerId,
+        customer_email: userEmail,
         cid: formatCustomerId(userCustomerId)
       })
     }
 
-    if (userEmail && userEmail !== user.publicMetadata.customerEmail) {
+    if (userEmail && userEmail !== user.publicMetadata.customer_email) {
       try {
-        await updateCustomerEmail(user.publicMetadata.stripeCustomerId as string, userEmail)
+        await updateCustomerEmail(user.publicMetadata.stripe_customer_id as string, userEmail)
       } catch (error) {
         console.error('Error updating customer email')
       }
@@ -72,6 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.setHeader('Set-Cookie', cookies)
+
+    console.log('User metadata', user.publicMetadata)
 
     return res.status(200).json({
       authenticated: true,
