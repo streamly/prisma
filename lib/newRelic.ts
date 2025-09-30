@@ -51,12 +51,22 @@ export async function runNrqlQuery(nrqlQuery: string) {
       `,
     }
 
-    const response = await queryClient.post('', query)
+    const response = await queryClient.post("", query)
+
+    // If GraphQL returned errors
+    if (response.data.errors) {
+      console.error("NRQL GraphQL errors:", response.data.errors)
+      throw new Error(response.data.errors.map((e: any) => e.message).join("; "))
+    }
 
     return response.data.data.actor.account.nrql.results
   } catch (err: any) {
-    console.error('Error executing NRQL query', err?.response?.data || err)
-    throw new Error('NRQL query failed')
+    if (err.response?.data) {
+      console.error("Error executing NRQL query:", JSON.stringify(err.response.data, null, 2))
+    } else {
+      console.error("Error executing NRQL query:", err.message || err)
+    }
+    throw new Error(`NRQL query failed: ${err.message}`)
   }
 }
 
@@ -281,4 +291,39 @@ export async function queryConversions({ videoId, phone, firstname, userId }: { 
   console.log('query', nrqlQuery)
 
   return runNrqlQuery(nrqlQuery)
+}
+
+
+export async function fetchTodayCosts() {
+  const nrql = `
+    SELECT 
+      filter(
+        sum((playtimeSinceLastEvent/60000) * ((score - 123456) / 8152256) / 46976),
+        WHERE ranking > 0
+      ) AS costs
+    FROM PageAction
+    WHERE ranking > 0
+    FACET cid, uid, dateOf(timestamp)
+    SINCE today
+    LIMIT MAX
+  `
+  return runNrqlQuery(nrql)
+}
+
+
+export async function fetchYesterdayCosts() {
+  const nrql = `
+    SELECT 
+      filter(
+        sum((playtimeSinceLastEvent/60000) * ((score - 123456) / 8152256) / 46976),
+        WHERE ranking > 0
+      ) AS costs
+    FROM PageAction
+    WHERE ranking > 0
+    FACET cid, uid, dateOf(timestamp)
+    SINCE 1 day ago UNTIL today
+    LIMIT MAX
+  `
+  
+  return runNrqlQuery(nrql)
 }

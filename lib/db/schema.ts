@@ -1,4 +1,4 @@
-import { bigint, index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import { bigint, doublePrecision, index, pgEnum, pgTable, text, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core"
 export const ledgerTypeEnum = pgEnum("ledger_type", ["credit", "debit"])
 
 
@@ -18,7 +18,28 @@ export const userLedger = pgTable(
             .notNull()
             .defaultNow(),
     },
-    (table) => ({
-        userIdx: index("idx_user_ledger_user_id").on(table.userId),
-    })
+    (table) => [
+        index("idx_user_ledger_user_id").on(table.userId),
+    ]
+)
+
+
+
+export const cost = pgTable("costs", {
+    id: uuid().defaultRandom().primaryKey(),
+    uid: text("uid").notNull(),
+    cid: text("cid").notNull(),
+    yymmdd: varchar("yymmdd", { length: 6 }).notNull(),
+    minutes: bigint("minutes", { mode: "number" }).notNull().default(0),
+    cpv: doublePrecision("cpv").notNull().default(0),
+    budget: doublePrecision("budget").notNull().default(0),
+    amount: doublePrecision("amount").notNull().default(0)
+},
+    (table) => [
+        unique().on(
+            table.uid,
+            table.cid,
+            table.yymmdd,
+        )
+    ]
 )

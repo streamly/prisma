@@ -4,7 +4,15 @@
     "crons": [
         {
             "path": "/api/cron/billing",
-            "schedule":  "*/30 * * * *"
+            "schedule": "*/30 * * * *"
+        },
+        {
+            "path": "/api/cron/costs?interval=today",
+            "schedule": "0 * * * *"
+        },
+        {
+            "path": "/api/cron/costs?interval=yesterday",
+            "schedule": "10 0 * * *"
         }
     ]
 }
