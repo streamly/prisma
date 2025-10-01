@@ -27,6 +27,29 @@ export async function getCustomerBillingStatus(customerId: string) {
 
 export async function getAllBillingStatuses() {
   await connectClient()
-  
+
   return redis.hGetAll("billing_status")
+}
+
+export async function saveConversions(results: Array<any>) {
+  await connectClient()
+
+  const pipeline = redis.multi()
+  const userSet = new Set<string>()
+
+  for (const row of results) {
+    const uid = row.uid || "unknown"
+    const guid = row.guid
+    const values = row.values || []
+
+    userSet.add(uid)
+
+    const redisKey = `conversions:${uid}`
+
+    pipeline.hSet(redisKey, guid, JSON.stringify(values))
+  }
+
+  await pipeline.exec()
+
+  return userSet.size
 }

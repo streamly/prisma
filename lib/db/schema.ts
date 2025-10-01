@@ -6,9 +6,9 @@ export const userLedger = pgTable(
     "user_ledger",
     {
         stripeEventId: text("stripe_event_id").primaryKey(),
-        userId: uuid("user_id").notNull(),
+        uid: uuid("user_id").notNull(),
         stripeObjectId: text("stripe_object_id").notNull(),
-        stripeCustomerId: text("stripe_customer_id").notNull(),
+        cid: text("stripe_customer_id").notNull(),
         type: ledgerTypeEnum("type").notNull(),
         sourceType: text("source_type").notNull(),
         amount: bigint("amount", { mode: "number" }).notNull(), // store in cents
@@ -16,10 +16,10 @@ export const userLedger = pgTable(
         description: text("description"),
         createdAt: timestamp("created_at", { withTimezone: true })
             .notNull()
-            .defaultNow(),
+            .defaultNow()
     },
     (table) => [
-        index("idx_user_ledger_user_id").on(table.userId),
+        index("idx_user_ledger_uid").on(table.uid),
     ]
 )
 
@@ -35,7 +35,8 @@ export const cost = pgTable(
         minutes: bigint("minutes", { mode: "number" }).notNull().default(0),
         cpv: doublePrecision("cpv").notNull().default(0),
         budget: doublePrecision("budget").notNull().default(0),
-        amount: doublePrecision("amount").notNull().default(0)
+        amount: doublePrecision("amount").notNull().default(0),
+        description: text("description")
     },
     (table) => [
         unique().on(

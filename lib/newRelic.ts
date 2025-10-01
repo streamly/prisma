@@ -350,3 +350,48 @@ LIMIT MAX
   `
   return runNrqlQuery(nrql)
 }
+
+
+export async function fetchConversions() {
+  const nrql = `
+    SELECT
+      latest(aid) AS uid,
+      latest(browserHeight) AS browserHeight,
+      latest(browserWidth)  AS browserWidth,
+      latest(cid)           AS cid,
+      latest(city)          AS city,
+      filter(((latest(score) - 123456) / 8152256) / 46976, where ranking > 0) AS cpv,
+      filter(latest(COMPANY), where actionName = 'PLAY') AS company,
+      latest(contentDuration)        AS contentDuration,
+      latest(contentRenditionHeight) AS contentRenditionHeight,
+      latest(contentRenditionWidth)  AS contentRenditionWidth,
+      latest(countryCode)            AS countryCode,
+      filter(sum((playtimeSinceLastEvent/60000) * ((score - 123456) / 8152256) / 46976), where ranking > 0) AS costs,
+      latest(currentUrl)             AS currentUrl,
+      latest(deviceType)             AS deviceType,
+      latest(guid)                   AS guid,
+      (sum(playtimeSinceLastEvent/60000) / (latest(contentDuration)/60000)) * 100 AS percentage,
+      filter(latest(message), where actionName = 'PLAY') AS message,
+      latest(pageUrl)                AS pageUrl,
+      latest(pid)                    AS pid,
+      latest(playtimeSinceLastEvent) AS playtimeSinceLastEvent,
+      latest(position)               AS position,
+      latest(ranking)                AS ranking,
+      latest(regionCode)             AS regionCode,
+      latest(timestamp)              AS timestamp,
+      filter(latest(title), where actionName = 'PLAY') AS title,
+      latest(totalPlaytime)          AS totalPlaytime,
+      latest(userAgentName)          AS userAgentName,
+      latest(userAgentOS)            AS userAgentOS,
+      latest(userAgentVersion)       AS userAgentVersion,
+      latest(uuid)                   AS uuid,
+      latest(vid)                    AS vid,
+      sum(playtimeSinceLastEvent/60000) AS watched
+    FROM MobileVideo, PageAction, RokuVideo
+    SINCE last hour
+    WHERE pid IS NOT NULL
+    FACET guid
+    LIMIT MAX
+  `
+  return runNrqlQuery(nrql)
+}

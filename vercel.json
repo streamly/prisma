@@ -21,6 +21,14 @@
         {
             "path": "/api/cron/reset",
             "schedule": "0 0 * * *"
+        },
+        {
+            "path": "/api/cron/recharge",
+            "schedule": "0 * * * *"
+        },
+        {
+            "path": "/api/cron/conversions",
+            "schedule": "* * * * *"
         }
     ]
 }

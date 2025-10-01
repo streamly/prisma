@@ -106,3 +106,20 @@ export async function updateCustomerEmail(customer: string, newEmail: string) {
     email: newEmail
   })
 }
+
+
+export async function createTopUpInvoice(cusId: string, amountCents = 10000) {
+  await stripe.invoiceItems.create({
+    customer: cusId,
+    amount: amountCents,
+    currency: "usd",
+    description: "Account top-up",
+  })
+
+  const invoice = await stripe.invoices.create({
+    customer: cusId,
+    auto_advance: true,
+  })
+
+  return invoice
+}

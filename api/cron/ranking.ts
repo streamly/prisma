@@ -4,6 +4,13 @@ import { getAllBillingStatuses } from '../../lib/redisClient.js'
 import { applyVideoUpdateRules } from '../../lib/typesenseClient.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+    const authHeader = req.headers["authorization"]
+
+    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        console.warn("Unauthorized request")
+        return res.status(401).json({ success: false })
+    }
+
     try {
         console.info("Starting NRQL job")
 
