@@ -294,7 +294,12 @@ export async function queryConversions({ videoId, phone, firstname, userId }: { 
 }
 
 
-export async function fetchTodayCosts() {
+export async function fetchCostsByInterval(interval: "today" | "yesterday") {
+  const timeClause =
+    interval === "yesterday"
+      ? "SINCE 1 day ago UNTIL today"
+      : "SINCE today"
+
   const nrql = `
     SELECT 
       filter(
@@ -304,27 +309,11 @@ export async function fetchTodayCosts() {
     FROM PageAction
     WHERE ranking > 0
     FACET cid, uid, dateOf(timestamp)
-    SINCE today
-    LIMIT MAX
-  `
-  return runNrqlQuery(nrql)
-}
-
-
-export async function fetchYesterdayCosts() {
-  const nrql = `
-    SELECT 
-      filter(
-        sum((playtimeSinceLastEvent/60000) * ((score - 123456) / 8152256) / 46976),
-        WHERE ranking > 0
-      ) AS costs
-    FROM PageAction
-    WHERE ranking > 0
-    FACET cid, uid, dateOf(timestamp)
-    SINCE 1 day ago UNTIL today
+    ${timeClause}
     LIMIT MAX
   `
 
+  console.log(`Running New Relic costs query for ${interval}`)
   return runNrqlQuery(nrql)
 }
 

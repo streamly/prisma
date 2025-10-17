@@ -11,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("Fetched billing statuses:", Object.keys(billingStatuses).length)
 
     const results = await fetchConversions()
-    console.log(`Fetched ${results.length} conversion facets`)
+    console.log(`Fetched ${results.length} conversion facets`, results)
 
 
     const inserted = await saveConversions(results)

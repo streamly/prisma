@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { upsertCosts } from "../../lib/db/costs.js"
-import { fetchTodayCosts, fetchYesterdayCosts } from "../../lib/newRelic.js"
+import { fetchCostsByInterval } from '../../lib/newRelic.js'
 import { Cost } from "../../lib/types.js"
 
 function transformFacetsToCosts(facets: any[]): Cost[] {
@@ -31,21 +31,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const interval = (req.query.interval as string) || "today"
     console.log(`Starting costs job for interval=${interval} at ${new Date().toISOString()}`)
 
-    const facets =
-      interval === "yesterday"
-        ? await fetchYesterdayCosts()
-        : await fetchTodayCosts()
+    const facets = await fetchCostsByInterval(interval as "today" | "yesterday")
+
+    if (facets.length === 0) {
+      console.log(`No data to upsert for interval=${interval}`)
+      return res.status(200).json({ success: true, message: `No ${interval} data to upsert` })
+    }
 
     console.log('Facets', facets)
     console.log(`NRQL returned ${facets?.length || 0} facets`)
 
     const costs: Cost[] = transformFacetsToCosts(facets)
     console.log(`Transformed to ${costs.length} cost rows`)
-
-    if (costs.length === 0) {
-      console.log(`No data to upsert for interval=${interval}`)
-      return res.status(200).json({ success: true, message: `No ${interval} data to upsert` })
-    }
 
     await upsertCosts(costs)
     console.log(`Successfully upserted ${costs.length} costs for interval=${interval}`)
