@@ -19,19 +19,24 @@ export async function renderData(videoId = undefined) {
     hideLoader(modalBody)
 
     // Reverse datasets (date ascending)
-    const reverseData = (arr) => (arr ? [...arr].reverse().map(v => (isNaN(v) ? 0 : v)) : [])
-    chart.labels = reverseData(chart.labels)
-    chart.plays = reverseData(chart.plays)
-    chart.watchTime = reverseData(chart.watchTime)
-    chart.averageWatchTime = reverseData(chart.averageWatchTime)
-    chart.averagePercentWatched = reverseData(chart.averagePercentWatched)
-    chart.uniqueViewers = reverseData(chart.uniqueViewers)
-    chart.averagePlaysPerVideo = reverseData(chart.averagePlaysPerVideo)
-    chart.averagePlaysPerViewer = reverseData(chart.averagePlaysPerViewer)
-    chart.conversions = reverseData(chart.conversions)
-    chart.conversionRate = reverseData(chart.conversionRate)
-    chart.averageCpv = reverseData(chart.averageCpv)
-    chart.costs = reverseData(chart.costs)
+    const reverseNumericData = (arr) =>
+      Array.isArray(arr) ? [...arr].reverse().map(v => (isNaN(v) ? 0 : v)) : []
+
+    const reverseLabels = (arr) =>
+      Array.isArray(arr) ? [...arr].reverse() : []
+
+    chart.labels = reverseLabels(chart.labels)
+    chart.plays = reverseNumericData(chart.plays)
+    chart.watchTime = reverseNumericData(chart.watchTime)
+    chart.averageWatchTime = reverseNumericData(chart.averageWatchTime)
+    chart.averagePercentWatched = reverseNumericData(chart.averagePercentWatched)
+    chart.uniqueViewers = reverseNumericData(chart.uniqueViewers)
+    chart.averagePlaysPerVideo = reverseNumericData(chart.averagePlaysPerVideo)
+    chart.averagePlaysPerViewer = reverseNumericData(chart.averagePlaysPerViewer)
+    chart.conversions = reverseNumericData(chart.conversions)
+    chart.conversionRate = reverseNumericData(chart.conversionRate)
+    chart.averageCpv = reverseNumericData(chart.averageCpv)
+    chart.costs = reverseNumericData(chart.costs)
 
     // ---- ApexCharts sparklines ----
     const sparkConfigs = [
@@ -55,6 +60,8 @@ export async function renderData(videoId = undefined) {
       chartDiv.id = conf.selector.replace('#', '')
       chartDiv.style.marginBottom = '20px'
       chartsContainer.appendChild(chartDiv)
+
+      console.log('Labels', chart.labels)
 
       const spark = {
         chart: {
@@ -167,7 +174,7 @@ export function initAnalyticsUi() {
   $(document).on('click', '.video-analytics', function () {
     const videoId = $(this).closest(".video-hit").data("id")
     const data = getVideo(videoId)
-    
+
     const title = data.title
     $modal.find('.video-title').text(`| ${decodeURIComponent(title)}`)
     showModal(videoId)
