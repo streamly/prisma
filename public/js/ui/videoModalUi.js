@@ -1,42 +1,35 @@
 import { updateVideo } from '../api.js'
 import { eventHub, EVENTS } from '../eventHub.js'
-import { getVideo } from '../videoData.js' // ⬅️ import the central store
+import { getVideo } from '../videoData.js'
 import { pauseVideo, playVideo } from '../videoPlayer.js'
 
 let isVideoUpdated = false
 let videoDuration = 0
-let tagifyAudience, tagifyTags, tagifyChannel, tagifyType, tagifyPeople
+let tagifyAudience, tagifyTags, tagifyChannel, tagifyType, tagifyPeople, tagifyTopic
 
 const modalElement = document.getElementById('videoModal')
 const $modal = $(modalElement)
 
-
 function formatCurrency(value, decimals = 2) {
   const num = parseFloat(value)
-
   if (isNaN(num)) return "0.00"
-
   return num.toFixed(decimals)
 }
 
 // ---------- Helpers ----------
 function checkVideoBudget(videoDuration) {
-  const cpvValue = parseFloat($("#cpv").val()) || 0
+  const cpvValue = Math.max(parseFloat($("#cpv").val()) || 0, 0.05)
   const budgetInput = $("#budget")
-  let budgetValue = parseFloat(budgetInput.val().trim()) || 0
-  let parsleyMin = 0
+  let budgetValue = Math.max(parseFloat(budgetInput.val().trim()) || 0, 1.0)
+  let parsleyMin = 1.0
 
   if (cpvValue > 0) {
-    const rawMin = (cpvValue * videoDuration / 60) * 10
+    const rawMin = cpvValue * 10
     const minBudget = Math.max(1, Math.ceil(rawMin))
     parsleyMin = minBudget.toFixed(2)
-
     if (budgetValue < minBudget) {
       budgetValue = minBudget
     }
-  } else {
-    budgetValue = 0
-    $("#gated").val("0")
   }
 
   budgetInput.val(budgetValue.toFixed(2))
@@ -46,19 +39,12 @@ function checkVideoBudget(videoDuration) {
 
 // ---------- Tagify Init ----------
 function initTagify() {
-  // Audience (whitelist, single or multiple choice)
   tagifyAudience = new Tagify(document.querySelector('#audience'), {
     whitelist: ["Business", "Consumer", "Government", "NGO/Non-Profit"],
     enforceWhitelist: true,
-    dropdown: {
-      maxItems: 5,
-      classname: 'tags-look',
-      enabled: 0,
-      closeOnSelect: false
-    }
+    dropdown: { maxItems: 5, classname: 'tags-look', enabled: 0, closeOnSelect: false }
   })
 
-  // Type (whitelist)
   tagifyType = new Tagify(document.querySelector('#type'), {
     whitelist: [
       "Animation", "Annual Report", "Behind-The-Scenes", "Board Meeting Highlights", "Brand",
@@ -71,23 +57,20 @@ function initTagify() {
       "Vision & Mission", "Webinar", "Workshop"
     ],
     enforceWhitelist: true,
-    dropdown: {
-      maxItems: 10,
-      classname: 'tags-look',
-      enabled: 0,
-      closeOnSelect: false
-    }
+    dropdown: { maxItems: 10, classname: 'tags-look', enabled: 0, closeOnSelect: false }
   })
 
-  // Tags (free text, lowercase)
   tagifyTags = new Tagify(document.querySelector('#tags'), {
     transformTag: tag => tag.value = tag.value.toLowerCase().trim()
   })
 
-  // Channel (free text, multiple companies)
   tagifyChannel = new Tagify(document.querySelector('#channel'))
-
   tagifyPeople = new Tagify(document.querySelector('#people'))
+
+  tagifyTopic = new Tagify(document.querySelector('#topic'), {
+    whitelist: ['Topic 1', 'Topic 2', 'Topic 3'],
+    dropdown: { maxItems: 10, classname: 'tags-look', enabled: 0, closeOnSelect: false }
+  })
 }
 
 // ---------- Event Handlers ----------
@@ -96,14 +79,12 @@ function handleEditClick() {
   const data = getVideo(videoId)
 
   console.log('Video data', data)
-
   if (!data) {
     console.error("Video not found in store:", videoId)
     return
   }
 
   const isNewVideo = !Boolean(data.title)
-
   if (!isNewVideo) {
     $('#thumbnail-input').val(videoId).trigger('input').trigger('change')
   }
@@ -113,55 +94,30 @@ function handleEditClick() {
   })
 
   videoDuration = data.duration
-
   $("#videoModal .modal-video-title").text(data.title)
   $("#id").val(data.id || '')
   $("#title").val(data.title || '')
   $("#description").val(data.description || '')
 
-
   tagifyAudience.removeAllTags()
-  if (Array.isArray(data.audience)) {
-    tagifyAudience.addTags(data.audience)
-  }
-
+  if (Array.isArray(data.audience)) tagifyAudience.addTags(data.audience)
   tagifyTags.removeAllTags()
-  if (Array.isArray(data.tags)) {
-    tagifyTags.addTags(data.tags)
-  }
-
+  if (Array.isArray(data.tags)) tagifyTags.addTags(data.tags)
   tagifyChannel.removeAllTags()
-  if (Array.isArray(data.channel)) {
-    tagifyChannel.addTags(data.channel)
-  }
-
+  if (Array.isArray(data.channel)) tagifyChannel.addTags(data.channel)
   tagifyType.removeAllTags()
-  if (Array.isArray(data.type)) {
-    tagifyType.addTags(data.type)
-  }
-
+  if (Array.isArray(data.type)) tagifyType.addTags(data.type)
   tagifyPeople.removeAllTags()
-  if (Array.isArray(data.people)) {
-    tagifyPeople.addTags(data.people)
-  }
+  if (Array.isArray(data.people)) tagifyPeople.addTags(data.people)
+  tagifyTopic.removeAllTags()
+  if (Array.isArray(data.topic)) tagifyTopic.addTags(data.topic)
 
-
-  $("#cpv").val(formatCurrency(data.cpv ?? 0))
-  $("#budget").val(formatCurrency(data.budget ?? 0))
-
-  $("#performance").prop("checked", data.cpv >= 0.05)
-  $(".performance-fields").toggle(data.cpv >= 0.05)
-
-  if (parseFloat(data.cpv) === 0) {
-    $("#gated").val("0")
-  } else {
-    $("#gated").val(data.gated ? "1" : "0")
-  }
+  $("#cpv").val(formatCurrency(Math.max(data.cpv ?? 0.05, 0.05)))
+  $("#budget").val(formatCurrency(Math.max(data.budget ?? 1.0, 1.0)))
 
   const timestamp = Date.now()
   const imageUrl = `https://img.syndinet.com/${data.id}?t=${timestamp}`
   $('#thumbnail').css("background-image", `url(${imageUrl})`)
-
   $('#generate-thumbnail, #save-thumbnail').data('id', data.id)
 
   const newUrl = new URL(window.location.href)
@@ -173,19 +129,11 @@ function handleEditClick() {
 }
 
 function handlePublishClick() {
-  const $form = $("#vod").parsley({
-    errorsContainer: () => $("#publish-errors")
-  })
-
+  const $form = $("#vod").parsley({ errorsContainer: () => $("#publish-errors") })
   if (!$form.validate()) return
 
-  const cpvValue = parseFloat($("#cpv").val()) || 0
-  const gatedValue = $("#gated").val()
-
-  if (gatedValue === "1" && cpvValue < 0.05) {
-    alert("Gated content requires CPV ≥ 0.05")
-    return
-  }
+  const cpvValue = Math.max(parseFloat($("#cpv").val()) || 0, 0.05)
+  const budgetValue = Math.max(parseFloat($("#budget").val()) || 0, 1.0)
 
   const payload = {
     id: $("#id").val(),
@@ -196,10 +144,9 @@ function handlePublishClick() {
     channel: tagifyChannel.value.map(t => t.value),
     tags: tagifyTags.value.map(t => t.value),
     people: tagifyPeople.value.map(t => t.value),
+    topic: tagifyTopic.value.map(t => t.value),
     cpv: cpvValue,
-    budget: parseFloat($("#budget").val()),
-    gated: parseInt(gatedValue, 10),
-    performance: $("#performance").is(":checked")
+    budget: budgetValue
   }
 
   updateVideo(payload)
@@ -226,54 +173,24 @@ function handleModalHidden() {
 }
 
 function handleCpvBlur() {
-  let cpvValue = parseFloat($('#cpv').val().trim()) || 0
-  if (cpvValue < 0.05) {
-    cpvValue = 0
-    $('#budget').val('0.00')
-  }
-
+  let cpvValue = Math.max(parseFloat($('#cpv').val().trim()) || 0, 0.05)
   $('#cpv').val(cpvValue.toFixed(2))
-  $('#cpv').attr('data-parsley-min', cpvValue === 0 ? '0' : '0.05')
+  $('#cpv').attr('data-parsley-min', '0.05')
   $('#cpv').parsley().validate()
-
   checkVideoBudget(videoDuration)
 }
 
 function handleBudgetBlur() {
+  let budgetValue = Math.max(parseFloat($('#budget').val().trim()) || 0, 1.0)
+  $('#budget').val(budgetValue.toFixed(2))
+  $('#budget').attr('data-parsley-min', '1')
+  $('#budget').parsley().validate()
   checkVideoBudget(videoDuration)
-}
-
-function handlePerformanceChange(e) {
-  if (e.target.checked) {
-    $(".performance-fields").show()
-    $("#cpv").val("0.05")
-    $("#budget").val("1.00")
-    checkVideoBudget(videoDuration)
-  } else {
-    $(".performance-fields").hide()
-    $("#cpv").val("0.00")
-    $("#budget").val("0.00")
-    $("#gated").val("0")
-  }
-}
-
-function handleGatedChange() {
-  if ($(this).val() === "1") {
-    let cpvValue = parseFloat($("#cpv").val()) || 0
-    if (cpvValue < 0.05) {
-      $("#cpv").val("0.05")
-      checkVideoBudget(videoDuration)
-    }
-  }
 }
 
 function handleTextTrimBlur() {
   let text = $(this).val()
-
-  if (!text) {
-    return
-  }
-
+  if (!text) return
   text = text.replace(/[\r\n]+/g, ' ')
   text = text.replace(/\s\s+/g, ' ')
   text = text.trim()
@@ -288,9 +205,7 @@ export function initVideoModalUi() {
 
   $('#cpv').on('blur', handleCpvBlur)
   $('#budget').on('blur', handleBudgetBlur)
-  $(document).on("change", "#performance", handlePerformanceChange)
   $(document).on('blur', '.text-trim', handleTextTrimBlur)
-  $(document).on('change', '#gated', handleGatedChange)
 
   initTagify()
 }

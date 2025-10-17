@@ -3,6 +3,49 @@ import { SearchResponse } from 'typesense/lib/Typesense/Documents.js'
 import { MIN_CPV } from "./consts.js"
 import { formatCustomerId, formatUserId } from "./utils.js"
 
+/*
+Videos Collection Schema
+------------------------
+  uid: string
+  size: int32
+  height: int32
+  width: int32
+  duration: int32
+  length: string
+  title: string
+  description: string
+  tags: string[]
+  ranking: int32
+  channel: string[]
+  audience: string[]
+  category: string[]
+  industry: string[]
+  language: string[]
+  cpv: float
+  budget: float
+  plan: int32
+  created: int32
+  modified: int32
+  active: int32
+  trusted: int32
+  billing: int32
+  score: int32
+  hash: int32[]
+  trial: int32
+  visibility: int64
+  bid: int32[]
+  company: string
+  creator: string[]
+  format: string
+  type: string[]
+  cid: string
+  people: string[]
+  gated: int32
+  contact: int32
+  topic: string[]
+*/
+
+
 // ----------------------
 // Types
 // ----------------------
@@ -44,6 +87,7 @@ export interface VideoDocument {
   format?: string
   gated?: number
   thumbnailKey?: string
+  topic?: string[]
 }
 
 export interface UpdateVideoData {
@@ -55,6 +99,7 @@ export interface UpdateVideoData {
   channel?: string[]
   audience?: string[]
   people?: string[]
+  topic?: string[]
   cpv?: number
   budget?: number
   gated?: number
@@ -90,6 +135,7 @@ const scopedKeyIncludedFields: (keyof VideoDocument)[] = [
   "creator",
   "people",
   "gated",
+  "topic"
 ]
 
 const typesenseClient = new Typesense.Client({
@@ -108,7 +154,7 @@ const typesenseClient = new Typesense.Client({
 // Keys
 // ----------------------
 export async function generateScopedSearchKey(userId: string): Promise<string> {
-  const scopedApiKey = await typesenseClient.keys().generateScopedSearchKey(
+  const scopedApiKey = typesenseClient.keys().generateScopedSearchKey(
     process.env.TYPESENSE_SEARCH_KEY as string,
     {
       filter_by: `uid:${userId}`,
@@ -252,6 +298,7 @@ export async function updateVideoDocument(
       channel: updateData.channel ?? document.channel,
       audience: updateData.audience ?? document.audience,
       people: updateData.people ?? document.people,
+      topic: updateData.topic ?? document.topic,
       ranking,
       score,
       cpv: newCpv,

@@ -121,7 +121,7 @@
       <div class="col-2">
         <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Format</h5>
         <div id="format-filter" class="ps-2"></div>
-        
+
         <h5 class="btn btn-link btn-sm disabled text-dark mt-4 mb-0">Type</h5>
         <div id="type-filter" class="ps-2"></div>
 
@@ -236,6 +236,12 @@
                   <input id="people" name="people" class="form-control border validate" />
                 </div>
 
+                <!-- FIELD - TOPIC -->
+                <div class="mb-3">
+                  <label for="topic">Topic</label>
+                  <input id="topic" name="topic" class="form-control border validate" />
+                </div>
+
                 <!-- FIELD - KEYWORDS -->
                 <div class="mb-3">
                   <label for="tags">
@@ -249,39 +255,45 @@
                 </div>
 
                 <!-- FIELD - CPV, BUDGET -->
-                <div class="performance-fields" style="display:none;">
-                  <div class="mb-3">
+                <div class="performance-fields">
+                  <!-- <div class="mb-3">
+                    <input type="hidden" id="gated" name="gated" value="1" />
                     <label for="gated" class="form-label">Gated</label>
                     <i class='bx bx-info-circle ms-1'
                       title="Gate content by requiring viewers to share contact information."></i>
                     <select id="gated" name="gated" class="form-select border validate">
-                      <option value="0" selected>No</option>
-                      <option value="1">Yes</option>
+                      <option value="0">No</option>
+                      <option value="1" selected>Yes</option>
                     </select>
-                  </div>
+                  </div> -->
                   <div class="mb-3">
-                    <label for="cpv" class="">CPV Bid (per minute)
+                    <label for="cpv" class="">CPV Bid
                       <i class='bx bx-help-circle'
-                        title="Set a cost-per-view (CPV) bid of $0.05 per minute or higher to amplify your video's reach."></i>
+                        title="Set a minimum cost-per-view (CPV) bid of $0.05 to amplify your video's reach"></i>
                     </label>
-                    <input type="number" id="cpv" name="cpv" value="0" step="0.01"
+                    <input type="number" id="cpv" name="cpv" value="0.05" step="0.01" min="0.05"
                       class="form-control bg-white border validate" />
                   </div>
                   <div class="mb-3">
                     <label for="budget" class="">Daily Spend Limit
                       <i class='bx bx-help-circle'
-                        title="Set your daily spending limit to cover at least 10 full-length plays."></i>
+                        title="Set a daily spending limit that covers at least 10 views per day or $1.00, whichever is higher. Once your budget is reached, your campaign will pause and automatically resume the following day.">
+                      </i>
                     </label>
-                    <input type="number" id="budget" name="budget" value="0" step="0.01"
+                    <input type="number" id="budget" name="budget" value="1" step="1"
                       class="form-control bg-white border validate" />
+                    <i>
+                      Your daily spending limit does not include the streaming costs of $1.00 per viewer hour, which are
+                      billed separately.
+                    </i>
                   </div>
                 </div>
 
-                <div class="form-check mb-3">
+                <!-- <div class="form-check mb-3">
                   <input class="form-check-input" type="checkbox" value="" id="performance" />
                   <label class="form-check-label" for="performance">Gated content and ad-free performance
                     marketing</label>
-                </div>
+                </div> -->
 
                 <input type="hidden" id="thumbnail-input" name="thumbnail" required data-parsley-required="true"
                   data-parsley-required-message="Thumbnail is required" />
