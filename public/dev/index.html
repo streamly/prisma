@@ -256,20 +256,11 @@
 
                 <!-- FIELD - CPV, BUDGET -->
                 <div class="performance-fields">
-                  <!-- <div class="mb-3">
-                    <input type="hidden" id="gated" name="gated" value="1" />
-                    <label for="gated" class="form-label">Gated</label>
-                    <i class='bx bx-info-circle ms-1'
-                      title="Gate content by requiring viewers to share contact information."></i>
-                    <select id="gated" name="gated" class="form-select border validate">
-                      <option value="0">No</option>
-                      <option value="1" selected>Yes</option>
-                    </select>
-                  </div> -->
+ 
                   <div class="mb-3">
                     <label for="cpv" class="">CPV Bid
                       <i class='bx bx-help-circle'
-                        title="Set a minimum cost-per-view (CPV) bid of $0.05 to amplify your video's reach"></i>
+                        title="Set a cost-per-view (CPV) bid to amplify your video's reach."></i>
                     </label>
                     <input type="number" id="cpv" name="cpv" value="0.05" step="0.01" min="0.05"
                       class="form-control bg-white border validate" />
@@ -277,23 +268,31 @@
                   <div class="mb-3">
                     <label for="budget" class="">Daily Spend Limit
                       <i class='bx bx-help-circle'
-                        title="Set a daily spending limit that covers at least 10 views per day or $1.00, whichever is higher. Once your budget is reached, your campaign will pause and automatically resume the following day.">
+                        title="Set a daily spending limit that covers at least 10 views per day. Once your budget is reached, your campaign will pause and automatically resume the following day.">
                       </i>
                     </label>
                     <input type="number" id="budget" name="budget" value="1" step="1"
                       class="form-control bg-white border validate" />
-                    <i>
-                      Your daily spending limit does not include the streaming costs of $1.00 per viewer hour, which are
-                      billed separately.
-                    </i>
                   </div>
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" value="1" name="gated" id="gated" />
+                  <label class="form-check-label" for="gated">Collect contact information
+                    <i class='bx bx-help-circle'
+                        title="Require viewers to share their contact information before accessing your content to generate leads.">
+                      </i>
+                  </label>
+                </div>
+               <div class="alert alert-light" role="alert">
+Your daily spending limit does not include the $1.00 per viewer hour streaming costs, 
+which are billed separately.  There are no costs to receive 
+inquiries from viewers using the Contact Us form. 
+
+</div> 
+                  
+                  
                 </div>
 
-                <!-- <div class="form-check mb-3">
-                  <input class="form-check-input" type="checkbox" value="" id="performance" />
-                  <label class="form-check-label" for="performance">Gated content and ad-free performance
-                    marketing</label>
-                </div> -->
+ 
 
                 <input type="hidden" id="thumbnail-input" name="thumbnail" required data-parsley-required="true"
                   data-parsley-required-message="Thumbnail is required" />
