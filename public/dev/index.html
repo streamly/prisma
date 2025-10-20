@@ -225,20 +225,33 @@
 
                 <!-- FIELD - COMPANY -->
                 <div class="mb-3">
-                  <label for="channel">Company</label>
+                  <label for="channel">Company
+                        <i class='bx bx-help-circle'
+                        title="Add the exact company or organization names as used previously—wording must be identical, since any variation will create separate, text-sensitive facets.">
+                      </i>  
+                                        
+                  </label>
                   <input id="channel" name="channel" required class="form-control border validate"
                     data-parsley-required-message="Please enter at least one company." />
                 </div>
 
                 <!-- FIELD - PEOPLE -->
                 <div class="mb-3">
-                  <label for="people">People</label>
+                  <label for="people">People
+                        <i class='bx bx-help-circle'
+                        title="Add only the names of people related to the content—no titles, roles, or job descriptions.">
+                      </i>  
+                  </label>
                   <input id="people" name="people" class="form-control border validate" />
                 </div>
 
                 <!-- FIELD - TOPIC -->
                 <div class="mb-3">
-                  <label for="topic">Topic</label>
+                  <label for="topic">Topic
+                <i class='bx bx-help-circle'
+                        title="Choose or create topics for your content to help viewers discover it more easily.">
+                      </i> 
+                  </label>
                   <input id="topic" name="topic" class="form-control border validate" />
                 </div>
 
@@ -260,7 +273,7 @@
                   <div class="mb-3">
                     <label for="cpv" class="">CPV Bid
                       <i class='bx bx-help-circle'
-                        title="Set a cost-per-view (CPV) bid to amplify your video's reach."></i>
+                        title="Set a cost-per-view (CPV) bid to amplify your video's reach. Higher bids boost your position in search recommendations, which can result in more engagement and conversions."></i>
                     </label>
                     <input type="number" id="cpv" name="cpv" value="0.05" step="0.01" min="0.05"
                       class="form-control bg-white border validate" />
@@ -283,7 +296,7 @@
                   </label>
                 </div>
                <div class="alert alert-light" role="alert">
-Your daily spending limit does not include the $1.00 per viewer hour streaming costs, 
+Your daily spend limit does not include the $1.00 per viewer hour streaming costs, 
 which are billed separately.  There are no costs to receive 
 inquiries from viewers using the Contact Us form. 
 
